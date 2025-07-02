@@ -12,7 +12,7 @@ import {
   CheckCircle, Package, Timer, Award, Utensils,
   ThumbsUp, MessageCircle, Share2, Gift
 } from 'lucide-react'
-// A logo NÃO é mais importada aqui. Usaremos o caminho direto da pasta /public
+// A logo NÃO é mais importada aqui.
 import './App.css'
 
 // Dados simulados para restaurantes e pratos
@@ -90,7 +90,6 @@ function LoginPage({ onLogin }) {
     e.preventDefault();
     setLoading(true);
     setTimeout(() => {
-      // Usando valores padrão para o formulário para simplificar o login
       localStorage.setItem('clientLoggedIn', 'true');
       onLogin(true);
       setLoading(false);
@@ -103,7 +102,7 @@ function LoginPage({ onLogin }) {
         <CardHeader className="text-center space-y-4">
           <div className="flex justify-center">
             <img 
-              src="/logo-cliente.png" 
+              src="/logo_inksa_cliente.png" 
               alt="Inksa Logo" 
               className="w-20 h-20 rounded-xl object-contain bg-white p-2"
             />
@@ -117,11 +116,11 @@ function LoginPage({ onLogin }) {
           <form onSubmit={handleLogin} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="email" className="text-sm font-medium">Email</Label>
-              <Input id="email" type="email" placeholder="cliente@inksa.com" defaultValue="cliente@inksa.com" required onChange={(e) => setEmail(e.target.value)} />
+              <Input id="email" type="email" placeholder="cliente@inksa.com" value={email} onChange={(e) => setEmail(e.target.value)} className="h-11" required />
             </div>
             <div className="space-y-2">
               <Label htmlFor="password" className="text-sm font-medium">Senha</Label>
-              <Input id="password" type="password" placeholder="••••••••" defaultValue="cli123" required onChange={(e) => setPassword(e.target.value)} />
+              <Input id="password" type="password" placeholder="••••••••" value={password} onChange={(e) => setPassword(e.target.value)} className="h-11" required />
             </div>
             <Button type="submit" className="w-full h-11 text-base font-medium bg-orange-600 hover:bg-orange-700" disabled={loading}>
               {loading ? 'Entrando...' : 'Entrar'}
@@ -139,7 +138,7 @@ function Header({ userName, cartCount, onLogout }) {
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-4">
           <img 
-            src="/logo-cliente.png" 
+            src="/logo_inksa_cliente.png" 
             alt="Inksa Logo" 
             className="w-10 h-10 rounded-lg object-contain"
           />
@@ -211,7 +210,6 @@ function DishCard({ dish, onAddToCart }) {
 }
 
 function OrderCard({ order }) {
-    // Código original do OrderCard restaurado
     const getStatusColor = (status) => {
         switch (status) {
           case 'preparing': return 'bg-yellow-100 text-yellow-800'
@@ -307,7 +305,6 @@ function ClientApp({ onLogout }) {
             <TabsTrigger value="orders">Pedidos</TabsTrigger>
             <TabsTrigger value="profile">Perfil</TabsTrigger>
           </TabsList>
-
           <TabsContent value="home" className="space-y-6">
             <div className="flex items-center justify-between"><h2 className="text-2xl font-bold text-gray-900">Restaurantes em Destaque</h2></div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -318,7 +315,6 @@ function ClientApp({ onLogout }) {
               {mockRestaurants.map(r => <RestaurantCard key={r.id} restaurant={r} onSelect={handleSelectRestaurant} />)}
             </div>
           </TabsContent>
-
           <TabsContent value="search" className="space-y-6">
             <h2 className="text-2xl font-bold text-gray-900">Buscar Restaurantes</h2>
             <div className="relative">
@@ -329,14 +325,12 @@ function ClientApp({ onLogout }) {
               {filteredRestaurants.map(r => <RestaurantCard key={r.id} restaurant={r} onSelect={handleSelectRestaurant} />)}
             </div>
           </TabsContent>
-
           <TabsContent value="orders" className="space-y-6">
             <h2 className="text-2xl font-bold text-gray-900">Meus Pedidos</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {mockOrders.map(order => <OrderCard key={order.id} order={order} />)}
             </div>
           </TabsContent>
-          
         </Tabs>
       </main>
     </div>
