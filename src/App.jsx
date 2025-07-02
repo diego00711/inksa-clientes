@@ -12,7 +12,7 @@ import {
   CheckCircle, Package, Timer, Award, Utensils,
   ThumbsUp, MessageCircle, Share2, Gift
 } from 'lucide-react'
-import logoImg from './assets/logo.png'
+import logoImg from './assets/logo-cliente.png' // <-- CORREÇÃO 1: Logo correta
 import './App.css'
 
 // Dados simulados para restaurantes e pratos
@@ -24,7 +24,7 @@ const mockRestaurants = [
     rating: 4.5,
     deliveryTime: '25-35 min',
     deliveryFee: 5.99,
-    image: 'https://via.placeholder.com/300x200/FF6B35/FFFFFF?text=Burger+King',
+    image: '', // MELHORIA: Deixei vazio para testar o placeholder
     featured: true,
     dishes: [
       { id: 1, name: 'Whopper', price: 18.90, description: 'Hambúrguer com carne grelhada, alface, tomate, cebola, picles e maionese', image: 'https://via.placeholder.com/150x150/FF6B35/FFFFFF?text=Whopper' },
@@ -234,12 +234,20 @@ function Header({ userName, cartCount, onLogout }) {
 function RestaurantCard({ restaurant, onSelect }) {
   return (
     <Card className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => onSelect(restaurant)}>
+      {/* INÍCIO DA CORREÇÃO 2 */}
       <div className="relative">
-        <img 
-          src={restaurant.image} 
-          alt={restaurant.name}
-          className="w-full h-48 object-cover rounded-t-lg"
-        />
+        {restaurant.image ? (
+          <img 
+            src={restaurant.image} 
+            alt={restaurant.name}
+            className="w-full h-48 object-cover rounded-t-lg"
+          />
+        ) : (
+          <div className="w-full h-48 bg-gray-200 flex items-center justify-center rounded-t-lg">
+            <Utensils className="w-12 h-12 text-gray-400" /> 
+          </div>
+        )}
+
         {restaurant.featured && (
           <Badge className="absolute top-2 left-2 bg-orange-500">
             Destaque
@@ -253,6 +261,7 @@ function RestaurantCard({ restaurant, onSelect }) {
           <Heart className="w-4 h-4" />
         </Button>
       </div>
+      {/* FIM DA CORREÇÃO 2 */}
       <CardContent className="p-4">
         <div className="flex items-start justify-between mb-2">
           <h3 className="text-lg font-semibold text-gray-900">{restaurant.name}</h3>
@@ -450,177 +459,4 @@ function ClientApp({ onLogout }) {
                 className="w-full h-64 object-cover rounded-lg"
               />
               <div className="absolute bottom-4 left-4 bg-white/90 backdrop-blur-sm rounded-lg p-4">
-                <h1 className="text-2xl font-bold text-gray-900">{selectedRestaurant.name}</h1>
-                <p className="text-gray-600">{selectedRestaurant.category}</p>
-                <div className="flex items-center space-x-4 mt-2 text-sm text-gray-500">
-                  <div className="flex items-center space-x-1">
-                    <Star className="w-4 h-4 text-yellow-500 fill-current" />
-                    <span>{selectedRestaurant.rating}</span>
-                  </div>
-                  <div className="flex items-center space-x-1">
-                    <Clock className="w-4 h-4" />
-                    <span>{selectedRestaurant.deliveryTime}</span>
-                  </div>
-                  <div className="flex items-center space-x-1">
-                    <Truck className="w-4 h-4" />
-                    <span>R$ {selectedRestaurant.deliveryFee.toFixed(2)}</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div className="space-y-4">
-            <h2 className="text-xl font-bold text-gray-900">Cardápio</h2>
-            {selectedRestaurant.dishes.map(dish => (
-              <DishCard 
-                key={dish.id} 
-                dish={dish} 
-                onAddToCart={handleAddToCart}
-              />
-            ))}
-          </div>
-        </main>
-      </div>
-    )
-  }
-
-  return (
-    <div className="min-h-screen bg-gray-50">
-      <Header userName="João Silva" cartCount={cart.length} onLogout={onLogout} />
-      
-      <main className="p-6">
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4">
-            <TabsTrigger value="home">Início</TabsTrigger>
-            <TabsTrigger value="search">Buscar</TabsTrigger>
-            <TabsTrigger value="orders">Pedidos</TabsTrigger>
-            <TabsTrigger value="profile">Perfil</TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="home" className="space-y-6">
-            <div className="flex items-center justify-between">
-              <h2 className="text-2xl font-bold text-gray-900">Restaurantes em Destaque</h2>
-            </div>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {mockRestaurants.filter(r => r.featured).map(restaurant => (
-                <RestaurantCard 
-                  key={restaurant.id} 
-                  restaurant={restaurant} 
-                  onSelect={handleSelectRestaurant}
-                />
-              ))}
-            </div>
-
-            <div className="flex items-center justify-between">
-              <h2 className="text-2xl font-bold text-gray-900">Todos os Restaurantes</h2>
-            </div>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {mockRestaurants.map(restaurant => (
-                <RestaurantCard 
-                  key={restaurant.id} 
-                  restaurant={restaurant} 
-                  onSelect={handleSelectRestaurant}
-                />
-              ))}
-            </div>
-          </TabsContent>
-
-          <TabsContent value="search" className="space-y-6">
-            <div className="flex items-center justify-between">
-              <h2 className="text-2xl font-bold text-gray-900">Buscar Restaurantes</h2>
-            </div>
-            
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-              <Input
-                placeholder="Buscar por restaurante ou categoria..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10 h-12 text-base"
-              />
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {filteredRestaurants.map(restaurant => (
-                <RestaurantCard 
-                  key={restaurant.id} 
-                  restaurant={restaurant} 
-                  onSelect={handleSelectRestaurant}
-                />
-              ))}
-            </div>
-
-            {filteredRestaurants.length === 0 && searchTerm && (
-              <div className="text-center py-12">
-                <Search className="w-16 h-16 mx-auto text-gray-400 mb-4" />
-                <h3 className="text-lg font-medium text-gray-900 mb-2">Nenhum resultado encontrado</h3>
-                <p className="text-gray-600">Tente buscar por outro termo</p>
-              </div>
-            )}
-          </TabsContent>
-
-          <TabsContent value="orders" className="space-y-6">
-            <div className="flex items-center justify-between">
-              <h2 className="text-2xl font-bold text-gray-900">Meus Pedidos</h2>
-            </div>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {mockOrders.map(order => (
-                <OrderCard key={order.id} order={order} />
-              ))}
-            </div>
-          </TabsContent>
-
-          <TabsContent value="profile" className="space-y-6">
-            <div className="flex items-center justify-between">
-              <h2 className="text-2xl font-bold text-gray-900">Meu Perfil</h2>
-            </div>
-            
-            <Card>
-              <CardContent className="p-12">
-                <div className="text-center text-gray-500">
-                  <User className="w-16 h-16 mx-auto mb-4 text-gray-400" />
-                  <h3 className="text-lg font-medium mb-2">Perfil do Cliente</h3>
-                  <p>Esta funcionalidade será implementada em breve.</p>
-                  <p className="text-sm mt-2">Aqui você poderá editar suas informações pessoais, endereços e preferências.</p>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-        </Tabs>
-      </main>
-    </div>
-  )
-}
-
-// Componente Principal da Aplicação
-function App() {
-  const [isLoggedIn, setIsLoggedIn] = useState(false)
-
-  useEffect(() => {
-    // Verificar se o cliente está logado
-    const loggedIn = localStorage.getItem('clientLoggedIn') === 'true'
-    setIsLoggedIn(loggedIn)
-  }, [])
-
-  const handleLogin = (status) => {
-    setIsLoggedIn(status)
-  }
-
-  const handleLogout = () => {
-    localStorage.removeItem('clientLoggedIn')
-    setIsLoggedIn(false)
-  }
-
-  if (!isLoggedIn) {
-    return <LoginPage onLogin={handleLogin} />
-  }
-
-  return <ClientApp onLogout={handleLogout} />
-}
-
-export default App
-
+                <h1 className="text-2xl font-bold text-gray-90
