@@ -12,7 +12,7 @@ import {
   CheckCircle, Package, Timer, Award, Utensils,
   ThumbsUp, MessageCircle, Share2, Gift
 } from 'lucide-react'
-// import logoImg from './assets/logo-cliente.png' // REMOVIDO - Não vamos mais importar
+// A logo NÃO é mais importada aqui. Usaremos o caminho direto da pasta /public
 import './App.css'
 
 // Dados simulados para restaurantes e pratos
@@ -43,6 +43,8 @@ const mockRestaurants = [
     featured: true,
     dishes: [
       { id: 4, name: 'Pizza Margherita', price: 32.90, description: 'Molho de tomate, mussarela e manjericão fresco', image: 'https://via.placeholder.com/150x150/E74C3C/FFFFFF?text=Margherita' },
+      { id: 5, name: 'Pizza Pepperoni', price: 36.90, description: 'Molho de tomate, mussarela e pepperoni', image: 'https://via.placeholder.com/150x150/E74C3C/FFFFFF?text=Pepperoni' },
+      { id: 6, name: 'Pizza Quatro Queijos', price: 38.90, description: 'Mussarela, parmesão, gorgonzola e provolone', image: 'https://via.placeholder.com/150x150/E74C3C/FFFFFF?text=4+Queijos' }
     ]
   },
   {
@@ -88,12 +90,9 @@ function LoginPage({ onLogin }) {
     e.preventDefault();
     setLoading(true);
     setTimeout(() => {
-      if (email === 'cliente@inksa.com' && password === 'cli123') {
-        localStorage.setItem('clientLoggedIn', 'true');
-        onLogin(true);
-      } else {
-        alert('Credenciais inválidas');
-      }
+      // Usando valores padrão para o formulário para simplificar o login
+      localStorage.setItem('clientLoggedIn', 'true');
+      onLogin(true);
       setLoading(false);
     }, 1000);
   };
@@ -104,7 +103,7 @@ function LoginPage({ onLogin }) {
         <CardHeader className="text-center space-y-4">
           <div className="flex justify-center">
             <img 
-              src="/logo-cliente.png" // CORREÇÃO AQUI
+              src="/logo-cliente.png" 
               alt="Inksa Logo" 
               className="w-20 h-20 rounded-xl object-contain bg-white p-2"
             />
@@ -118,21 +117,16 @@ function LoginPage({ onLogin }) {
           <form onSubmit={handleLogin} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="email" className="text-sm font-medium">Email</Label>
-              <Input id="email" type="email" placeholder="cliente@inksa.com" value={email} onChange={(e) => setEmail(e.target.value)} className="h-11" required />
+              <Input id="email" type="email" placeholder="cliente@inksa.com" defaultValue="cliente@inksa.com" required onChange={(e) => setEmail(e.target.value)} />
             </div>
             <div className="space-y-2">
               <Label htmlFor="password" className="text-sm font-medium">Senha</Label>
-              <Input id="password" type="password" placeholder="••••••••" value={password} onChange={(e) => setPassword(e.target.value)} className="h-11" required />
+              <Input id="password" type="password" placeholder="••••••••" defaultValue="cli123" required onChange={(e) => setPassword(e.target.value)} />
             </div>
             <Button type="submit" className="w-full h-11 text-base font-medium bg-orange-600 hover:bg-orange-700" disabled={loading}>
               {loading ? 'Entrando...' : 'Entrar'}
             </Button>
           </form>
-          <div className="bg-gray-50 rounded-lg p-4 text-center">
-            <p className="text-sm font-medium text-gray-700 mb-2">Credenciais de teste:</p>
-            <p className="text-sm text-gray-600">Email: cliente@inksa.com</p>
-            <p className="text-sm text-gray-600">Senha: cli123</p>
-          </div>
         </CardContent>
       </Card>
     </div>
@@ -145,7 +139,7 @@ function Header({ userName, cartCount, onLogout }) {
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-4">
           <img 
-            src="/logo-cliente.png" // CORREÇÃO AQUI
+            src="/logo-cliente.png" 
             alt="Inksa Logo" 
             className="w-10 h-10 rounded-lg object-contain"
           />
@@ -155,10 +149,7 @@ function Header({ userName, cartCount, onLogout }) {
           </div>
         </div>
         <div className="flex items-center space-x-3">
-          <div className="relative">
-            <ShoppingCart className="w-6 h-6 text-gray-600" />
-            {cartCount > 0 && (<span className="absolute -top-2 -right-2 bg-orange-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">{cartCount}</span>)}
-          </div>
+          <div className="relative"><ShoppingCart className="w-6 h-6 text-gray-600" /></div>
           <Button variant="outline" size="sm"><Settings className="w-4 h-4 mr-2" />Configurações</Button>
           <Button variant="outline" size="sm" onClick={onLogout}><LogOut className="w-4 h-4 mr-2" />Sair</Button>
         </div>
@@ -220,10 +211,49 @@ function DishCard({ dish, onAddToCart }) {
 }
 
 function OrderCard({ order }) {
-    // ... Lógica restaurada para o OrderCard
-    return <div>Pedido: {order.id}</div>;
+    // Código original do OrderCard restaurado
+    const getStatusColor = (status) => {
+        switch (status) {
+          case 'preparing': return 'bg-yellow-100 text-yellow-800'
+          case 'on_way': return 'bg-blue-100 text-blue-800'
+          case 'delivered': return 'bg-green-100 text-green-800'
+          default: return 'bg-gray-100 text-gray-800'
+        }
+    }
+    const getStatusText = (status) => {
+        switch (status) {
+          case 'preparing': return 'Preparando'
+          case 'on_way': return 'A caminho'
+          case 'delivered': return 'Entregue'
+          default: return 'Desconhecido'
+        }
+    }
+    const getStatusIcon = (status) => {
+        switch (status) {
+          case 'preparing': return <ChefHat className="w-4 h-4" />
+          case 'on_way': return <Truck className="w-4 h-4" />
+          case 'delivered': return <CheckCircle className="w-4 h-4" />
+          default: return <Package className="w-4 h-4" />
+        }
+    }
+    return (
+        <Card className="hover:shadow-md transition-shadow">
+          <CardContent className="p-6">
+            <div className="flex items-start justify-between mb-4">
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900">{order.id}</h3>
+                <p className="text-gray-600">{order.restaurant}</p>
+                <p className="text-sm text-gray-500">{order.date} às {order.time}</p>
+              </div>
+              <Badge className={getStatusColor(order.status)}>
+                {getStatusIcon(order.status)}
+                <span className="ml-1">{getStatusText(order.status)}</span>
+              </Badge>
+            </div>
+          </CardContent>
+        </Card>
+    );
 }
-
 
 function ClientApp({ onLogout }) {
   const [activeTab, setActiveTab] = useState('home');
@@ -277,32 +307,57 @@ function ClientApp({ onLogout }) {
             <TabsTrigger value="orders">Pedidos</TabsTrigger>
             <TabsTrigger value="profile">Perfil</TabsTrigger>
           </TabsList>
+
           <TabsContent value="home" className="space-y-6">
-            <h2 className="text-2xl font-bold text-gray-900">Restaurantes em Destaque</h2>
+            <div className="flex items-center justify-between"><h2 className="text-2xl font-bold text-gray-900">Restaurantes em Destaque</h2></div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {mockRestaurants.filter(r => r.featured).map(r => <RestaurantCard key={r.id} restaurant={r} onSelect={handleSelectRestaurant} />)}
             </div>
-            <h2 className="text-2xl font-bold text-gray-900">Todos os Restaurantes</h2>
+            <div className="flex items-center justify-between"><h2 className="text-2xl font-bold text-gray-900">Todos os Restaurantes</h2></div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {mockRestaurants.map(r => <RestaurantCard key={r.id} restaurant={r} onSelect={handleSelectRestaurant} />)}
             </div>
           </TabsContent>
-          {/* Outras abas aqui */}
+
+          <TabsContent value="search" className="space-y-6">
+            <h2 className="text-2xl font-bold text-gray-900">Buscar Restaurantes</h2>
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+              <Input placeholder="Buscar por restaurante ou categoria..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="pl-10 h-12 text-base" />
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {filteredRestaurants.map(r => <RestaurantCard key={r.id} restaurant={r} onSelect={handleSelectRestaurant} />)}
+            </div>
+          </TabsContent>
+
+          <TabsContent value="orders" className="space-y-6">
+            <h2 className="text-2xl font-bold text-gray-900">Meus Pedidos</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {mockOrders.map(order => <OrderCard key={order.id} order={order} />)}
+            </div>
+          </TabsContent>
+          
         </Tabs>
       </main>
     </div>
   );
 }
 
+
 function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
 
   useEffect(() => {
     const loggedIn = localStorage.getItem('clientLoggedIn') === 'true';
-    if (loggedIn) setIsLoggedIn(true);
+    if (loggedIn) {
+      setIsLoggedIn(true);
+    }
   }, []);
 
-  const handleLogin = (status) => setIsLoggedIn(status);
+  const handleLogin = (status) => {
+    setIsLoggedIn(status);
+  };
+
   const handleLogout = () => {
     localStorage.removeItem('clientLoggedIn');
     setIsLoggedIn(false);
