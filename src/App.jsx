@@ -12,10 +12,10 @@ import {
   CheckCircle, Package, Timer, Award, Utensils,
   ThumbsUp, MessageCircle, Share2, Gift
 } from 'lucide-react'
-// A logo NÃO é mais importada aqui.
+// A logo não é mais importada
 import './App.css'
 
-// Dados simulados para restaurantes e pratos
+// Dados simulados
 const mockRestaurants = [
   {
     id: 1,
@@ -26,11 +26,7 @@ const mockRestaurants = [
     deliveryFee: 5.99,
     image: '', // Deixado vazio para testar o placeholder
     featured: true,
-    dishes: [
-      { id: 1, name: 'Whopper', price: 18.90, description: 'Hambúrguer com carne grelhada, alface, tomate, cebola, picles e maionese', image: 'https://via.placeholder.com/150x150/FF6B35/FFFFFF?text=Whopper' },
-      { id: 2, name: 'Big King', price: 16.90, description: 'Dois hambúrgueres, alface, queijo, molho especial e cebola', image: 'https://via.placeholder.com/150x150/FF6B35/FFFFFF?text=Big+King' },
-      { id: 3, name: 'Chicken Crispy', price: 15.90, description: 'Frango empanado crocante com alface e maionese', image: 'https://via.placeholder.com/150x150/FF6B35/FFFFFF?text=Chicken' }
-    ]
+    dishes: [ { id: 1, name: 'Whopper', price: 18.90, description: 'Hambúrguer grelhado, alface, etc.', image: 'https://via.placeholder.com/150' } ]
   },
   {
     id: 2,
@@ -41,45 +37,10 @@ const mockRestaurants = [
     deliveryFee: 4.99,
     image: 'https://via.placeholder.com/300x200/E74C3C/FFFFFF?text=Pizza+Hut',
     featured: true,
-    dishes: [
-      { id: 4, name: 'Pizza Margherita', price: 32.90, description: 'Molho de tomate, mussarela e manjericão fresco', image: 'https://via.placeholder.com/150x150/E74C3C/FFFFFF?text=Margherita' },
-      { id: 5, name: 'Pizza Pepperoni', price: 36.90, description: 'Molho de tomate, mussarela e pepperoni', image: 'https://via.placeholder.com/150x150/E74C3C/FFFFFF?text=Pepperoni' },
-      { id: 6, name: 'Pizza Quatro Queijos', price: 38.90, description: 'Mussarela, parmesão, gorgonzola e provolone', image: 'https://via.placeholder.com/150x150/E74C3C/FFFFFF?text=4+Queijos' }
-    ]
-  },
-  {
-    id: 3,
-    name: 'Subway',
-    category: 'Sanduíches',
-    rating: 4.2,
-    deliveryTime: '20-30 min',
-    deliveryFee: 3.99,
-    image: 'https://via.placeholder.com/300x200/00A651/FFFFFF?text=Subway',
-    featured: false,
-    dishes: [
-      { id: 7, name: 'Subway Melt', price: 14.90, description: 'Peru, presunto, bacon, queijo e vegetais', image: 'https://via.placeholder.com/150x150/00A651/FFFFFF?text=Melt' },
-    ]
-  },
-  {
-    id: 4,
-    name: 'McDonald\'s',
-    category: 'Fast Food',
-    rating: 4.4,
-    deliveryTime: '20-30 min',
-    deliveryFee: 5.99,
-    image: 'https://via.placeholder.com/300x200/FFC72C/000000?text=McDonald\'s',
-    featured: true,
-    dishes: [
-      { id: 10, name: 'Big Mac', price: 17.90, description: 'Dois hambúrgueres, alface, queijo, molho especial, cebola, picles', image: 'https://via.placeholder.com/150x150/FFC72C/000000?text=Big+Mac' },
-    ]
+    dishes: [ { id: 4, name: 'Pizza Margherita', price: 32.90, description: 'Molho de tomate, mussarela e manjericão.', image: 'https://via.placeholder.com/150' } ]
   }
 ]
-
-const mockOrders = [
-  { id: '#P001', restaurant: 'Burger King', items: ['1x Whopper', '1x Batata Grande'], total: 25.80, status: 'delivered', date: '2025-06-22', time: '14:30', rating: 5 },
-  { id: '#P002', restaurant: 'Pizza Hut', items: ['1x Pizza Margherita'], total: 37.89, status: 'preparing', date: '2025-06-22', time: '15:15', rating: null },
-  { id: '#P003', restaurant: 'McDonald\'s', items: ['1x Big Mac', '1x Coca-Cola'], total: 22.80, status: 'on_way', date: '2025-06-22', time: '15:45', rating: null }
-]
+const mockOrders = [ { id: '#P001', restaurant: 'Burger King', items: ['1x Whopper'], total: 25.80, status: 'delivered', date: '2025-07-02', time: '14:30', rating: 5 } ]
 
 function LoginPage({ onLogin }) {
   const [email, setEmail] = useState('');
@@ -101,10 +62,11 @@ function LoginPage({ onLogin }) {
       <Card className="w-full max-w-md shadow-2xl">
         <CardHeader className="text-center space-y-4">
           <div className="flex justify-center">
+            {/* LOGO AUMENTADA */}
             <img 
               src="/logo_inksa_cliente.png" 
               alt="Inksa Logo" 
-              className="w-20 h-20 rounded-xl object-contain bg-white p-2"
+              className="w-28 h-28 rounded-xl object-contain bg-white p-2"
             />
           </div>
           <div>
@@ -119,18 +81,40 @@ function LoginPage({ onLogin }) {
               <Input id="email" type="email" placeholder="cliente@inksa.com" value={email} onChange={(e) => setEmail(e.target.value)} className="h-11" required />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="password" className="text-sm font-medium">Senha</Label>
+              <div className="flex items-center justify-between">
+                <Label htmlFor="password" className="text-sm font-medium">Senha</Label>
+                {/* LINK "ESQUECEU SUA SENHA?" */}
+                <Button variant="link" className="h-auto p-0 text-xs text-orange-600 hover:text-orange-700">
+                  Esqueceu sua senha?
+                </Button>
+              </div>
               <Input id="password" type="password" placeholder="••••••••" value={password} onChange={(e) => setPassword(e.target.value)} className="h-11" required />
             </div>
             <Button type="submit" className="w-full h-11 text-base font-medium bg-orange-600 hover:bg-orange-700" disabled={loading}>
               {loading ? 'Entrando...' : 'Entrar'}
             </Button>
           </form>
+          
+          {/* BOTÃO DE CADASTRO */}
+          <div className="relative">
+            <div className="absolute inset-0 flex items-center"><span className="w-full border-t" /></div>
+            <div className="relative flex justify-center text-xs uppercase">
+              <span className="bg-white px-2 text-muted-foreground">Não tem uma conta?</span>
+            </div>
+          </div>
+          <Button variant="outline" className="w-full h-11">
+            Cadastre-se
+          </Button>
+
         </CardContent>
       </Card>
     </div>
   );
 }
+
+
+// ... (O restante dos seus componentes: Header, RestaurantCard, etc., continuam aqui)
+
 
 function Header({ userName, cartCount, onLogout }) {
   return (
@@ -336,7 +320,6 @@ function ClientApp({ onLogout }) {
     </div>
   );
 }
-
 
 function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
