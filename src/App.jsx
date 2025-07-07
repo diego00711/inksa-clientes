@@ -1,15 +1,14 @@
-// Local: src/App.jsx - CORREÇÃO DA IMPORTAÇÃO DO LINK
+// Local: src/App.jsx - Adicionar as novas rotas
 
 import React from "react";
-// ATENÇÃO: Adicionado 'Link' aqui -> { Routes, Route, Link }
-import { Routes, Route, Link } from "react-router-dom"; 
+import { Routes, Route, Link } from "react-router-dom"; // Link já deveria estar aqui
 import { Layout } from "./components/Layout";
 import { HomePage } from "./pages/HomePage";
 import { RestaurantDetailsPage } from "./pages/RestaurantDetailsPage";
-import { CartPage } from "./pages/CartPage";     
-import { ProfilePage } from "./pages/ProfilePage"; 
-import { Header } from "./components/Header"; 
-import { ScrollToTopButton } from "./components/ScrollToTopButton"; 
+import { CartPage } from "./pages/CartPage";     // NOVO: Importar CartPage
+import { ProfilePage } from "./pages/ProfilePage"; // NOVO: Importar ProfilePage
+import { Header } from "./components/Header";
+import { ScrollToTopButton } from "./components/ScrollToTopButton";
 
 export default function App() {
   return (
@@ -20,8 +19,9 @@ export default function App() {
         <Routes>
           <Route path="/" element={<HomePage />} />
           <Route path="/restaurantes/:id" element={<RestaurantDetailsPage />} />
-          <Route path="/carrinho" element={<CartPage />} />       
-          <Route path="/perfil" element={<ProfilePage />} />       
+          <Route path="/carrinho" element={<CartPage />} />       {/* NOVO: Rota para o Carrinho */}
+          <Route path="/perfil" element={<ProfilePage />} />       {/* NOVO: Rota para o Perfil */}
+          {/* Rota para páginas não encontradas (404) */}
           <Route path="*" element={
             <div className="text-center py-20">
               <h1 className="text-3xl font-bold text-gray-800 mb-4">404 - Página Não Encontrada</h1>
