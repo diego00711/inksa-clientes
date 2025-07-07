@@ -1,36 +1,80 @@
-// Local: src/pages/HomePage.jsx - CORREÇÃO DO ÍCONE SearchOff PARA SearchX
+// Local: src/pages/HomePage.jsx - CORREÇÃO DO ERRO DE SINTAXE EM mockRestaurants
 
 import { useState, useEffect, useCallback } from "react"; 
 import { RestaurantList } from "../components/RestaurantList";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Search, SearchX } from "lucide-react"; // ALTERADO AQUI: SearchOff para SearchX
+import { Search, SearchX } from "lucide-react"; 
 import { FilterDrawer } from "../components/FilterDrawer";
 
 const INITIAL_LOAD_COUNT = 8; 
 
+// ATENÇÃO: ESTE É O BLOCO mockRestaurants CORRIGIDO
 const mockRestaurants = [
-  { id: 1, name: "Pizzaria Sabor Divino", imageUrl: "https://images.unsplash.com/photo-1513104890138-7c749659a591", category: "Pizza", rating: 4.8, deliveryFee: 5.00, deliveryTime: "30-45 min" },
-  { id: 2, name: "Burger-Mania", imageUrl: "https://images.unsplash.com/photo-1571091718767-18b5b1457add", category: "Lanches", rating: 4.9, deliveryFee: 0.00, deliveryTime: "25-35 min" },
-  { id: 3, name: "Sushi House", imageUrl: "https://images.unsplash.com/photo-1579871494447-9811cf80d66c", category: "Japonesa", rating: 4.7, deliveryFee: 7.00, deliveryTime: "45-60 min" },
-  { id: 4, name: "Cantina da Nona", imageUrl: "https://images.unsplash.com/photo-1598866594243-7b36de3ca16c", category: "Italiana", rating: 4.6, deliveryFee: 6.00, deliveryTime: "40-50 min" },
-  { id: 5, "name": "Padaria Doce Pão", "imageUrl": "https://images.unsplash.com/photo-1627962635489-08bf1841364d", "category": "Padaria", "rating": 4.1, "deliveryFee": 3.00, "deliveryTime": "20-30 min" },
-  { id: 6, "name": "Churrascaria Gaúcha", "imageUrl": "https://images.unsplash.com/photo-1610444738580-044237f3747f", "category": "Churrasco", "rating": 3.9, "deliveryFee": 8.00, "deliveryTime": "45-60 min" },
-  { id: 7, "name": "Temaki Express", "imageUrl": "https://images.unsplash.com/photo-1563612116035-7c152a41d6b0", "category": "Japonesa", "rating": 4.5, "deliveryFee": 6.00, "deliveryTime": "35-45 min" },
-  { id: 8, "name": "Café da Esquina", "imageUrl": "https://images.unsplash.com/photo-1509042239860-f550ce710b93", "category": "Cafeteria", "rating": 4.2, "deliveryFee": 4.00, "deliveryTime": "20-30 min" },
-  { id: 9, "name": "Doceria Encantada", "imageUrl": "https://images.unsplash.com/photo-1587314168485-3236d6710814", "category": "Doces", "rating": 4.9, "deliveryFee": 5.00, "deliveryTime": "30-40 min" },
-  { id: 10, "name": "Comida Caseira da Vovó", "imageUrl": "https://images.unsplash.com/photo-1512621776951-a5732159c961", "category": "Brasileira", "rating": 4.3, "deliveryFee": 6.00, "deliveryTime": "40-55 min" },
-  { id: 11, "name": "Hamburgueria Artesanal", "imageUrl": "https://images.unsplash.com/photo-1568901346379-8ce8e6042132", "category": "Lanches", "rating": 4.7, "deliveryFee": 0.00, "deliveryTime": "25-35 min" },
-  { id: 12, "name": "Tacos Mexicanos", "imageUrl": "https://images.unsplash.com/photo-1552532450-fa7585021287", "category": "Mexicana", "rating": 4.4, "deliveryFee": 7.00, "deliveryTime": "35-45 min" },
-  { id: 13, "name": "Açaí Tropical", "imageUrl": "https://images.unsplash.com/photo-1550596334-7ad447547781", "category": "Saudável", "rating": 4.6, "deliveryFee": 3.00, "deliveryTime": "20-30 min" },
-  { id: 14, "name": "Esfiharia Árabe", "imageUrl": "https://images.unsplash.com/photo-1621995543166-51d30324866b", "category": "Árabe", "rating": 4.0, "deliveryFee": 5.00, "deliveryTime": "30-40 min" },
+  { 
+    id: 1, 
+    name: "Pizzaria Sabor Divino", 
+    imageUrl: "https://images.unsplash.com/photo-1513104890138-7c749659a591", 
+    category: "Pizza", 
+    rating: 4.8, 
+    deliveryFee: 5.00, 
+    deliveryTime: "30-45 min",
+    menuItems: [ 
+      { id: 'p1', name: "Pizza Calabresa", description: "Muçarela, calabresa, cebola e orégano.", price: 45.00, imageUrl: "https://images.unsplash.com/photo-1596200236473-b78f844f24c3?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D" },
+      { id: 'p2', name: "Pizza Marguerita", description: "Muçarela, tomate, manjericão e azeite.", price: 42.00, imageUrl: "https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D" },
+      { id: 'p3', name: "Pizza Frango c/ Catupiry", description: "Muçarela, frango desfiado e catupiry.", price: 48.00, imageUrl: "https://images.unsplash.com/photo-1564759226500-111059f33887?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D" },
+      { id: 'b1', name: "Coca-Cola Lata", description: "Refrigerante 350ml.", price: 7.00, imageUrl: "https://images.unsplash.com/photo-1627962635489-08bf1841364d" },
+    ]
+  },
+  { 
+    id: 2, 
+    name: "Burger-Mania", 
+    imageUrl: "https://images.unsplash.com/photo-1571091718767-18b5b1457add", 
+    category: "Lanches", 
+    rating: 4.9, 
+    deliveryFee: 0.00, 
+    deliveryTime: "25-35 min",
+    menuItems: [ 
+      { id: 'h1', name: "Hambúrguer Clássico", description: "Pão, carne, queijo, alface, tomate e maionese.", price: 32.00, imageUrl: "https://images.unsplash.com/photo-1568901346379-8ce8e6042132?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D" },
+      { id: 'h2', name: "Cheeseburguer Duplo", description: "Dois hambúrgueres, queijo cheddar, picles e cebola.", price: 45.00, imageUrl: "https://images.unsplash.com/photo-1594212699903-ec8a3ecc439c?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D" },
+      { id: 'h3', name: "Batata Frita G", description: "Porção grande de batatas fritas.", price: 15.00, imageUrl: "https://images.unsplash.com/photo-1616788880468-b76e1a477382?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D" },
+      { id: 'b2', name: "Guaraná Antarctica", description: "Refrigerante 350ml.", price: 7.00, imageUrl: "https://images.unsplash.com/photo-1627962635489-08bf1841364d" },
+    ]
+  },
+  { 
+    id: 3, 
+    name: "Sushi House", 
+    imageUrl: "https://images.unsplash.com/photo-1579871494447-9811cf80d66c", 
+    category: "Japonesa", 
+    rating: 4.7, 
+    deliveryFee: 7.00, 
+    deliveryTime: "45-60 min",
+    menuItems: [ 
+      { id: 's1', name: "Combinado 20 peças", description: "Mix de sushis e sashimis variados.", price: 89.00, imageUrl: "https://images.unsplash.com/photo-1563612116035-7c152a41d6b0?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D" },
+      { id: 's2', name: "Temaki Salmão", description: "Cone de alga com arroz, salmão e cream cheese.", price: 35.00, imageUrl: "https://images.unsplash.com/photo-1579871494447-9811cf80d66c?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D" },
+      { id: 's3', name: "Gyoza (6 unidades)", description: "Pastéis japoneses de carne suína.", price: 28.00, imageUrl: "https://images.unsplash.com/photo-1628172905295-8e27c191a2a4?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D" },
+      { id: 'b3', name: "H2OH! Limoneto", description: "Bebida leve 500ml.", price: 8.00, imageUrl: "https://images.unsplash.com/photo-1627962635489-08bf1841364d" },
+    ]
+  },
+  { id: 4, name: "Cantina da Nona", imageUrl: "https://images.unsplash.com/photo-1598866594243-7b36de3ca16c", category: "Italiana", rating: 4.6, deliveryFee: 6.00, deliveryTime: "40-50 min", menuItems: [] }, 
+  { id: 5, name: "Padaria Doce Pão", imageUrl: "https://images.unsplash.com/photo-1627962635489-08bf1841364d", category: "Padaria", rating: 4.1, deliveryFee: 3.00, deliveryTime: "20-30 min", menuItems: [] },
+  { id: 6, name: "Churrascaria Gaúcha", imageUrl: "https://images.unsplash.com/photo-1610444738580-044237f3747f", category: "Churrasco", rating: 3.9, deliveryFee: 8.00, deliveryTime: "45-60 min", menuItems: [] },
+  { id: 7, name: "Temaki Express", imageUrl: "https://images.unsplash.com/photo-1563612116035-7c152a41d6b0", category: "Japonesa", rating: 4.5, deliveryFee: 6.00, deliveryTime: "35-45 min", menuItems: [] },
+  { id: 8, name: "Café da Esquina", imageUrl: "https://images.unsplash.com/photo-1509042239860-f550ce710b93", category: "Cafeteria", rating: 4.2, deliveryFee: 4.00, deliveryTime: "20-30 min", menuItems: [] },
+  { id: 9, name: "Doceria Encantada", imageUrl: "https://images.unsplash.com/photo-1587314168485-3236d6710814", category: "Doces", rating: 4.9, deliveryFee: 5.00, deliveryTime: "30-40 min", menuItems: [] },
+  { id: 10, name: "Comida Caseira da Vovó", imageUrl: "https://images.unsplash.com/photo-1512621776951-a5732159c961", category: "Brasileira", rating: 4.3, deliveryFee: 6.00, deliveryTime: "40-55 min", menuItems: [] },
+  { id: 11, name: "Hamburgueria Artesanal", imageUrl: "https://images.unsplash.com/photo-1568901346379-8ce8e6042132", category: "Lanches", rating: 4.7, deliveryFee: 0.00, deliveryTime: "25-35 min", menuItems: [] },
+  { id: 12, name: "Tacos Mexicanos", imageUrl: "https://images.unsplash.com/photo-1552532450-fa7585021287", category: "Mexicana", rating: 4.4, deliveryFee: 7.00, deliveryTime: "35-45 min", menuItems: [] },
+  { id: 13, name: "Açaí Tropical", imageUrl: "https://images.unsplash.com/photo-1550596334-7ad447547781", category: "Saudável", rating: 4.6, deliveryFee: 3.00, deliveryTime: "20-30 min", menuItems: [] },
+  { id: 14, name: "Esfiharia Árabe", imageUrl: "https://images.unsplash.com/photo-1621995543166-51d30324866b", category: "Árabe", rating: 4.0, deliveryFee: 5.00, deliveryTime: "30-40 min", menuItems: [] },
 ];
 
 const categories = ["Todos", ...new Set(mockRestaurants.map(r => r.category))];
 const ratingFilters = ["Todos", 4.0, 4.5];
 
 const featuredBanner = {
-  imageUrl: "https://images.unsplash.com/photo-1579547621804-03a0134f593b?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
+  // ATENÇÃO: Verifique se essa imagem está na sua pasta public/
+  imageUrl: "/banner-gamificacao.jpg", // Exemplo: se você salvou em public/banner-gamificacao.jpg
   title: "Ganhe Recompensas Incríveis!",
   subtitle: "Acumule pontos em cada pedido e troque por descontos exclusivos. Comece a ganhar agora!",
 };
@@ -175,11 +219,11 @@ export function HomePage() {
   return (
     <div>
       {/* Título Principal */}
-      <h1 className="text-4xl sm:text-5xl md:text-6xl font-extrabold mb-4 text-gray-800 leading-tight"> {/* Ajustes para título */}
+      <h1 className="text-4xl sm:text-5xl md:text-6xl font-extrabold mb-4 text-gray-800 leading-tight"> 
         Bem-vindo ao Inksa Delivery!
       </h1>
       {/* Subtítulo Principal */}
-      <p className="text-lg sm:text-xl text-gray-600 mb-10 leading-relaxed"> {/* Ajustes para subtítulo */}
+      <p className="text-lg sm:text-xl text-gray-600 mb-10 leading-relaxed"> 
         Encontre o melhor restaurante para você.
       </p>
 
@@ -188,7 +232,7 @@ export function HomePage() {
         <img
           src={featuredBanner.imageUrl}
           alt={featuredBanner.title}
-          className="w-full h-full object-cover brightness-[.3]"
+          className="w-full h-full object-cover brightness-[.4]" // AJUSTADO O BRILHO AQUI!
         />
         <div className="absolute inset-0 flex flex-col items-center justify-center text-center p-4">
           <h2 className="text-white text-3xl sm:text-4xl md:text-5xl font-extrabold mb-2 leading-tight drop-shadow-lg">
@@ -238,8 +282,7 @@ export function HomePage() {
         </div>
       ) : filteredAndSortedRestaurants.length === 0 ? (
         <div className="text-center py-16 text-gray-500">
-          {/* AQUI ESTÁ O NOVO ÍCONE PARA O ESTADO VAZIO */}
-          <SearchX className="w-12 h-12 mx-auto mb-4 text-gray-400" /> {/* ADICIONADO: Ícone SearchX */}
+          <SearchX className="w-12 h-12 mx-auto mb-4 text-gray-400" /> 
           <p className="text-xl font-semibold mb-3">Nenhum restaurante encontrado.</p>
           <p className="text-base">
             Tente ajustar sua busca ou mudar os filtros.

@@ -1,37 +1,76 @@
-// Local: src/pages/RestaurantDetailsPage.jsx - VERSÃO CORRIGIDA E BÁSICA
+// Local: src/pages/RestaurantDetailsPage.jsx - EXIBINDO ITENS DO CARDÁPIO
 
 import React from 'react';
-import { useParams, Link } from 'react-router-dom'; // Importa useParams para pegar o ID da URL e Link para navegação
-import { Button } from "@/components/ui/button";     // Importa o componente Button do Shadcn/ui
-import { ChevronLeft } from "lucide-react";         // Importa o ícone de seta para a esquerda
+import { useParams, Link } from 'react-router-dom'; 
+import { Button } from "@/components/ui/button";     
+import { ChevronLeft, Star } from "lucide-react"; 
 
-// Importa os mockRestaurants para poder encontrar os detalhes do restaurante
-// Em uma aplicação real, você buscaria os detalhes do restaurante de uma API
+// IMPORTANTE: Adicione mockRestaurants aqui também para que RestaurantDetailsPage possa acessá-lo.
+// Idealmente, em uma aplicação real, você buscaria os detalhes e o cardápio do restaurante de uma API.
 const mockRestaurants = [
-  { id: 1, name: "Pizzaria Sabor Divino", imageUrl: "https://images.unsplash.com/photo-1513104890138-7c749659a591", category: "Pizza", rating: 4.8, deliveryFee: 5.00, deliveryTime: "30-45 min" },
-  { id: 2, name: "Burger-Mania", imageUrl: "https://images.unsplash.com/photo-1571091718767-18b5b1457add", category: "Lanches", rating: 4.9, deliveryFee: 0.00, deliveryTime: "25-35 min" },
-  { id: 3, name: "Sushi House", imageUrl: "https://images.unsplash.com/photo-1579871494447-9811cf80d66c", category: "Japonesa", rating: 4.7, deliveryFee: 7.00, deliveryTime: "45-60 min" },
-  { id: 4, name: "Cantina da Nona", imageUrl: "https://images.unsplash.com/photo-1598866594243-7b36de3ca16c", category: "Italiana", rating: 4.6, deliveryFee: 6.00, deliveryTime: "40-50 min" },
-  { id: 5, name: "Padaria Doce Pão", imageUrl: "https://images.unsplash.com/photo-1627962635489-08bf1841364d", category: "Padaria", rating: 4.1, deliveryFee: 3.00, deliveryTime: "20-30 min" },
-  { id: 6, name: "Churrascaria Gaúcha", imageUrl: "https://images.unsplash.com/photo-1610444738580-044237f3747f", category: "Churrasco", rating: 3.9, deliveryFee: 8.00, deliveryTime: "45-60 min" },
-  { id: 7, name: "Temaki Express", imageUrl: "https://images.unsplash.com/photo-1563612116035-7c152a41d6b0", category: "Japonesa", rating: 4.5, deliveryFee: 6.00, deliveryTime: "35-45 min" },
-  { id: 8, name: "Café da Esquina", imageUrl: "https://images.unsplash.com/photo-1509042239860-f550ce710b93", category: "Cafeteria", rating: 4.2, deliveryFee: 4.00, deliveryTime: "20-30 min" },
-  { id: 9, name: "Doceria Encantada", imageUrl: "https://images.unsplash.com/photo-1587314168485-3236d6710814", category: "Doces", rating: 4.9, deliveryFee: 5.00, deliveryTime: "30-40 min" },
-  { id: 10, name: "Comida Caseira da Vovó", imageUrl: "https://images.unsplash.com/photo-1512621776951-a5732159c961", category: "Brasileira", rating: 4.3, deliveryFee: 6.00, deliveryTime: "40-55 min" },
-  { id: 11, name: "Hamburgueria Artesanal", imageUrl: "https://images.unsplash.com/photo-1568901346379-8ce8e6042132", category: "Lanches", rating: 4.7, deliveryFee: 0.00, deliveryTime: "25-35 min" },
-  { id: 12, name: "Tacos Mexicanos", imageUrl: "https://images.unsplash.com/photo-1552532450-fa7585021287", category: "Mexicana", rating: 4.4, deliveryFee: 7.00, deliveryTime: "35-45 min" },
-  { id: 13, name: "Açaí Tropical", imageUrl: "https://images.unsplash.com/photo-1550596334-7ad447547781", category: "Saudável", rating: 4.6, deliveryFee: 3.00, deliveryTime: "20-30 min" },
-  { id: 14, name: "Esfiharia Árabe", imageUrl: "https://images.unsplash.com/photo-1621995543166-51d30324866b", category: "Árabe", rating: 4.0, deliveryFee: 5.00, deliveryTime: "30-40 min" },
+  { 
+    id: 1, 
+    name: "Pizzaria Sabor Divino", 
+    imageUrl: "https://images.unsplash.com/photo-1513104890138-7c749659a591", 
+    category: "Pizza", 
+    rating: 4.8, 
+    deliveryFee: 5.00, 
+    deliveryTime: "30-45 min",
+    menuItems: [ 
+      { id: 'p1', name: "Pizza Calabresa", description: "Muçarela, calabresa, cebola e orégano.", price: 45.00, imageUrl: "https://images.unsplash.com/photo-1596200236473-b78f844f24c3?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D" },
+      { id: 'p2', name: "Pizza Marguerita", description: "Muçarela, tomate, manjericão e azeite.", price: 42.00, imageUrl: "https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D" },
+      { id: 'p3', name: "Pizza Frango c/ Catupiry", description: "Muçarela, frango desfiado e catupiry.", price: 48.00, imageUrl: "https://images.unsplash.com/photo-1564759226500-111059f33887?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D" },
+      { id: 'b1', name: "Coca-Cola Lata", description: "Refrigerante 350ml.", price: 7.00, imageUrl: "https://images.unsplash.com/photo-1627962635489-08bf1841364d" },
+    ]
+  },
+  { 
+    id: 2, 
+    name: "Burger-Mania", 
+    imageUrl: "https://images.unsplash.com/photo-1571091718767-18b5b1457add", 
+    category: "Lanches", 
+    rating: 4.9, 
+    deliveryFee: 0.00, 
+    deliveryTime: "25-35 min",
+    menuItems: [ 
+      { id: 'h1', name: "Hambúrguer Clássico", description: "Pão, carne, queijo, alface, tomate e maionese.", price: 32.00, imageUrl: "https://images.unsplash.com/photo-1568901346379-8ce8e6042132?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D" },
+      { id: 'h2', name: "Cheeseburguer Duplo", description: "Dois hambúrgueres, queijo cheddar, picles e cebola.", price: 45.00, imageUrl: "https://images.unsplash.com/photo-1594212699903-ec8a3ecc439c?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D" },
+      { id: 'h3', name: "Batata Frita G", description: "Porção grande de batatas fritas.", price: 15.00, imageUrl: "https://images.unsplash.com/photo-1616788880468-b76e1a477382?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D" },
+      { id: 'b2', name: "Guaraná Antarctica", description: "Refrigerante 350ml.", price: 7.00, imageUrl: "https://images.unsplash.com/photo-1627962635489-08bf1841364d" },
+    ]
+  },
+  { 
+    id: 3, 
+    name: "Sushi House", 
+    imageUrl: "https://images.unsplash.com/photo-1579871494447-9811cf80d66c", 
+    category: "Japonesa", 
+    rating: 4.7, 
+    deliveryFee: 7.00, 
+    deliveryTime: "45-60 min",
+    menuItems: [ 
+      { id: 's1', name: "Combinado 20 peças", description: "Mix de sushis e sashimis variados.", price: 89.00, imageUrl: "https://images.unsplash.com/photo-1563612116035-7c152a41d6b0?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D" },
+      { id: 's2', name: "Temaki Salmão", description: "Cone de alga com arroz, salmão e cream cheese.", price: 35.00, imageUrl: "https://images.unsplash.com/photo-1579871494447-9811cf80d66c?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D" },
+      { id: 's3', name: "Gyoza (6 unidades)", description: "Pastéis japoneses de carne suína.", price: 28.00, imageUrl: "https://images.unsplash.com/photo-1628172905295-8e27c191a2a4?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D" },
+      { id: 'b3', name: "H2OH! Limoneto", description: "Bebida leve 500ml.", price: 8.00, imageUrl: "https://images.unsplash.com/photo-1627962635489-08bf1841364d" },
+    ]
+  },
+  { id: 4, name: "Cantina da Nona", imageUrl: "https://images.unsplash.com/photo-1598866594243-7b36de3ca16c", category: "Italiana", rating: 4.6, deliveryFee: 6.00, deliveryTime: "40-50 min", menuItems: [] }, 
+  { id: 5, name: "Padaria Doce Pão", imageUrl: "https://images.unsplash.com/photo-1627962635489-08bf1841364d", category: "Padaria", rating: 4.1, deliveryFee: 3.00, deliveryTime: "20-30 min", menuItems: [] },
+  { id: 6, name: "Churrascaria Gaúcha", imageUrl: "https://images.unsplash.com/photo-1610444738580-044237f3747f", category: "Churrasco", rating: 3.9, deliveryFee: 8.00, deliveryTime: "45-60 min", menuItems: [] },
+  { id: 7, name: "Temaki Express", imageUrl: "https://images.unsplash.com/photo-1563612116035-7c152a41d6b0", category: "Japonesa", rating: 4.5, deliveryFee: 6.00, deliveryTime: "35-45 min", menuItems: [] },
+  { id: 8, name: "Café da Esquina", imageUrl: "https://images.unsplash.com/photo-1509042239860-f550ce710b93", category: "Cafeteria", rating: 4.2, deliveryFee: 4.00, deliveryTime: "20-30 min", menuItems: [] },
+  { id: 9, name: "Doceria Encantada", imageUrl: "https://images.unsplash.com/photo-1587314168485-3236d6710814", category: "Doces", rating: 4.9, deliveryFee: 5.00, deliveryTime: "30-40 min", menuItems: [] },
+  { id: 10, name: "Comida Caseira da Vovó", imageUrl: "https://images.unsplash.com/photo-1512621776951-a5732159c961", category: "Brasileira", rating: 4.3, deliveryFee: 6.00, deliveryTime: "40-55 min", menuItems: [] },
+  { id: 11, name: "Hamburgueria Artesanal", imageUrl: "https://images.unsplash.com/photo-1568901346379-8ce8e6042132", category: "Lanches", rating: 4.7, deliveryFee: 0.00, deliveryTime: "25-35 min", menuItems: [] },
+  { id: 12, name: "Tacos Mexicanos", imageUrl: "https://images.unsplash.com/photo-1552532450-fa7585021287", category: "Mexicana", rating: 4.4, deliveryFee: 7.00, deliveryTime: "35-45 min", menuItems: [] },
+  { id: 13, name: "Açaí Tropical", imageUrl: "https://images.unsplash.com/photo-1550596334-7ad447547781", category: "Saudável", rating: 4.6, deliveryFee: 3.00, deliveryTime: "20-30 min", menuItems: [] },
+  { id: 14, name: "Esfiharia Árabe", imageUrl: "https://images.unsplash.com/photo-1621995543166-51d30324866b", category: "Árabe", rating: 4.0, deliveryFee: 5.00, deliveryTime: "30-40 min", menuItems: [] },
 ];
 
-
 export function RestaurantDetailsPage() {
-  const { id } = useParams(); // Obtém o ID do restaurante da URL (string)
+  const { id } = useParams(); 
 
-  // Busca o restaurante pelo ID (converte o ID da URL para número inteiro)
   const restaurant = mockRestaurants.find(r => r.id === parseInt(id));
 
-  // Caso o restaurante não seja encontrado (ID inválido ou não existe no mock)
   if (!restaurant) {
     return (
       <div className="text-center py-20">
@@ -42,35 +81,33 @@ export function RestaurantDetailsPage() {
     );
   }
 
-  // Se o restaurante for encontrado, exibe seus detalhes
   return (
     <div className="py-6">
       <div className="flex items-center mb-6">
-        {/* Botão de Voltar para a página inicial */}
         <Button variant="ghost" size="icon" asChild>
           <Link to="/">
-            <ChevronLeft className="h-6 w-6 text-primary" /> {/* Ícone da seta */}
+            <ChevronLeft className="h-6 w-6 text-accent" /> {/* Ícone da seta com cor accent */}
             <span className="sr-only">Voltar</span>
           </Link>
         </Button>
-        {/* Título com o nome do restaurante */}
         <h1 className="text-3xl font-bold ml-4 text-gray-800">{restaurant.name}</h1>
       </div>
 
-      {/* Imagem do Restaurante */}
       <div className="relative w-full h-64 sm:h-80 md:h-96 rounded-xl overflow-hidden mb-6">
         <img
           src={restaurant.imageUrl}
           alt={restaurant.name}
           className="w-full h-full object-cover"
         />
-        {/* Você pode adicionar badges de categoria/avaliação aqui futuramente, como no card */}
       </div>
 
-      {/* Detalhes do Restaurante */}
       <div className="space-y-4 text-lg text-gray-700">
         <p><strong>Categoria:</strong> <span className="font-semibold text-primary">{restaurant.category}</span></p>
-        <p><strong>Avaliação:</strong> <span className="font-semibold text-yellow-600">{restaurant.rating} estrelas</span></p>
+        <p className="flex items-center gap-1"> {/* Flex para alinhar estrela e texto */}
+          <strong>Avaliação:</strong> 
+          <Star className="w-5 h-5 text-yellow-500 fill-yellow-400" /> {/* Ícone de estrela */}
+          <span className="font-semibold text-gray-800">{restaurant.rating} estrelas</span>
+        </p>
         <p>
           <strong>Taxa de Entrega:</strong> 
           {restaurant.deliveryFee === 0 ? (
@@ -81,16 +118,32 @@ export function RestaurantDetailsPage() {
         </p>
         <p><strong>Tempo de Entrega:</strong> <span className="font-semibold ml-1">{restaurant.deliveryTime}</span></p>
         
-        {/* Seção de Menu (placeholder) */}
+        {/* NOVO: Seção de Cardápio Real */}
         <h2 className="text-2xl font-bold mt-8 mb-4 text-gray-800">Cardápio</h2>
-        <div className="bg-gray-50 p-6 rounded-lg border border-gray-200">
-          <p className="text-muted-foreground">O cardápio completo do restaurante estará disponível aqui.</p>
-          <ul className="list-disc list-inside mt-4 text-base text-gray-700">
-            <li>Item de exemplo 1: Delicioso prato de massa (R$ 45,00)</li>
-            <li>Item de exemplo 2: Hambúrguer especial (R$ 32,50)</li>
-            <li>Item de exemplo 3: Sobremesa da casa (R$ 18,00)</li>
-          </ul>
-        </div>
+        {restaurant.menuItems && restaurant.menuItems.length > 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6"> {/* Layout de grid para itens de menu */}
+            {restaurant.menuItems.map(item => (
+              <div key={item.id} className="bg-white p-4 rounded-lg shadow-sm border border-gray-100 flex gap-4 items-center">
+                <img 
+                  src={item.imageUrl || 'https://via.placeholder.com/80x80?text=Item'} // Imagem do item ou placeholder
+                  alt={item.name} 
+                  className="w-20 h-20 object-cover rounded-md"
+                />
+                <div className="flex-grow">
+                  <h3 className="text-lg font-semibold text-gray-800">{item.name}</h3>
+                  <p className="text-sm text-muted-foreground mb-2">{item.description}</p>
+                  <p className="text-md font-bold text-primary">R$ {item.price.toFixed(2)}</p>
+                </div>
+                {/* Futuramente, aqui virá o seletor de quantidade e o botão "Adicionar" */}
+                <Button size="sm" className="bg-primary text-primary-foreground hover:bg-primary/90">Adicionar</Button>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="bg-gray-50 p-6 rounded-lg border border-gray-200 text-muted-foreground text-center">
+            <p>Este restaurante não possui um cardápio disponível no momento.</p>
+          </div>
+        )}
 
         {/* Seção de Avaliações (placeholder) */}
         <h2 className="text-2xl font-bold mt-8 mb-4 text-gray-800">Avaliações</h2>
