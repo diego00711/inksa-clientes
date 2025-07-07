@@ -6,7 +6,8 @@ export default defineConfig({
   plugins: [react()],
   resolve: {
     alias: {
-      "@": path.resolve(__dirname, "./src"),
+      // Deixando a configuração de atalho como estava quando funcionava
+      "@": path.resolve(process.cwd(), "src"),
     },
   },
 })

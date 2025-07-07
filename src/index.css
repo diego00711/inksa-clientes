@@ -13,8 +13,9 @@
     --popover: 0 0% 100%;
     --popover-foreground: 222.2 84% 4.9%;
 
-    --primary: 222.2 47.4% 11.2%;
-    --primary-foreground: 210 40% 98%;
+    /* MUITO IMPORTANTE: NOVA COR PRIMÁRIA - LARANJA VIBRANTE DO LOGO */
+    --primary: 30 98% 50%; /* HSL para um laranja vibrante */
+    --primary-foreground: 210 40% 98%; /* Cor do texto sobre o laranja (branco/quase branco) */
 
     --secondary: 210 40% 96.1%;
     --secondary-foreground: 222.2 47.4% 11.2%;
@@ -43,4 +44,23 @@
   body {
     @apply bg-background text-foreground;
   }
+}
+
+/* Estilos personalizados para a barra de rolagem (WebKit - Chrome, Safari, Edge) */
+.custom-scrollbar::-webkit-scrollbar {
+  height: 6px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: hsl(var(--muted));
+  border-radius: 10px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: hsl(var(--primary)); /* Agora será laranja! */
+  border-radius: 10px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--primary) / 0.8);
 }
