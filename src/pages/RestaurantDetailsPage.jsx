@@ -1,12 +1,14 @@
-// Local: src/pages/RestaurantDetailsPage.jsx - EXIBINDO ITENS DO CARDÁPIO
+// Local: src/pages/RestaurantDetailsPage.jsx - ATUALIZADO PARA ADICIONAR ITENS AO CARRINHO
 
 import React from 'react';
 import { useParams, Link } from 'react-router-dom'; 
 import { Button } from "@/components/ui/button";     
 import { ChevronLeft, Star } from "lucide-react"; 
+// 1. Importe o hook useCart
+import { useCart } from '../context/CartContext'; 
 
-// IMPORTANTE: Adicione mockRestaurants aqui também para que RestaurantDetailsPage possa acessá-lo.
-// Idealmente, em uma aplicação real, você buscaria os detalhes e o cardápio do restaurante de uma API.
+// IMPORTANTE: Este bloco mockRestaurants está aqui para fins de demonstração.
+// Ele deve ser IDÊNTICO ao mockRestaurants do seu HomePage.jsx para consistência.
 const mockRestaurants = [
   { 
     id: 1, 
@@ -66,8 +68,11 @@ const mockRestaurants = [
   { id: 14, name: "Esfiharia Árabe", imageUrl: "https://images.unsplash.com/photo-1621995543166-51d30324866b", category: "Árabe", rating: 4.0, deliveryFee: 5.00, deliveryTime: "30-40 min", menuItems: [] },
 ];
 
+
 export function RestaurantDetailsPage() {
   const { id } = useParams(); 
+  // 2. Use o hook useCart para obter a função addItemToCart
+  const { addItemToCart } = useCart();
 
   const restaurant = mockRestaurants.find(r => r.id === parseInt(id));
 
@@ -86,7 +91,7 @@ export function RestaurantDetailsPage() {
       <div className="flex items-center mb-6">
         <Button variant="ghost" size="icon" asChild>
           <Link to="/">
-            <ChevronLeft className="h-6 w-6 text-accent" /> {/* Ícone da seta com cor accent */}
+            <ChevronLeft className="h-6 w-6 text-accent" /> 
             <span className="sr-only">Voltar</span>
           </Link>
         </Button>
@@ -103,9 +108,9 @@ export function RestaurantDetailsPage() {
 
       <div className="space-y-4 text-lg text-gray-700">
         <p><strong>Categoria:</strong> <span className="font-semibold text-primary">{restaurant.category}</span></p>
-        <p className="flex items-center gap-1"> {/* Flex para alinhar estrela e texto */}
+        <p className="flex items-center gap-1"> 
           <strong>Avaliação:</strong> 
-          <Star className="w-5 h-5 text-yellow-500 fill-yellow-400" /> {/* Ícone de estrela */}
+          <Star className="w-5 h-5 text-yellow-500 fill-yellow-400" /> 
           <span className="font-semibold text-gray-800">{restaurant.rating} estrelas</span>
         </p>
         <p>
@@ -118,14 +123,13 @@ export function RestaurantDetailsPage() {
         </p>
         <p><strong>Tempo de Entrega:</strong> <span className="font-semibold ml-1">{restaurant.deliveryTime}</span></p>
         
-        {/* NOVO: Seção de Cardápio Real */}
         <h2 className="text-2xl font-bold mt-8 mb-4 text-gray-800">Cardápio</h2>
         {restaurant.menuItems && restaurant.menuItems.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6"> {/* Layout de grid para itens de menu */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6"> 
             {restaurant.menuItems.map(item => (
               <div key={item.id} className="bg-white p-4 rounded-lg shadow-sm border border-gray-100 flex gap-4 items-center">
                 <img 
-                  src={item.imageUrl || 'https://via.placeholder.com/80x80?text=Item'} // Imagem do item ou placeholder
+                  src={item.imageUrl || 'https://via.placeholder.com/80x80?text=Item'} 
                   alt={item.name} 
                   className="w-20 h-20 object-cover rounded-md"
                 />
@@ -134,8 +138,14 @@ export function RestaurantDetailsPage() {
                   <p className="text-sm text-muted-foreground mb-2">{item.description}</p>
                   <p className="text-md font-bold text-primary">R$ {item.price.toFixed(2)}</p>
                 </div>
-                {/* Futuramente, aqui virá o seletor de quantidade e o botão "Adicionar" */}
-                <Button size="sm" className="bg-primary text-primary-foreground hover:bg-primary/90">Adicionar</Button>
+                {/* 3. Adicione o onClick ao botão "Adicionar" */}
+                <Button 
+                  size="sm" 
+                  className="bg-primary text-primary-foreground hover:bg-primary/90"
+                  onClick={() => addItemToCart(item)} // Chama addItemToCart com o item
+                >
+                  Adicionar
+                </Button>
               </div>
             ))}
           </div>
@@ -145,7 +155,6 @@ export function RestaurantDetailsPage() {
           </div>
         )}
 
-        {/* Seção de Avaliações (placeholder) */}
         <h2 className="text-2xl font-bold mt-8 mb-4 text-gray-800">Avaliações</h2>
         <div className="bg-gray-50 p-6 rounded-lg border border-gray-200">
           <p className="text-muted-foreground">As avaliações dos clientes aparecerão em breve.</p>

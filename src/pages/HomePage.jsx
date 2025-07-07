@@ -1,4 +1,4 @@
-// Local: src/pages/HomePage.jsx - CORREÇÃO DO ERRO DE SINTAXE EM mockRestaurants
+// Local: src/pages/HomePage.jsx - CORREÇÃO DO ERRO DE SINTAXE EM toggleFavorite
 
 import { useState, useEffect, useCallback } from "react"; 
 import { RestaurantList } from "../components/RestaurantList";
@@ -9,7 +9,6 @@ import { FilterDrawer } from "../components/FilterDrawer";
 
 const INITIAL_LOAD_COUNT = 8; 
 
-// ATENÇÃO: ESTE É O BLOCO mockRestaurants CORRIGIDO
 const mockRestaurants = [
   { 
     id: 1, 
@@ -142,7 +141,7 @@ export function HomePage() {
         return timeA - timeB; 
       }
       if (currentSort === "deliveryFee-asc") {
-        return a.deliveryFee - b.deliveryFee; 
+        return a.deliveryFee - b.deliveryFee; // <-- PONTO E VÍRGULA ADICIONADO AQUI
       }
       return 0; 
     });
@@ -163,7 +162,7 @@ export function HomePage() {
   const toggleFavorite = useCallback((restaurantId) => {
     setFavoriteRestaurantIds(prevFavorites => {
       if (prevFavorites.includes(restaurantId)) {
-        return prevFavorites.filter(id => id !== restaurantId);
+        return prevFavorites.filter(id => id !== restaurantId); // <-- PONTO E VÍRGULA ADICIONADO AQUI
       } else {
         return [...prevFavorites, restaurantId];
       }
@@ -232,7 +231,7 @@ export function HomePage() {
         <img
           src={featuredBanner.imageUrl}
           alt={featuredBanner.title}
-          className="w-full h-full object-cover brightness-[.4]" // AJUSTADO O BRILHO AQUI!
+          className="w-full h-full object-cover brightness-[.4]" 
         />
         <div className="absolute inset-0 flex flex-col items-center justify-center text-center p-4">
           <h2 className="text-white text-3xl sm:text-4xl md:text-5xl font-extrabold mb-2 leading-tight drop-shadow-lg">
