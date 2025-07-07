@@ -1,4 +1,4 @@
-// Local: src/pages/CartPage.jsx
+// Local: src/pages/CartPage.jsx - ALTERE ESTE ARQUIVO
 
 import React from 'react';
 import { Link } from 'react-router-dom';
@@ -11,7 +11,7 @@ export function CartPage() {
       <div className="flex items-center mb-6">
         <Button variant="ghost" size="icon" asChild>
           <Link to="/">
-            <ChevronLeft className="h-6 w-6 text-primary" />
+            <ChevronLeft className="h-6 w-6 text-accent" /> {/* ALTERADO AQUI! */}
             <span className="sr-only">Voltar</span>
           </Link>
         </Button>
@@ -31,8 +31,6 @@ export function CartPage() {
           </Button>
         </Link>
       </div>
-
-      {/* Você pode adicionar mais seções aqui futuramente, como itens do carrinho, total, etc. */}
     </div>
   );
 }

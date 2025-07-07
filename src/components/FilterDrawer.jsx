@@ -1,4 +1,4 @@
-// Local: src/components/FilterDrawer.jsx - CORREÇÃO DO ERRO 'React.Children.only'
+// Local: src/components/FilterDrawer.jsx - CORREÇÃO FINAL PARA React.Children.only
 
 import React from "react";
 import {
@@ -8,11 +8,10 @@ import {
   SheetHeader,
   SheetTitle,
   SheetTrigger,
-  // SheetClose, // Removido o import explícito, pois não usaremos 'asChild' no botão 'Limpar'
+  SheetClose,
 } from "@/components/ui/sheet";
-import { Button } from "@/components/ui/button";
-import { SlidersHorizontal, X } from "lucide-react"; 
-
+import { Button } from "@/components/ui/button"; // Ainda precisamos do Button para os filtros internos
+import { SlidersHorizontal } from "lucide-react"; 
 
 export function FilterDrawer({
   selectedCategory,
@@ -28,20 +27,22 @@ export function FilterDrawer({
 }) {
   return (
     <Sheet>
-      <SheetTrigger asChild>
-        <Button variant="outline" className="h-10 px-4 py-2 text-base">
-          <SlidersHorizontal className="mr-2 h-4 w-4" />
-          Filtros
-        </Button>
+      {/* ALTERADO AQUI: REMOVIDO 'asChild' e o <Button> externo do SheetTrigger.
+          As classes de estilo do botão foram aplicadas DIRETAMENTE no SheetTrigger. */}
+      <SheetTrigger 
+        // Classes que simulam um Button variant="outline" do Shadcn/ui
+        className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-gray-100 hover:text-foreground h-10 px-4 py-2 text-base"
+      >
+        <SlidersHorizontal className="mr-2 h-4 w-4" />
+        Filtros
       </SheetTrigger>
+      
       <SheetContent side="right" className="w-full sm:max-w-md overflow-y-auto">
         <SheetHeader>
-          <SheetTitle className="flex justify-between items-center">
+          <SheetTitle className="flex justify-between items-center text-2xl font-bold">
             Filtros e Ordenação
-            {/* O BOTÃO 'X' PADRÃO do Sheet já está incluído pelo Shadcn/ui aqui.
-                Removemos o 'Button' customizado que causava a duplicidade/erro. */}
           </SheetTitle>
-          <SheetDescription>
+          <SheetDescription className="text-sm text-muted-foreground">
             Ajuste suas preferências para encontrar o restaurante ideal.
           </SheetDescription>
         </SheetHeader>
@@ -49,7 +50,7 @@ export function FilterDrawer({
         <div className="py-6 space-y-8">
           {/* Seção de Filtro por Categoria */}
           <div>
-            <h2 className="text-lg font-semibold mb-3 text-gray-700">Categorias</h2>
+            <h2 className="text-xl font-bold mb-4 text-gray-800">Categorias</h2>
             <div className="flex flex-wrap gap-2">
               {categories.map(category => (
                 <Button
@@ -59,7 +60,7 @@ export function FilterDrawer({
                     whitespace-nowrap rounded-full px-4 py-1 text-sm font-medium
                     transition-all duration-200
                     ${selectedCategory === category
-                      ? "bg-primary text-primary-foreground shadow-md hover:bg-primary/90"
+                      ? "bg-accent text-primary-foreground shadow-md hover:bg-accent/90" 
                       : "bg-white text-muted-foreground border border-gray-200 hover:bg-gray-100"
                     }
                   `}
@@ -72,7 +73,7 @@ export function FilterDrawer({
 
           {/* Seção de Filtro por Avaliação Mínima */}
           <div>
-            <h2 className="text-lg font-semibold mb-3 text-gray-700">Avaliação Mínima</h2>
+            <h2 className="text-xl font-bold mb-4 text-gray-800">Avaliação Mínima</h2>
             <div className="flex flex-wrap gap-2">
               {ratingFilters.map(rating => (
                 <Button
@@ -82,7 +83,7 @@ export function FilterDrawer({
                     whitespace-nowrap rounded-full px-4 py-1 text-sm font-medium
                     transition-all duration-200
                     ${(minRating === 0 && rating === "Todos") || (minRating === rating && rating !== "Todos")
-                      ? "bg-primary text-primary-foreground shadow-md hover:bg-primary/90"
+                      ? "bg-accent text-primary-foreground shadow-md hover:bg-accent/90" 
                       : "bg-white text-muted-foreground border border-gray-200 hover:bg-gray-100"
                     }
                   `}
@@ -95,7 +96,7 @@ export function FilterDrawer({
 
           {/* Seção de Ordenação */}
           <div>
-            <h2 className="text-lg font-semibold mb-3 text-gray-700">Ordenar por</h2>
+            <h2 className="text-xl font-bold mb-4 text-gray-800">Ordenar por</h2>
             <div className="flex flex-wrap gap-2">
               {sortOptions.map(option => (
                 <Button
@@ -105,7 +106,7 @@ export function FilterDrawer({
                     whitespace-nowrap rounded-full px-4 py-1 text-sm font-medium
                     transition-all duration-200
                     ${currentSort === option.value
-                      ? "bg-primary text-primary-foreground shadow-md hover:bg-primary/90"
+                      ? "bg-accent text-primary-foreground shadow-md hover:bg-accent/90" 
                       : "bg-white text-muted-foreground border border-gray-200 hover:bg-gray-100"
                     }
                   `}
@@ -119,19 +120,11 @@ export function FilterDrawer({
 
         {/* Botões de Ação na parte inferior do painel */}
         <div className="absolute bottom-0 left-0 right-0 p-4 bg-white border-t flex gap-4">
-          {/* REMOVIDO: SheetClose asChild do botão Limpar Todos. 
-             Ele agora apenas limpa e não fecha o painel automaticamente por este botão. */}
-          <Button onClick={onClearFilters} variant="outline" className="flex-1">
-             Limpar Todos
-          </Button>
-          {/* Se quiser um botão "Aplicar" que FECHA o painel, ele sim usaria SheetClose asChild */}
-          {/* Exemplo de botão Aplicar (opcional) que fecharia o Sheet
-          <SheetClose asChild>
-            <Button className="flex-1 bg-primary text-primary-foreground">
-              Aplicar
-            </Button>
+          <SheetClose asChild> 
+             <Button onClick={onClearFilters} variant="outline" className="flex-1">
+                Limpar Todos
+             </Button>
           </SheetClose>
-          */}
         </div>
       </SheetContent>
     </Sheet>

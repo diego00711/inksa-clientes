@@ -1,11 +1,11 @@
-// Local: src/pages/HomePage.jsx - VERSÃO COMPLETA E CORRIGIDA (ERRO DE SINTAXE 'return')
+// Local: src/pages/HomePage.jsx - CORREÇÃO DO ÍCONE SearchOff PARA SearchX
 
 import { useState, useEffect, useCallback } from "react"; 
 import { RestaurantList } from "../components/RestaurantList";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Search } from "lucide-react";
-import { FilterDrawer } from "../components/FilterDrawer"; // Adicionado import do FilterDrawer
+import { Search, SearchX } from "lucide-react"; // ALTERADO AQUI: SearchOff para SearchX
+import { FilterDrawer } from "../components/FilterDrawer";
 
 const INITIAL_LOAD_COUNT = 8; 
 
@@ -14,16 +14,16 @@ const mockRestaurants = [
   { id: 2, name: "Burger-Mania", imageUrl: "https://images.unsplash.com/photo-1571091718767-18b5b1457add", category: "Lanches", rating: 4.9, deliveryFee: 0.00, deliveryTime: "25-35 min" },
   { id: 3, name: "Sushi House", imageUrl: "https://images.unsplash.com/photo-1579871494447-9811cf80d66c", category: "Japonesa", rating: 4.7, deliveryFee: 7.00, deliveryTime: "45-60 min" },
   { id: 4, name: "Cantina da Nona", imageUrl: "https://images.unsplash.com/photo-1598866594243-7b36de3ca16c", category: "Italiana", rating: 4.6, deliveryFee: 6.00, deliveryTime: "40-50 min" },
-  { id: 5, name: "Padaria Doce Pão", imageUrl: "https://images.unsplash.com/photo-1627962635489-08bf1841364d", category: "Padaria", rating: 4.1, deliveryFee: 3.00, deliveryTime: "20-30 min" },
-  { id: 6, name: "Churrascaria Gaúcha", imageUrl: "https://images.unsplash.com/photo-1610444738580-044237f3747f", category: "Churrasco", rating: 3.9, deliveryFee: 8.00, deliveryTime: "45-60 min" },
-  { id: 7, name: "Temaki Express", imageUrl: "https://images.unsplash.com/photo-1563612116035-7c152a41d6b0", category: "Japonesa", rating: 4.5, deliveryFee: 6.00, deliveryTime: "35-45 min" },
-  { id: 8, name: "Café da Esquina", imageUrl: "https://images.unsplash.com/photo-1509042239860-f550ce710b93", category: "Cafeteria", rating: 4.2, deliveryFee: 4.00, deliveryTime: "20-30 min" },
-  { id: 9, name: "Doceria Encantada", imageUrl: "https://images.unsplash.com/photo-1587314168485-3236d6710814", category: "Doces", rating: 4.9, deliveryFee: 5.00, deliveryTime: "30-40 min" },
-  { id: 10, name: "Comida Caseira da Vovó", imageUrl: "https://images.unsplash.com/photo-1512621776951-a5732159c961", category: "Brasileira", rating: 4.3, deliveryFee: 6.00, deliveryTime: "40-55 min" },
-  { id: 11, name: "Hamburgueria Artesanal", imageUrl: "https://images.unsplash.com/photo-1568901346379-8ce8e6042132", category: "Lanches", rating: 4.7, deliveryFee: 0.00, deliveryTime: "25-35 min" },
-  { id: 12, name: "Tacos Mexicanos", imageUrl: "https://images.unsplash.com/photo-1552532450-fa7585021287", category: "Mexicana", rating: 4.4, deliveryFee: 7.00, deliveryTime: "35-45 min" },
-  { id: 13, name: "Açaí Tropical", imageUrl: "https://images.unsplash.com/photo-1550596334-7ad447547781", category: "Saudável", rating: 4.6, deliveryFee: 3.00, deliveryTime: "20-30 min" },
-  { id: 14, name: "Esfiharia Árabe", imageUrl: "https://images.unsplash.com/photo-1621995543166-51d30324866b", category: "Árabe", rating: 4.0, deliveryFee: 5.00, deliveryTime: "30-40 min" },
+  { id: 5, "name": "Padaria Doce Pão", "imageUrl": "https://images.unsplash.com/photo-1627962635489-08bf1841364d", "category": "Padaria", "rating": 4.1, "deliveryFee": 3.00, "deliveryTime": "20-30 min" },
+  { id: 6, "name": "Churrascaria Gaúcha", "imageUrl": "https://images.unsplash.com/photo-1610444738580-044237f3747f", "category": "Churrasco", "rating": 3.9, "deliveryFee": 8.00, "deliveryTime": "45-60 min" },
+  { id: 7, "name": "Temaki Express", "imageUrl": "https://images.unsplash.com/photo-1563612116035-7c152a41d6b0", "category": "Japonesa", "rating": 4.5, "deliveryFee": 6.00, "deliveryTime": "35-45 min" },
+  { id: 8, "name": "Café da Esquina", "imageUrl": "https://images.unsplash.com/photo-1509042239860-f550ce710b93", "category": "Cafeteria", "rating": 4.2, "deliveryFee": 4.00, "deliveryTime": "20-30 min" },
+  { id: 9, "name": "Doceria Encantada", "imageUrl": "https://images.unsplash.com/photo-1587314168485-3236d6710814", "category": "Doces", "rating": 4.9, "deliveryFee": 5.00, "deliveryTime": "30-40 min" },
+  { id: 10, "name": "Comida Caseira da Vovó", "imageUrl": "https://images.unsplash.com/photo-1512621776951-a5732159c961", "category": "Brasileira", "rating": 4.3, "deliveryFee": 6.00, "deliveryTime": "40-55 min" },
+  { id: 11, "name": "Hamburgueria Artesanal", "imageUrl": "https://images.unsplash.com/photo-1568901346379-8ce8e6042132", "category": "Lanches", "rating": 4.7, "deliveryFee": 0.00, "deliveryTime": "25-35 min" },
+  { id: 12, "name": "Tacos Mexicanos", "imageUrl": "https://images.unsplash.com/photo-1552532450-fa7585021287", "category": "Mexicana", "rating": 4.4, "deliveryFee": 7.00, "deliveryTime": "35-45 min" },
+  { id: 13, "name": "Açaí Tropical", "imageUrl": "https://images.unsplash.com/photo-1550596334-7ad447547781", "category": "Saudável", "rating": 4.6, "deliveryFee": 3.00, "deliveryTime": "20-30 min" },
+  { id: 14, "name": "Esfiharia Árabe", "imageUrl": "https://images.unsplash.com/photo-1621995543166-51d30324866b", "category": "Árabe", "rating": 4.0, "deliveryFee": 5.00, "deliveryTime": "30-40 min" },
 ];
 
 const categories = ["Todos", ...new Set(mockRestaurants.map(r => r.category))];
@@ -129,16 +129,24 @@ export function HomePage() {
   const handleCategoryClick = useCallback((category) => {
     setSelectedCategory(category);
     setVisibleRestaurantsCount(INITIAL_LOAD_COUNT);
+    setCurrentSort("relevance"); 
   }, []);
+
+  const handleSearchChange = (e) => {
+    setSearchTerm(e.target.value);
+    setVisibleRestaurantsCount(INITIAL_LOAD_COUNT); 
+    setCurrentSort("relevance"); 
+  };
 
   const handleRatingFilterClick = useCallback((rating) => {
     setMinRating(rating);
     setVisibleRestaurantsCount(INITIAL_LOAD_COUNT);
+    setCurrentSort("relevance"); 
   }, []);
 
   const handleSortChange = useCallback((sortValue) => {
     setCurrentSort(sortValue);
-    setVisibleRestaurantsCount(INITIAL_LOAD_COUNT);
+    setVisibleRestaurantsCount(INITIAL_LOAD_COUNT); 
   }, []);
 
   const handleClearFilters = useCallback(() => {
@@ -164,12 +172,18 @@ export function HomePage() {
     </div>
   );
 
-  // Começa o 'return' na linha 88. A correção é aqui!
   return (
     <div>
-      <h1 className="text-4xl font-extrabold mb-3 text-gray-800">Bem-vindo ao Inksa Delivery!</h1>
-      <p className="text-lg text-muted-foreground mb-8">Encontre o melhor restaurante para você.</p>
+      {/* Título Principal */}
+      <h1 className="text-4xl sm:text-5xl md:text-6xl font-extrabold mb-4 text-gray-800 leading-tight"> {/* Ajustes para título */}
+        Bem-vindo ao Inksa Delivery!
+      </h1>
+      {/* Subtítulo Principal */}
+      <p className="text-lg sm:text-xl text-gray-600 mb-10 leading-relaxed"> {/* Ajustes para subtítulo */}
+        Encontre o melhor restaurante para você.
+      </p>
 
+      {/* Seção de Banner de Gamificação */}
       <div className="relative w-full h-48 sm:h-64 md:h-72 lg:h-80 rounded-xl overflow-hidden shadow-lg mb-12">
         <img
           src={featuredBanner.imageUrl}
@@ -187,6 +201,7 @@ export function HomePage() {
       </div>
 
       <div className="flex justify-between items-center mb-8 max-w-full sm:max-w-xl">
+        {/* Seção de Busca */}
         <div className="relative flex-grow mr-4">
           <Input
             placeholder="Buscar por nome do restaurante..."
@@ -223,6 +238,8 @@ export function HomePage() {
         </div>
       ) : filteredAndSortedRestaurants.length === 0 ? (
         <div className="text-center py-16 text-gray-500">
+          {/* AQUI ESTÁ O NOVO ÍCONE PARA O ESTADO VAZIO */}
+          <SearchX className="w-12 h-12 mx-auto mb-4 text-gray-400" /> {/* ADICIONADO: Ícone SearchX */}
           <p className="text-xl font-semibold mb-3">Nenhum restaurante encontrado.</p>
           <p className="text-base">
             Tente ajustar sua busca ou mudar os filtros.
@@ -231,13 +248,7 @@ export function HomePage() {
             <Button 
               className="mt-6" 
               variant="outline" 
-              onClick={() => { 
-                setSearchTerm(""); 
-                setSelectedCategory("Todos"); 
-                setMinRating(0);
-                setVisibleRestaurantsCount(INITIAL_LOAD_COUNT);
-                setCurrentSort("relevance"); 
-              }}
+              onClick={handleClearFilters} 
             >
               Limpar Busca e Filtros
             </Button>
