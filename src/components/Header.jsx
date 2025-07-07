@@ -1,44 +1,63 @@
-// Local: src/components/Header.jsx - COM CONTADOR DE ITENS NO CARRINHO
+// Local: src/components/Header.jsx
 
-import { Link } from "react-router-dom";
-import { Button } from "@/components/ui/button";
-import { ShoppingCart, User, Menu } from "lucide-react";
-// 1. Importe o hook useCart
-import { useCart } from '../context/CartContext'; 
+import { Link, useNavigate } from "react-router-dom";
+import { ShoppingCart, User, Menu, LogOut } from "lucide-react";
+import { Button } from "./ui/button";
+import { useAuth } from "../context/AuthContext";
+import { useCart } from "../context/CartContext"; // 1. Importamos o hook do carrinho
+import { Badge } from "./ui/badge"; // 2. Importamos o Badge para o contador
 
 export function Header() {
-  // 2. Use o hook useCart para obter o total de itens no carrinho
-  const { totalItemsInCart } = useCart();
+  const { isAuthenticated, logout } = useAuth();
+  const { totalItemsInCart } = useCart(); // 3. Pegamos o total de itens do contexto
+  const navigate = useNavigate();
+
+  const handleLogout = () => {
+    logout();
+    navigate("/login");
+  };
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/60 shadow-sm">
-      <div className="container flex h-16 items-center justify-between px-4 md:px-6">
-        <Link to="/" className="flex items-center gap-2 font-bold text-xl text-primary hover:text-primary/90 transition-colors">
-          <img src="/inka-logo.png" alt="Inksa Delivery Logo" className="h-8 w-auto" /> 
+    <header className="bg-white shadow-md sticky top-0 z-50">
+      <div className="container mx-auto flex justify-between items-center p-4">
+        <Link to="/" className="flex items-center gap-2">
+          <img src="/inka-logo.png" alt="Inksa Delivery Logo" className="h-16 w-auto" />
+          <span className="text-xl font-bold text-primary hidden sm:inline">
+            Inksa Delivery
+          </span>
         </Link>
 
-        <nav className="flex items-center gap-4">
-          <Button variant="ghost" size="icon" asChild>
-            <Link to="/carrinho" className="relative"> {/* Adicionado relative para posicionar o contador */}
-              <ShoppingCart className="h-5 w-5 text-primary" />
-              <span className="sr-only">Carrinho</span>
-              {/* 3. Exiba o contador de itens no carrinho */}
-              {totalItemsInCart > 0 && ( // Mostra o contador apenas se for maior que 0
-                <span className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full text-xs font-bold w-5 h-5 flex items-center justify-center">
-                  {totalItemsInCart}
-                </span>
-              )}
-            </Link>
-          </Button>
-          <Button variant="ghost" size="icon" asChild>
-            <Link to="/perfil">
-              <User className="h-5 w-5 text-primary" /> 
-              <span className="sr-only">Perfil</span>
-            </Link>
-          </Button>
-          <Button variant="ghost" size="icon">
-            <Menu className="h-5 w-5 text-primary" />
-            <span className="sr-only">Menu</span>
+        <nav className="flex items-center gap-1 sm:gap-2">
+          {isAuthenticated && (
+            <>
+              {/* 4. Alteramos o botão do carrinho para incluir o contador */}
+              <Link to="/carrinho" className="relative">
+                <Button variant="ghost" size="icon" aria-label="Carrinho">
+                  <ShoppingCart className="h-5 w-5" />
+                  {/* O contador só aparece se houver itens no carrinho */}
+                  {totalItemsInCart > 0 && (
+                    <Badge
+                      variant="destructive"
+                      className="absolute -top-2 -right-2 h-6 w-6 rounded-full flex items-center justify-center p-0"
+                    >
+                      {totalItemsInCart}
+                    </Badge>
+                  )}
+                </Button>
+              </Link>
+
+              <Link to="/perfil">
+                <Button variant="ghost" size="icon" aria-label="Perfil">
+                  <User className="h-5 w-5" />
+                </Button>
+              </Link>
+              <Button variant="ghost" size="icon" aria-label="Sair" onClick={handleLogout}>
+                <LogOut className="h-5 w-5 text-red-500" />
+              </Button>
+            </>
+          )}
+          <Button variant="ghost" size="icon" aria-label="Menu" className="sm:hidden">
+            <Menu className="h-5 w-5" />
           </Button>
         </nav>
       </div>
