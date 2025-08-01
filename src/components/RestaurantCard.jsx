@@ -1,100 +1,117 @@
-// Local: src/components/RestaurantCard.jsx - VERSÃO DEFINITIVA E CORRIGIDA
+// Local: src/components/RestaurantCard.jsx
 
 import { Link } from "react-router-dom";
-// APENAS UMA IMPORTAÇÃO PARA CADA COMPONENTE SHADCN/UI
-import { Card, CardContent, CardTitle } from "@/components/ui/card"; // Caminho correto para Shadcn/ui
-import { Badge } from "@/components/ui/badge";     // Caminho correto para Shadcn/ui
-import { Button } from "@/components/ui/button";   // Caminho correto para Shadcn/ui
-import { Star, Heart } from "lucide-react";       // Ícones Lucide
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent } from "@/components/ui/card";
+import { Star, MapPin, Clock } from "lucide-react"; 
 
-// Adicionamos as props: restaurant, isFavorited, onToggleFavorite
-export function RestaurantCard({ restaurant, isFavorited, onToggleFavorite }) {
-  const isFreeDelivery = restaurant.deliveryFee === 0;
+export function RestaurantCard({ restaurant }) {
+  // Para depuração: podemos ver todos os dados que o card recebe
+  // console.log("Dados recebidos pelo card:", restaurant); 
+
+  // --- LÓGICA DE DADOS ---
+  const deliveryFee = restaurant.delivery_fee ?? 0;
+  const isFreeDelivery = deliveryFee === 0;
+  const ratingValue = restaurant.rating ?? 0;
+  const deliveryTime = restaurant.delivery_time;
+  const category = restaurant.category ?? "Restaurante";
+  const imageUrl = restaurant.logo_url || 'https://via.placeholder.com/400x200?text=Inksa';
+  const isOpen = restaurant.is_open;
+  const deliveryType = restaurant.delivery_type;
+  
+  // ✅ CORREÇÃO: Garantindo que pegamos a distância corretamente
+  const distance = restaurant.distance_km;
+
+  // --- COMPONENTE INTERNO PARA O TEXTO DA ENTREGA ---
+  const DeliveryInfo = () => {
+    if (deliveryType === 'platform') {
+      return <span className="font-medium text-blue-600">Entrega a calcular</span>;
+    }
+    if (isFreeDelivery) {
+      return <span className="font-medium text-green-600">Entrega Grátis</span>;
+    }
+    return `Entrega: R$ ${parseFloat(deliveryFee).toFixed(2)}`;
+  };
+
+  // --- COMPONENTE WRAPPER ---
+  const CardWrapper = ({ children }) => {
+    if (isOpen) {
+      return <Link to={`/restaurantes/${restaurant.id}`}>{children}</Link>;
+    }
+    return <div className="cursor-not-allowed">{children}</div>;
+  };
 
   return (
-    // Estilos do Card: bordas, sombras, transições, elevação no hover e posicionamento relativo
-    <Card
-      className="
-        w-full border-2 border-muted cursor-pointer overflow-hidden rounded-xl
-        shadow-md                           
-        transition-all duration-300 ease-in-out 
-        hover:border-primary                  
-        hover:shadow-xl                       
-        hover:-translate-y-1                  
-        relative                             
-      "
-    >
-      {/* O Link envolve a imagem e o conteúdo principal do card para navegação */}
-      <Link to={`/restaurantes/${restaurant.id}`}> 
+    <CardWrapper>
+      <Card 
+        className={`
+          w-full border-2 border-transparent 
+          ${isOpen ? 'hover:border-primary' : 'grayscale opacity-60'} 
+          transition-all duration-300 group overflow-hidden rounded-xl shadow-sm
+        `}
+      >
         <div className="relative">
           <img
-            src={restaurant.imageUrl}
-            alt={restaurant.name}
-            className="w-full h-40 object-cover" // h-40 para altura consistente da imagem
+            src={imageUrl}
+            alt={restaurant.restaurant_name}
+            className="w-full h-40 object-cover group-hover:scale-105 transition-transform duration-300"
           />
-          {/* Badge de Categoria */}
-          <Badge
-            className="absolute top-3 left-3 bg-white text-primary font-bold border-primary border
-                       px-3 py-1 text-xs rounded-full shadow-sm"
+          
+          <Badge 
+            className={`
+              absolute top-3 right-3 text-xs font-bold tracking-wider
+              ${isOpen ? 'bg-green-600 text-white' : 'bg-gray-700 text-white'}
+            `}
           >
-            {restaurant.category}
+            {isOpen ? 'ABERTO' : 'FECHADO'}
           </Badge>
 
-          {/* Badge de Frete Grátis - aparece SOMENTE SE deliveryFee for 0 */}
-          {isFreeDelivery && (
-            <Badge
-              className="absolute top-3 right-3 bg-green-500 text-white font-bold
-                         px-3 py-1 text-xs rounded-full shadow-md z-10" // z-10 para garantir que esteja acima
-            >
-              Frete Grátis
-            </Badge>
-          )}
+          <Badge className="absolute top-3 left-3 bg-white text-primary font-bold border-primary border px-2 py-0.5 text-xs rounded-full shadow-md">
+            {category}
+          </Badge>
         </div>
-
-        <CardContent className="p-4 sm:p-5"> {/* Padding interno responsivo */}
-          <div className="flex justify-between items-start mb-2"> {/* items-start para alinhamento superior */}
-            <CardTitle className="text-lg font-extrabold truncate" title={restaurant.name}> {/* font-extrabold para mais destaque */}
-              {restaurant.name}
-            </CardTitle>
-            {/* Div para a Avaliação (Estrela e Pontuação) */}
-            <div className="flex items-center gap-1 text-primary-foreground bg-primary rounded-full px-2 py-1 ml-2">
-              <Star className="w-3 h-3 text-yellow-300 fill-yellow-300" /> {/* Estrela menor */}
-              <span className="font-semibold text-xs">{restaurant.rating}</span> {/* Texto menor para a pontuação */}
+        <CardContent className="p-3">
+          <div className="flex justify-between items-center mb-1">
+            <h3 className="text-base font-bold truncate" title={restaurant.restaurant_name}>
+              {restaurant.restaurant_name}
+            </h3>
+            <div className="flex items-center gap-1 text-orange-500">
+              <Star className="w-4 h-4 fill-orange-500" />
+              <span className="font-semibold text-sm">
+                {parseFloat(ratingValue).toFixed(1)}
+              </span>
             </div>
           </div>
-
-          <div className="flex justify-between text-sm text-muted-foreground mt-3"> {/* Espaçamento superior */}
-            {/* Exibição da taxa de entrega ou "Entrega Grátis!" */}
+          {/* ✅ CORREÇÃO: Seção inferior com a distância incluída */}
+          <div className="flex items-center gap-3 text-xs text-gray-500 mt-2">
             <span>
-              {isFreeDelivery ? (
-                <span className="font-medium text-green-600">Entrega Grátis!</span>
-              ) : (
-                <span className="font-medium">{`Entrega: R$ ${restaurant.deliveryFee.toFixed(2)}`}</span>
-              )}
+              <DeliveryInfo />
             </span>
-            <span className="text-right">{restaurant.deliveryTime}</span> {/* Alinhamento à direita */}
+            
+            {/* Exibe a distância apenas se ela existir */}
+            {distance !== undefined && distance !== null && (
+              <>
+                <span>•</span>
+                <span className="flex items-center gap-1">
+                  <MapPin className="w-3 h-3" />
+                  {distance} km
+                </span>
+              </>
+            )}
+
+            {/* Exibe o tempo de entrega apenas se ele existir */}
+            {deliveryTime && (
+                <>
+                 <span>•</span>
+                 <span className="flex items-center gap-1">
+                    <Clock className="w-3 h-3" />
+                    {deliveryTime}
+                 </span>
+                </>
+            )}
           </div>
         </CardContent>
-      </Link> {/* Fim do Link principal do card */}
-
-      {/* Botão de Favorito - posicionado absolutamente e clicável separadamente */}
-      <Button
-        variant="ghost"
-        size="icon"
-        className="absolute top-3 right-3 z-20" // Posição no canto superior direito do card
-        onClick={(e) => {
-          e.preventDefault(); // Impede a navegação do Link ao clicar no coração
-          e.stopPropagation(); // Impede que o clique se propague para o Link pai
-          onToggleFavorite(restaurant.id); // Chama a função para alternar o favorito
-        }}
-      >
-        <Heart 
-          className={`h-6 w-6 transition-colors duration-200 ${
-            isFavorited ? "text-red-500 fill-red-500" : "text-gray-400 hover:text-red-500 hover:fill-red-500"
-          }`}
-        />
-        <span className="sr-only">Favoritar</span>
-      </Button>
-    </Card>
+      </Card>
+    </CardWrapper>
   );
 }

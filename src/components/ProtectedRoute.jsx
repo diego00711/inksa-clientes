@@ -1,20 +1,20 @@
-// Local: src/components/ProtectedRoute.jsx
+// src/components/ProtectedRoute.jsx (PROJETO CLIENTE - ClienteApp)
 
-// A LINHA QUE FALTAVA ESTÁ AQUI:
-import { Navigate } from "react-router-dom";
-import { useAuth } from "../context/AuthContext";
+import React, { useEffect, useState } from 'react';
+import { Navigate, Outlet } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext'; // Contexto de Auth do Cliente
 
-// Este componente atua como um "segurança"
 export function ProtectedRoute({ children }) {
-  // 1. Ele pergunta ao nosso "cérebro" (AuthContext) se o usuário está logado
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, loading } = useAuth(); // Pega o estado de autenticação do cliente
 
-  // 2. Se o usuário NÃO estiver logado...
+  if (loading) {
+    return <div>Carregando autenticação do cliente...</div>;
+  }
+
   if (!isAuthenticated) {
-    // ...nós o redirecionamos para a página de login.
+    // Redireciona para o login do cliente
     return <Navigate to="/login" replace />;
   }
 
-  // 3. Se estiver logado, ele simplesmente mostra a página solicitada (children).
-  return children;
+  return children ? children : <Outlet />;
 }

@@ -1,15 +1,16 @@
 // Local: src/components/Header.jsx
 
 import { Link, useNavigate } from "react-router-dom";
-import { ShoppingCart, User, Menu, LogOut } from "lucide-react";
+import { ShoppingCart, LogOut, Receipt } from "lucide-react"; 
 import { Button } from "./ui/button";
 import { useAuth } from "../context/AuthContext";
-import { useCart } from "../context/CartContext"; // 1. Importamos o hook do carrinho
-import { Badge } from "./ui/badge"; // 2. Importamos o Badge para o contador
+import { useCart } from "../context/CartContext";
+import { Badge } from "./ui/badge";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 export function Header() {
-  const { isAuthenticated, logout } = useAuth();
-  const { totalItemsInCart } = useCart(); // 3. Pegamos o total de itens do contexto
+  const { isAuthenticated, logout, user } = useAuth();
+  const { totalItemsInCart } = useCart();
   const navigate = useNavigate();
 
   const handleLogout = () => {
@@ -17,48 +18,63 @@ export function Header() {
     navigate("/login");
   };
 
+  // Esta lógica agora vai funcionar, pois 'user.profile' existirá
+  const userInitials = user?.profile?.first_name ? user.profile.first_name[0].toUpperCase() : (user?.email ? user.email[0].toUpperCase() : "U");
+
   return (
     <header className="bg-white shadow-md sticky top-0 z-50">
       <div className="container mx-auto flex justify-between items-center p-4">
         <Link to="/" className="flex items-center gap-2">
-          <img src="/inka-logo.png" alt="Inksa Delivery Logo" className="h-16 w-auto" />
+          <img src="/inka-logo.png" alt="Inksa Delivery Logo" className="h-10 w-auto" />
           <span className="text-xl font-bold text-primary hidden sm:inline">
             Inksa Delivery
           </span>
         </Link>
 
-        <nav className="flex items-center gap-1 sm:gap-2">
-          {isAuthenticated && (
+        <nav className="flex items-center gap-4">
+          {isAuthenticated && user && ( 
             <>
-              {/* 4. Alteramos o botão do carrinho para incluir o contador */}
+              <div className="hidden md:flex flex-col items-end">
+                <span className="text-sm font-semibold text-gray-800">
+                  Olá, {user?.profile?.first_name || 'Usuário'}!
+                </span>
+                <span className="text-xs text-muted-foreground">
+                  Bem-vindo(a) de volta
+                </span>
+              </div>
+
+              <Link to="/perfil">
+                <Avatar className="h-10 w-10 border-2 border-gray-200">
+                  {/* Esta linha agora encontrará a URL da imagem */}
+                  <AvatarImage src={user?.profile?.avatar_url} alt={user?.profile?.first_name} />
+                  <AvatarFallback className="bg-gray-200 font-bold">
+                    {userInitials}
+                  </AvatarFallback>
+                </Avatar>
+              </Link>
+              
+              <Link to="/meus-pedidos" className="relative">
+                <Button variant="ghost" size="icon" aria-label="Meus Pedidos">
+                  <Receipt className="h-5 w-5" />
+                </Button>
+              </Link>
+
               <Link to="/carrinho" className="relative">
                 <Button variant="ghost" size="icon" aria-label="Carrinho">
                   <ShoppingCart className="h-5 w-5" />
-                  {/* O contador só aparece se houver itens no carrinho */}
                   {totalItemsInCart > 0 && (
-                    <Badge
-                      variant="destructive"
-                      className="absolute -top-2 -right-2 h-6 w-6 rounded-full flex items-center justify-center p-0"
-                    >
+                    <Badge variant="destructive" className="absolute -top-2 -right-2 h-6 w-6 rounded-full flex items-center justify-center p-0">
                       {totalItemsInCart}
                     </Badge>
                   )}
                 </Button>
               </Link>
 
-              <Link to="/perfil">
-                <Button variant="ghost" size="icon" aria-label="Perfil">
-                  <User className="h-5 w-5" />
-                </Button>
-              </Link>
               <Button variant="ghost" size="icon" aria-label="Sair" onClick={handleLogout}>
                 <LogOut className="h-5 w-5 text-red-500" />
               </Button>
             </>
           )}
-          <Button variant="ghost" size="icon" aria-label="Menu" className="sm:hidden">
-            <Menu className="h-5 w-5" />
-          </Button>
         </nav>
       </div>
     </header>

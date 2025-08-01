@@ -2,13 +2,9 @@
 
 import React, { createContext, useState, useContext, useEffect, useCallback } from 'react';
 
-// 1. Criação do Contexto
 export const CartContext = createContext();
 
-// 2. Criação do Provedor do Contexto
 export const CartProvider = ({ children }) => {
-  // Estado para armazenar os itens do carrinho
-  // Inicializa o carrinho com dados do localStorage, se existirem
   const [cartItems, setCartItems] = useState(() => {
     try {
       const storedCartItems = localStorage.getItem('inka_cart_items');
@@ -19,7 +15,6 @@ export const CartProvider = ({ children }) => {
     }
   });
 
-  // Efeito para persistir os itens do carrinho no localStorage sempre que mudarem
   useEffect(() => {
     try {
       localStorage.setItem('inka_cart_items', JSON.stringify(cartItems));
@@ -28,63 +23,60 @@ export const CartProvider = ({ children }) => {
     }
   }, [cartItems]);
 
-  // Função para adicionar um item ao carrinho
   const addItemToCart = useCallback((item) => {
     setCartItems(prevItems => {
       const existingItem = prevItems.find(cartItem => cartItem.id === item.id);
-
       if (existingItem) {
-        // Se o item já existe, aumenta a quantidade
         return prevItems.map(cartItem =>
           cartItem.id === item.id
             ? { ...cartItem, quantity: cartItem.quantity + 1 }
             : cartItem
         );
       } else {
-        // Se o item não existe, adiciona com quantidade 1
         return [...prevItems, { ...item, quantity: 1 }];
       }
     });
   }, []);
 
-  // Função para remover um item do carrinho (diminuir quantidade ou remover totalmente)
-  const removeItemFromCart = useCallback((itemId) => {
+  const removeItemFromCart = useCallback((itemId, removeAll = false) => {
     setCartItems(prevItems => {
-      const existingItem = prevItems.find(cartItem => cartItem.id === itemId);
-
-      if (existingItem && existingItem.quantity > 1) {
-        // Se a quantidade for maior que 1, apenas diminui
-        return prevItems.map(cartItem =>
-          cartItem.id === itemId
-            ? { ...cartItem, quantity: cartItem.quantity - 1 }
-            : cartItem
-        );
+      const currentItems = Array.isArray(prevItems) ? prevItems : []; 
+      if (removeAll) {
+        return currentItems.filter(cartItem => cartItem.id !== itemId);
       } else {
-        // Se a quantidade for 1 ou o item não existir, remove-o
-        return prevItems.filter(cartItem => cartItem.id !== itemId);
+        const existingItem = currentItems.find(cartItem => cartItem.id === itemId);
+        if (existingItem && existingItem.quantity > 1) {
+          return currentItems.map(cartItem =>
+            cartItem.id === itemId
+              ? { ...cartItem, quantity: cartItem.quantity - 1 }
+              : cartItem
+          );
+        } else {
+          return currentItems.filter(cartItem => cartItem.id !== itemId);
+        }
       }
     });
   }, []);
 
-  // Função para limpar todo o carrinho
   const clearCart = useCallback(() => {
     setCartItems([]);
   }, []);
 
-  // Calcula o total de itens no carrinho
-  const totalItemsInCart = cartItems.reduce((total, item) => total + item.quantity, 0);
+  const totalItemsInCart = cartItems.reduce((total, item) => total + (item.quantity || 0), 0);
 
-  // Calcula o valor total do carrinho
-  const cartTotal = cartItems.reduce((total, item) => total + (item.price * item.quantity), 0);
+  // --- RENOMEADO ---
+  // Renomeado de cartTotal para subTotal para maior clareza
+  const subTotal = cartItems.reduce((total, item) => 
+    total + (parseFloat(item.price || 0) * (item.quantity || 0))
+  , 0);
 
-  // O valor que será fornecido pelo contexto
   const contextValue = {
     cartItems,
     addItemToCart,
     removeItemFromCart,
     clearCart,
     totalItemsInCart,
-    cartTotal,
+    subTotal, // --- RENOMEADO ---
   };
 
   return (
@@ -94,7 +86,6 @@ export const CartProvider = ({ children }) => {
   );
 };
 
-// Hook customizado para facilitar o uso do contexto em componentes
 export const useCart = () => {
   const context = useContext(CartContext);
   if (context === undefined) {
