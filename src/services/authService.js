@@ -1,6 +1,6 @@
 // services/authService.js
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:5000';
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://inksa-auth-flask-dev.onrender.com';
 const AUTH_TOKEN_KEY = 'clientAuthToken';
 const CLIENT_USER_DATA_KEY = 'clientUser';
 
@@ -33,12 +33,15 @@ const createAuthHeaders = () => {
     if (!token) {
         throw new Error('Usuário não autenticado. Token não encontrado.');
     }
-    return { 'Authorization': `Bearer ${token}` };
+    return { 
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+    };
 };
 
 const AuthService = {
     /**
-     * Realiza o login do usuário.
+     * ✅ CORRIGIDO: Realiza o login do usuário.
      * @param {string} email - O email do usuário.
      * @param {string} password - A senha do usuário.
      * @returns {Promise<object>} - Os dados da resposta do login, incluindo token e dados do usuário.
@@ -47,12 +50,20 @@ const AuthService = {
         const response = await fetch(`${API_BASE_URL}/api/auth/login`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email, password, user_type: 'client' }),
+            body: JSON.stringify({ email, password }),
         });
+        
         const data = await processResponse(response);
-        if (data.access_token) {
-            localStorage.setItem(AUTH_TOKEN_KEY, data.access_token);
-            localStorage.setItem(CLIENT_USER_DATA_KEY, JSON.stringify(data.data.user));
+        
+        // ✅ CORREÇÃO: Acessar token através de data.session
+        if (data.session && data.session.access_token) {
+            localStorage.setItem(AUTH_TOKEN_KEY, data.session.access_token);
+            localStorage.setItem(CLIENT_USER_DATA_KEY, JSON.stringify(data.user));
+            
+            // ✅ Também salvar refresh token se necessário
+            if (data.session.refresh_token) {
+                localStorage.setItem('clientRefreshToken', data.session.refresh_token);
+            }
         } else {
             throw new Error('Login falhou: Token de acesso não recebido.');
         }
@@ -68,13 +79,10 @@ const AuthService = {
         const dataToSend = {
             email: userData.email,
             password: userData.password,
-            name: `${userData.firstName} ${userData.lastName}`, // O backend espera 'name'
-            userType: 'client',
-            profileData: {
-                firstName: userData.firstName,
-                lastName: userData.lastName,
-            }
+            name: `${userData.firstName} ${userData.lastName}`,
+            user_type: 'client' // ✅ backend espera user_type
         };
+        
         const response = await fetch(`${API_BASE_URL}/api/auth/register`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -103,6 +111,7 @@ const AuthService = {
     logout: () => {
         localStorage.removeItem(AUTH_TOKEN_KEY);
         localStorage.removeItem(CLIENT_USER_DATA_KEY);
+        localStorage.removeItem('clientRefreshToken');
         window.location.href = '/login';
     },
 
@@ -119,12 +128,28 @@ const AuthService = {
     getToken: () => localStorage.getItem(AUTH_TOKEN_KEY),
 
     /**
-     * Obtém os dados do usuário armazenados localmente.
+     * ✅ CORRIGIDO: Obtém os dados do usuário armazenados localmente.
      * @returns {object|null} - Os dados do usuário ou null se não existir.
      */
     getUser: () => {
         const userData = localStorage.getItem(CLIENT_USER_DATA_KEY);
-        return userData ? JSON.parse(userData) : null;
+        if (!userData) return null;
+        
+        try {
+            const user = JSON.parse(userData);
+            // ✅ Converter estrutura do backend para frontend se necessário
+            return {
+                ...user,
+                // Se o frontend espera firstName/lastName mas backend retorna name
+                firstName: user.firstName || user.name?.split(' ')[0] || '',
+                lastName: user.lastName || user.name?.split(' ')[1] || '',
+                // Garantir compatibilidade
+                fullName: user.name || `${user.firstName || ''} ${user.lastName || ''}`.trim()
+            };
+        } catch (e) {
+            console.error('Erro ao parsear dados do usuário:', e);
+            return null;
+        }
     },
 
     /**
@@ -146,17 +171,20 @@ const AuthService = {
     updateProfile: async (profileData) => {
         const response = await fetch(`${API_BASE_URL}/api/auth/profile`, {
             method: 'PUT',
-            headers: {
-                ...createAuthHeaders(),
-                'Content-Type': 'application/json',
-            },
+            headers: createAuthHeaders(),
             body: JSON.stringify(profileData),
         });
+        
         const data = await processResponse(response);
+        
+        // ✅ Atualizar dados locais do usuário
         if (AuthService.isAuthenticated()) {
             const currentUserData = AuthService.getUser();
             if (currentUserData) {
-                const updatedUserData = { ...currentUserData, ...data.data };
+                const updatedUserData = { 
+                    ...currentUserData, 
+                    ...data.user || data // Depende da estrutura da resposta
+                };
                 localStorage.setItem(CLIENT_USER_DATA_KEY, JSON.stringify(updatedUserData));
             }
         }
@@ -164,7 +192,6 @@ const AuthService = {
     },
 
     /**
-     * ✅ FUNÇÃO CORRIGIDA
      * Faz o upload do avatar do usuário.
      * @param {File} file - O ficheiro da imagem a ser enviado.
      * @returns {Promise<object>} - A resposta da API, contendo a URL do avatar.
@@ -174,21 +201,31 @@ const AuthService = {
         if (!token) {
             throw new Error('Usuário não autenticado. Token não encontrado.');
         }
+        
         const formData = new FormData();
         formData.append('file', file);
+        
         const response = await fetch(`${API_BASE_URL}/api/auth/avatar`, {
             method: 'POST',
             headers: {
                 'Authorization': `Bearer ${token}`,
+                // ✅ Não definir Content-Type, o browser fará automaticamente com boundary
             },
             body: formData,
         });
+        
         const data = await processResponse(response);
+        
+        // ✅ Atualizar avatar localmente
         const currentUserData = AuthService.getUser();
         if (currentUserData) {
-            const updatedUserData = { ...currentUserData, avatar_url: data.avatar_url };
+            const updatedUserData = { 
+                ...currentUserData, 
+                avatar_url: data.avatar_url || data.url 
+            };
             localStorage.setItem(CLIENT_USER_DATA_KEY, JSON.stringify(updatedUserData));
         }
+        
         return data;
     },
     
@@ -200,10 +237,7 @@ const AuthService = {
     createOrder: async (orderData) => {
         const response = await fetch(`${API_BASE_URL}/api/orders`, {
             method: 'POST',
-            headers: {
-                ...createAuthHeaders(),
-                'Content-Type': 'application/json',
-            },
+            headers: createAuthHeaders(),
             body: JSON.stringify(orderData),
         });
         return processResponse(response);
@@ -230,8 +264,56 @@ const AuthService = {
             method: 'DELETE',
             headers: createAuthHeaders(),
         });
-        return processResponse(response); 
+        return processResponse(response);
     },
+
+    /**
+     * ✅ NOVO: Atualiza token com refresh token
+     */
+    refreshToken: async () => {
+        const refreshToken = localStorage.getItem('clientRefreshToken');
+        if (!refreshToken) {
+            throw new Error('Refresh token não disponível');
+        }
+        
+        const response = await fetch(`${API_BASE_URL}/api/auth/refresh`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ refresh_token: refreshToken }),
+        });
+        
+        const data = await processResponse(response);
+        
+        if (data.session && data.session.access_token) {
+            localStorage.setItem(AUTH_TOKEN_KEY, data.session.access_token);
+            if (data.session.refresh_token) {
+                localStorage.setItem('clientRefreshToken', data.session.refresh_token);
+            }
+            return data.session.access_token;
+        }
+        
+        throw new Error('Falha ao atualizar token');
+    },
+
+    /**
+     * ✅ NOVO: Verifica e atualiza token expirado automaticamente
+     */
+    withAuthRetry: async (fetchFunction) => {
+        try {
+            return await fetchFunction();
+        } catch (error) {
+            if (error.message.includes('401') || error.message.includes('não autorizada')) {
+                try {
+                    await AuthService.refreshToken();
+                    return await fetchFunction(); // Tenta novamente com novo token
+                } catch (refreshError) {
+                    AuthService.logout();
+                    throw refreshError;
+                }
+            }
+            throw error;
+        }
+    }
 };
 
 export default AuthService;
