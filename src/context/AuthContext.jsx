@@ -1,13 +1,5 @@
-// src/context/AuthContext.jsx
-
 import { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import { createClient } from '@supabase/supabase-js';
 import AuthService from '../services/authService';
-
-const supabaseUrl = "https://jbritstgkpznuivfupnz.supabase.co";
-const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Impicml0c3Rna3B6bnVpdmZ1cG56Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTExMTg5MzUsImV4cCI6MjA2NjY5NDkzNX0.W0xkWhbWrZ3FeAOYaBqB1FXhwbareYXHWI-RzRLHQ04";
-
-export const supabase = createClient(supabaseUrl, supabaseKey);
 
 export const AuthContext = createContext();
 
@@ -20,23 +12,18 @@ export const AuthProvider = ({ children }) => {
   // ✅ CORREÇÃO: 'refreshUser' agora é assíncrona e busca os dados completos do perfil
   const refreshUser = useCallback(async () => {
     const token = AuthService.getToken();
-    const authUser = AuthService.getUser(); // Dados básicos da autenticação (id, email)
+    const authUser = AuthService.getCurrentUser(); // Correção aqui!
 
-    // Apenas prossiga se houver um token e um usuário básico
     if (token && authUser) {
       try {
-        // Busca os dados detalhados da tabela 'client_profiles'
-        const profileResponse = await AuthService.getProfile();
-        // Junta os dados de autenticação com os dados do perfil (nome, avatar, etc.)
-        const fullUserData = { ...authUser, profile: profileResponse.data };
-        
+        const profileResponse = await AuthService.getProfile?.();
+        const fullUserData = { ...authUser, profile: profileResponse?.data };
         setUser(fullUserData);
         setUserToken(token);
         setIsAuthenticated(true);
-
       } catch (error) {
         console.error("Falha ao buscar perfil completo, fazendo logout:", error);
-        AuthService.logout(); // Se não conseguir buscar o perfil, desloga por segurança
+        AuthService.logout();
         setUser(null);
         setUserToken(null);
         setIsAuthenticated(false);
@@ -50,46 +37,19 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   useEffect(() => {
-    // Busca os dados do usuário ao carregar a página
     refreshUser();
-
-    // Ouve por mudanças no localStorage (login/logout em outra aba)
     const handleStorageChange = () => {
       refreshUser();
     };
     window.addEventListener('storage', handleStorageChange);
-
     return () => {
       window.removeEventListener('storage', handleStorageChange);
-    };
-  }, [refreshUser]);
-
-  useEffect(() => {
-    // Ouve por eventos de autenticação do Supabase
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
-        console.log(`Supabase auth event: ${event}`);
-        if (event === 'SIGNED_IN' && session) {
-          localStorage.setItem('clientAuthToken', session.access_token);
-          localStorage.setItem('clientUser', JSON.stringify(session.user));
-          refreshUser();
-        } else if (event === 'SIGNED_OUT') {
-          localStorage.removeItem('clientAuthToken');
-          localStorage.removeItem('clientUser');
-          refreshUser();
-        }
-      }
-    );
-
-    return () => {
-      subscription?.unsubscribe();
     };
   }, [refreshUser]);
 
   const login = async (email, password) => {
     try {
       await AuthService.login(email, password);
-      // ✅ CORREÇÃO: Espera o refreshUser buscar os dados completos antes de continuar
       await refreshUser();
     } catch (error) {
       console.error("Erro no login (AuthContext):", error);
@@ -109,7 +69,6 @@ export const AuthProvider = ({ children }) => {
 
   const logout = () => {
     AuthService.logout();
-    // Limpa o estado local imediatamente para uma resposta visual mais rápida
     setUser(null);
     setIsAuthenticated(false);
     setUserToken(null);
