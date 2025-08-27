@@ -1,40 +1,17 @@
 // services/authService.js - INKSA CLIENTES
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://inksa-auth-flask-dev.onrender.com';
+import api from '../lib/api.js';
+
 const AUTH_TOKEN_KEY = 'clientAuthToken';
 const CLIENT_USER_DATA_KEY = 'clientUser';
-
-const processResponse = async (response) => {
-    if (response.status === 401) {
-        localStorage.removeItem(AUTH_TOKEN_KEY);
-        localStorage.removeItem(CLIENT_USER_DATA_KEY);
-        window.location.href = '/login';
-        return null;
-    }
-    
-    if (!response.ok) {
-        const error = await response.json().catch(() => ({ message: 'Erro desconhecido' }));
-        throw new Error(error.message || `HTTP error! status: ${response.status}`);
-    }
-    
-    return response.json();
-};
 
 const authService = {
     async login(email, password) {
         try {
-            const response = await fetch(`${API_BASE_URL}/api/auth/login`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ 
-                    email, 
-                    password,
-                    user_type: 'cliente' 
-                }),
+            const data = await api.post('/api/auth/login', {
+                email, 
+                password,
+                user_type: 'cliente' 
             });
-
-            const data = await processResponse(response);
             
             if (data && data.token) {
                 localStorage.setItem(AUTH_TOKEN_KEY, data.token);
@@ -51,18 +28,10 @@ const authService = {
 
     async register(userData) {
         try {
-            const response = await fetch(`${API_BASE_URL}/api/auth/register`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    ...userData,
-                    user_type: 'cliente'
-                }),
+            const data = await api.post('/api/auth/register', {
+                ...userData,
+                user_type: 'cliente'
             });
-
-            const data = await processResponse(response);
             
             if (data && data.token) {
                 localStorage.setItem(AUTH_TOKEN_KEY, data.token);
@@ -81,13 +50,7 @@ const authService = {
         try {
             const token = localStorage.getItem(AUTH_TOKEN_KEY);
             if (token) {
-                await fetch(`${API_BASE_URL}/api/auth/logout`, {
-                    method: 'POST',
-                    headers: {
-                        'Authorization': `Bearer ${token}`,
-                        'Content-Type': 'application/json',
-                    },
-                });
+                await api.post('/api/auth/logout', null, true);
             }
         } catch (error) {
             console.error('Erro no logout:', error);
@@ -100,15 +63,7 @@ const authService = {
 
     async forgotPassword(email) {
         try {
-            const response = await fetch(`${API_BASE_URL}/api/auth/forgot-password`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ email }),
-            });
-
-            return await processResponse(response);
+            return await api.post('/api/auth/forgot-password', { email });
         } catch (error) {
             console.error('Erro ao solicitar recuperação de senha:', error);
             throw error;
@@ -117,15 +72,10 @@ const authService = {
 
     async resetPassword(token, newPassword) {
         try {
-            const response = await fetch(`${API_BASE_URL}/api/auth/reset-password`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ token, new_password: newPassword }),
+            return await api.post('/api/auth/reset-password', { 
+                token, 
+                new_password: newPassword 
             });
-
-            return await processResponse(response);
         } catch (error) {
             console.error('Erro ao resetar senha:', error);
             throw error;
@@ -134,17 +84,7 @@ const authService = {
 
     async updateProfile(profileData) {
         try {
-            const token = localStorage.getItem(AUTH_TOKEN_KEY);
-            const response = await fetch(`${API_BASE_URL}/api/auth/profile`, {
-                method: 'PUT',
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(profileData),
-            });
-
-            const data = await processResponse(response);
+            const data = await api.put('/api/auth/profile', profileData, true);
             
             if (data && data.user) {
                 localStorage.setItem(CLIENT_USER_DATA_KEY, JSON.stringify(data.user));

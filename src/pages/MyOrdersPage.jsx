@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import AuthService from '../services/authService'; 
+import { getOrders, deleteOrder } from '../services/orderService';
 import { Link, useNavigate } from 'react-router-dom'; 
 import { ArrowLeft, Trash2 } from 'lucide-react'; // Importar ícone Trash2
 import { useToast } from '../context/ToastContext.jsx'; // Importar useToast
@@ -20,14 +21,9 @@ const MyOrdersPage = () => {
                 addToast('error', 'Sessão expirada. Por favor, faça o login novamente.');
                 return;
             }
-            const response = await fetch('http://localhost:5000/api/orders', {
-                headers: { 'Authorization': `Bearer ${authToken}` }
-            });
-            const result = await response.json();
-            if (!response.ok) {
-                throw new Error(result.error || 'Não foi possível buscar os pedidos.');
-            }
-            setOrders(result.data);
+            
+            const orders = await getOrders();
+            setOrders(orders);
         } catch (err) {
             setError(err.message);
             console.error('Erro ao buscar pedidos:', err);
@@ -54,8 +50,7 @@ const MyOrdersPage = () => {
         }
 
         try {
-            // Chama o método deleteOrder do AuthService (que você precisará criar)
-            await AuthService.deleteOrder(orderId); 
+            await deleteOrder(orderId);
             addToast('success', 'Pedido excluído com sucesso!');
             // Remove o pedido da lista localmente para atualizar a UI
             setOrders(prevOrders => prevOrders.filter(order => order.id !== orderId));

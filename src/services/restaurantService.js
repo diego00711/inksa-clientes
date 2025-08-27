@@ -2,6 +2,7 @@
 
 // ✅ 1. IMPORTAR A FUNÇÃO PARA CRIAR O CLIENTE SUPABASE
 import { createClient } from '@supabase/supabase-js';
+import api from '../lib/api.js';
 
 // ✅ 2. DEFINIR AS VARIÁVEIS DE AMBIENTE DO SUPABASE PARA O FRONTEND
 // Em projetos Vite (React), as variáveis de ambiente devem começar com VITE_
@@ -21,36 +22,22 @@ export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
   },
 });
 
-
-// --- SEU CÓDIGO EXISTENTE (PERMANECE IGUAL) ---
-const API_BASE_URL = 'http://127.0.0.1:5000'; // A URL da sua API Flask
-
-const processResponse = async (response) => {
-  if (!response.ok) {
-    const errorData = await response.json().catch(() => ({}));
-    const errorMessage = errorData.error || `Erro HTTP ${response.status}`;
-    throw new Error(errorMessage);
-  }
-  return response.json();
-};
-
 const RestaurantService = {
   /**
    * Busca a lista de restaurantes. Se a localização for fornecida,
    * envia as coordenadas para a API para obter as distâncias.
    */
   getAllRestaurants: async (location) => {
-    let url = `${API_BASE_URL}/api/restaurants`;
+    let endpoint = '/api/restaurants';
 
     if (location && location.latitude && location.longitude) {
       const params = new URLSearchParams();
       params.append('user_lat', location.latitude);
       params.append('user_lon', location.longitude);
-      url += `?${params.toString()}`;
+      endpoint += `?${params.toString()}`;
     }
     
-    const response = await fetch(url);
-    const data = await processResponse(response);
+    const data = await api.get(endpoint);
     return data.data; // Retorna o array de restaurantes
   },
 
@@ -58,8 +45,7 @@ const RestaurantService = {
    * Busca os detalhes completos de um restaurante, incluindo seu cardápio.
    */
   getRestaurantDetails: async (restaurantId) => {
-    const response = await fetch(`${API_BASE_URL}/api/restaurants/${restaurantId}`);
-    const data = await processResponse(response);
+    const data = await api.get(`/api/restaurants/${restaurantId}`);
     return data.data; // Retorna o objeto do restaurante com o cardápio
   },
 };
