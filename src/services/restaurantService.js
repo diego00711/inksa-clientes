@@ -23,8 +23,9 @@ const processResponse = async (response) => {
 };
 
 const RestaurantService = {
+  // Lista restaurantes — backend expõe /api/restaurant (singular)
   getAllRestaurants: async (location) => {
-    let url = `${API_URL}/restaurants`;
+    let url = `${API_URL}/restaurant`;
 
     if (location?.latitude && location?.longitude) {
       const params = new URLSearchParams();
@@ -38,8 +39,9 @@ const RestaurantService = {
     return data.data || data;
   },
 
+  // Detalhes do restaurante
   getRestaurantDetails: async (restaurantId) => {
-    const response = await fetch(`${API_URL}/restaurants/${restaurantId}`);
+    const response = await fetch(`${API_URL}/restaurant/${restaurantId}`);
     const data = await processResponse(response);
     return data.data || data;
   },
