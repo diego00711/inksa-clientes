@@ -27,7 +27,7 @@ const ClientService = {
       credentials: 'include',
     });
     const data = await processResponse(response);
-    return data.data || data.user || data; // compatível com diferentes respostas
+    return data.data || data.user || data;
   },
 
   updateProfile: async (profileData) => {
