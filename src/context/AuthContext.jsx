@@ -1,88 +1,63 @@
-import { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import AuthService from '../services/authService';
+// src/context/AuthContext.jsx - VERSÃO FINAL E CORRIGIDA
 
-export const AuthContext = createContext();
+import { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import authService from '../services/authService';
+import clientService from '../services/clientService'; // ✅ 1. Importa o serviço correto do cliente
+
+export const AuthContext = createContext(null);
 
 export const AuthProvider = ({ children }) => {
+  // ✅ 2. Simplificação: 'user' guardará o perfil completo. 'isAuthenticated' será derivado dele.
   const [user, setUser] = useState(null);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [userToken, setUserToken] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  // ✅ CORREÇÃO: 'refreshUser' agora é assíncrona e busca os dados completos do perfil
-  const refreshUser = useCallback(async () => {
-    const token = AuthService.getToken();
-    const authUser = AuthService.getCurrentUser(); // Correção aqui!
-
-    if (token && authUser) {
+  const fetchAndSetUser = useCallback(async () => {
+    // Esta função agora é a única fonte da verdade para buscar o perfil.
+    const token = authService.getToken();
+    if (token) {
       try {
-        const profileResponse = await AuthService.getProfile?.();
-        const fullUserData = { ...authUser, profile: profileResponse?.data };
-        setUser(fullUserData);
-        setUserToken(token);
-        setIsAuthenticated(true);
+        // ✅ 3. Usa o clientService para buscar o perfil da rota /api/client/profile
+        const profileData = await clientService.getProfile();
+        setUser(profileData); // Armazena o perfil completo: { id, name, avatar_url, ... }
       } catch (error) {
-        console.error("Falha ao buscar perfil completo, fazendo logout:", error);
-        AuthService.logout();
+        console.error("Falha ao buscar perfil, fazendo logout:", error);
+        // Se o token for inválido ou o perfil não for encontrado, desloga.
+        authService.logout();
         setUser(null);
-        setUserToken(null);
-        setIsAuthenticated(false);
       }
-    } else {
-      setUser(null);
-      setUserToken(null);
-      setIsAuthenticated(false);
     }
     setIsLoading(false);
   }, []);
 
   useEffect(() => {
-    refreshUser();
-    const handleStorageChange = () => {
-      refreshUser();
-    };
-    window.addEventListener('storage', handleStorageChange);
-    return () => {
-      window.removeEventListener('storage', handleStorageChange);
-    };
-  }, [refreshUser]);
+    fetchAndSetUser();
+  }, [fetchAndSetUser]);
 
   const login = async (email, password) => {
     try {
-      await AuthService.login(email, password);
-      await refreshUser();
+      // O serviço de login já salva o token no localStorage
+      await authService.login(email, password);
+      // ✅ 4. Após o login, chama a função para buscar e definir o perfil completo.
+      await fetchAndSetUser();
     } catch (error) {
       console.error("Erro no login (AuthContext):", error);
-      throw error;
-    }
-  };
-
-  const register = async (userData) => {
-    try {
-      const data = await AuthService.register(userData);
-      return data;
-    } catch (error) {
-      console.error("Erro no registro (AuthContext):", error);
-      throw error;
+      throw error; // Relança o erro para a página de login poder mostrar a mensagem.
     }
   };
 
   const logout = () => {
-    AuthService.logout();
+    authService.logout();
     setUser(null);
-    setIsAuthenticated(false);
-    setUserToken(null);
   };
 
+  // ✅ 5. O valor do contexto é simplificado.
   const value = {
-    user,
-    isAuthenticated,
-    userToken,
+    user, // O objeto de perfil completo
+    isAuthenticated: !!user, // A autenticação é verdadeira se o objeto 'user' existir
     isLoading,
     login,
-    register,
     logout,
-    refreshUser,
+    refreshUser: fetchAndSetUser, // A função de refresh agora é a mesma que busca o usuário
   };
 
   return (
