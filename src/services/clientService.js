@@ -1,9 +1,11 @@
+// src/services/ClientService.js - VERSÃO CORRIGIDA
+
 import AuthService from './authService';
 
 const API_BASE = import.meta.env.VITE_API_URL || 'https://inksa-auth-flask-dev.onrender.com';
 const API_URL = `${API_BASE}/api`;
 
-const processResponse = async (response) => {
+const processResponse = async (response ) => {
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({}));
     const errorMessage = errorData.error || `Erro HTTP ${response.status}`;
@@ -22,16 +24,19 @@ const createAuthHeaders = () => {
 
 const ClientService = {
   getProfile: async () => {
-    const response = await fetch(`${API_URL}/auth/profile`, {
+    // ✅ CORREÇÃO: A URL agora aponta para a rota específica do cliente.
+    const response = await fetch(`${API_URL}/client/profile`, {
       headers: createAuthHeaders(),
       credentials: 'include',
     });
     const data = await processResponse(response);
-    return data.data || data.user || data;
+    // Retorna os dados do perfil, que estão dentro da chave 'data'
+    return data.data || data;
   },
 
   updateProfile: async (profileData) => {
-    const response = await fetch(`${API_URL}/auth/profile`, {
+    // ✅ CORREÇÃO: A URL agora aponta para a rota específica do cliente.
+    const response = await fetch(`${API_URL}/client/profile`, {
       method: 'PUT',
       headers: {
         ...createAuthHeaders(),
@@ -41,14 +46,15 @@ const ClientService = {
       body: JSON.stringify(profileData),
     });
     const data = await processResponse(response);
-    return data.data || data.user || data;
+    return data.data || data;
   },
 
   uploadAvatar: async (file) => {
     const formData = new FormData();
     formData.append('file', file);
 
-    const response = await fetch(`${API_URL}/auth/profile/upload-avatar`, {
+    // ✅ CORREÇÃO: A URL agora aponta para a rota específica do cliente.
+    const response = await fetch(`${API_URL}/client/profile/upload-avatar`, {
       method: 'POST',
       headers: createAuthHeaders(),
       credentials: 'include',
