@@ -1,7 +1,5 @@
-// src/components/Header.jsx - VERSÃO FINAL E CORRIGIDA
-
 import { Link, useNavigate } from "react-router-dom";
-import { ShoppingCart, LogOut, Receipt } from "lucide-react"; 
+import { ShoppingCart, LogOut, Receipt, Star } from "lucide-react"; 
 import { Button } from "./ui/button";
 import { useAuth } from "../context/AuthContext";
 import { useCart } from "../context/CartContext";
@@ -47,7 +45,6 @@ export function Header() {
 
               <Link to="/perfil">
                 <Avatar className="h-10 w-10 border-2 border-gray-200">
-                  {/* ✅ CORREÇÃO: Usa 'user.avatar_url' que é o campo correto */}
                   <AvatarImage src={user?.avatar_url} alt={userFirstName} />
                   <AvatarFallback className="bg-gray-200 font-bold">
                     {userInitials}
@@ -58,6 +55,13 @@ export function Header() {
               <Link to="/meus-pedidos" className="relative">
                 <Button variant="ghost" size="icon" aria-label="Meus Pedidos">
                   <Receipt className="h-5 w-5" />
+                </Button>
+              </Link>
+
+              {/* NOVO LINK: Central de Avaliações */}
+              <Link to="/avaliacoes" className="relative">
+                <Button variant="ghost" size="icon" aria-label="Avaliações">
+                  <Star className="h-5 w-5" />
                 </Button>
               </Link>
 
