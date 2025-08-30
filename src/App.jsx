@@ -35,6 +35,7 @@ function App() {
                 <Route path="carrinho" element={<CartPage />} />
                 <Route path="perfil" element={<ProfilePage />} />
                 <Route path="meus-pedidos" element={<MyOrdersPage />} />
+                 <Route path="avaliacoes" element={<ClientEvaluationsCenter />} />
               </Route>
             </Routes>
           </ToastProvider>
