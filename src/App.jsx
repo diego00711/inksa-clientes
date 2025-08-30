@@ -1,5 +1,3 @@
-// src/App.jsx (PROJETO CLIENTE - Versão ORIGINAL CORRETA)
-
 import { Routes, Route, Navigate } from "react-router-dom";
 import { HomePage } from "./pages/HomePage";
 import { RestaurantDetailsPage } from "./pages/RestaurantDetailsPage";
@@ -14,7 +12,8 @@ import { ProfilePage } from "./pages/ProfilePage";
 import { CartProvider } from "./context/CartContext";
 import MyOrdersPage from "./pages/MyOrdersPage";
 import { LocationProvider } from "./context/LocationContext";
-import { ToastProvider } from "./context/ToastContext"; 
+import { ToastProvider } from "./context/ToastContext";
+import ClientEvaluationsCenter from "./pages/ClientEvaluationsCenter"; 
 
 function App() {
   return (
@@ -35,7 +34,7 @@ function App() {
                 <Route path="carrinho" element={<CartPage />} />
                 <Route path="perfil" element={<ProfilePage />} />
                 <Route path="meus-pedidos" element={<MyOrdersPage />} />
-                 <Route path="avaliacoes" element={<ClientEvaluationsCenter />} />
+                <Route path="avaliacoes" element={<ClientEvaluationsCenter />} />
               </Route>
             </Routes>
           </ToastProvider>
