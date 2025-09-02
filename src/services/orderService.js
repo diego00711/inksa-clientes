@@ -1,57 +1,78 @@
 // src/services/orderService.js
 
-const API_BASE = import.meta.env.VITE_API_URL || 'https://inksa-auth-flask-dev.onrender.com';
-const API_URL = `${API_BASE}/api`;
+// ✅ 1. Importa as funções auxiliares do nosso novo arquivo api.js
+import { CLIENT_API_URL, processResponse, createAuthHeaders } from './api';
 
 /**
  * Calcula a taxa de entrega.
  */
 export const calculateDeliveryFee = async (deliveryData) => {
-  const response = await fetch(`${API_URL}/delivery/calculate_fee`, {
+  // A URL deve ser completa, usando a variável do api.js
+  const url = `${CLIENT_API_URL}/api/delivery/calculate_fee`;
+  
+  const response = await fetch(url, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
     },
     body: JSON.stringify(deliveryData),
   });
-  if (!response.ok) {
-    throw new Error('Falha ao calcular o frete');
-  }
-  return response.json();
+  
+  return processResponse(response);
 };
 
 /**
  * Cria um novo pedido no banco de dados.
  */
-export const createOrder = async (orderData, token) => {
-  const response = await fetch(`${API_URL}/orders`, {
+export const createOrder = async (orderData) => {
+  const url = `${CLIENT_API_URL}/api/orders`;
+  
+  const response = await fetch(url, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      Authorization: `Bearer ${token}`,
+      ...createAuthHeaders(), // Usa a função auxiliar para o token
     },
     body: JSON.stringify(orderData),
   });
-  if (!response.ok) {
-    const errorData = await response.json().catch(() => ({}));
-    throw new Error(errorData.error || 'Falha ao criar o pedido');
-  }
-  return response.json();
+
+  return processResponse(response);
 };
 
 /**
  * Cria a preferência de pagamento no Mercado Pago.
  */
 export const createPaymentPreference = async (preferenceData) => {
-  const response = await fetch(`${API_URL}/pagamentos/criar_preferencia`, {
+  const url = `${CLIENT_API_URL}/api/pagamentos/criar_preferencia`;
+  
+  const response = await fetch(url, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
     },
     body: JSON.stringify(preferenceData),
   });
-  if (!response.ok) {
-    throw new Error('Falha ao criar a preferência de pagamento');
-  }
-  return response.json();
+
+  return processResponse(response);
+};
+
+/**
+ * ✅ 2. NOVA FUNÇÃO ADICIONADA
+ * Busca os pedidos que um cliente já recebeu e que estão pendentes de avaliação.
+ * @param {string} clientId - O ID do perfil do cliente.
+ * @param {AbortSignal} [signal] - Para cancelar a requisição se necessário.
+ */
+export const getOrdersPendingClientReview = async (clientId, signal) => {
+  // IMPORTANTE: Confirme se a URL do seu backend para esta funcionalidade é esta.
+  const url = `${CLIENT_API_URL}/api/orders/pending-client-review`;
+
+  const response = await fetch(url, {
+    method: 'GET',
+    headers: createAuthHeaders(),
+    signal,
+  });
+  
+  const data = await processResponse(response);
+  // Garante que sempre retornará um array
+  return data?.data ?? data ?? [];
 };
