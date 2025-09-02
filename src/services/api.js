@@ -10,7 +10,10 @@ export const CLIENT_API_URL = import.meta.env.VITE_API_URL || 'https://inksa-aut
  * @returns {HeadersInit} Um objeto com o cabeçalho de autorização.
  */
 export function createAuthHeaders( ) {
-  const token = localStorage.getItem('authToken'); // Ou o nome que você usa para guardar o token
+  // ✅✅✅ CORREÇÃO PRINCIPAL APLICADA AQUI ✅✅✅
+  // Alterado de 'authToken' para 'clientAuthToken' para corresponder ao seu localStorage.
+  const token = localStorage.getItem('clientAuthToken'); 
+  
   if (token) {
     return {
       Authorization: `Bearer ${token}`,
