@@ -1,56 +1,59 @@
 // src/services/reviewService.js
 
-// Supondo que você tenha um arquivo 'api.js' com estas funções.
-import { CLIENT_API_URL, processResponse, createAuthHeaders } from './api';
+// Importa as funções auxiliares de 'api.js'
+import { CLIENT_API_URL, createAuthHeaders, processResponse } from './api';
 
 /**
- * Envia uma avaliação para um restaurante.
- * @param {object} reviewData - Contém restaurantId, orderId, rating, etc.
+ * Busca as avaliações que o cliente logado recebeu.
+ * @returns {Promise<object>} Um objeto contendo a lista de avaliações, a média e o total.
  */
-export async function postRestaurantReview({ restaurantId, orderId, rating, comment, tags, categories }) {
-  // A URL deve corresponder ao endpoint do seu backend.
-  const url = `${CLIENT_API_URL}/api/review/restaurants/${encodeURIComponent(restaurantId)}/reviews`;
-
-  const response = await fetch(url, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      ...createAuthHeaders(),
-    },
-    body: JSON.stringify({ 
-      order_id: orderId, 
-      rating, 
-      comment,
-      tags,
-      category_ratings: categories,
-    }),
-  });
-
+export async function getClientReviewsReceived() {
+  // Chama a nova rota que criamos no backend
+  const response = await fetch(
+    `${CLIENT_API_URL}/api/review/clients/my-reviews`, 
+    {
+      headers: createAuthHeaders(),
+    }
+  );
   return processResponse(response);
 }
 
 /**
- * Envia uma avaliação para um entregador.
- * @param {object} reviewData - Contém deliverymanId, orderId, rating, etc.
+ * Envia uma nova avaliação para um restaurante.
+ * @param {object} reviewData - Dados da avaliação.
+ * @returns {Promise<object>} A resposta da API.
  */
-export async function postDeliveryReview({ deliverymanId, orderId, rating, comment, tags, categories }) {
-  // A URL deve corresponder ao endpoint do seu backend.
-  const url = `${CLIENT_API_URL}/api/review/delivery/${encodeURIComponent(deliverymanId)}/reviews`;
+export async function postRestaurantReview(reviewData) {
+  const response = await fetch(
+    `${CLIENT_API_URL}/api/review/restaurants/${reviewData.restaurantId}/reviews`,
+    {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...createAuthHeaders(),
+      },
+      body: JSON.stringify(reviewData),
+    }
+  );
+  return processResponse(response);
+}
 
-  const response = await fetch(url, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      ...createAuthHeaders(),
-    },
-    body: JSON.stringify({ 
-      order_id: orderId, 
-      rating, 
-      comment,
-      tags,
-      category_ratings: categories,
-    }),
-  });
-
+/**
+ * Envia uma nova avaliação para um entregador.
+ * @param {object} reviewData - Dados da avaliação.
+ * @returns {Promise<object>} A resposta da API.
+ */
+export async function postDeliveryReview(reviewData) {
+  const response = await fetch(
+    `${CLIENT_API_URL}/api/review/delivery/${reviewData.deliverymanId}/reviews`,
+    {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...createAuthHeaders(),
+      },
+      body: JSON.stringify(reviewData),
+    }
+  );
   return processResponse(response);
 }
