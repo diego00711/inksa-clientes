@@ -161,3 +161,28 @@ export const cancelOrder = async (orderId) => {
     throw error;
   }
 };
+
+// ✅ FUNÇÃO PARA CRIAR PREFERÊNCIA DE PAGAMENTO (MERCADO PAGO)
+export const createPaymentPreference = async (orderData) => {
+  console.log('💳 Criando preferência de pagamento:', orderData);
+  
+  try {
+    const response = await fetch(`${API_BASE_URL}/payment/create-preference`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${localStorage.getItem('token')}`,
+      },
+      credentials: 'include',
+      body: JSON.stringify(orderData),
+    });
+
+    const data = await processResponse(response);
+    console.log('✅ Preferência de pagamento criada:', data);
+    return data;
+    
+  } catch (error) {
+    console.error('❌ Erro ao criar preferência de pagamento:', error);
+    throw error;
+  }
+};
