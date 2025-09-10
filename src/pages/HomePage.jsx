@@ -1,25 +1,18 @@
 // Local: src/pages/HomePage.jsx
 
 import { useState, useEffect, useCallback } from "react";
-// Importando o supabase a partir do serviço (já configurado)
 import RestaurantService, { supabase } from "../services/restaurantService";
 import { RestaurantList } from "../components/RestaurantList";
 import { Input } from "@/components/ui/input";
 import { Search } from "lucide-react";
-import { FilterDrawer } from "../components/FilterDrawer";
 import { useLocation } from "../context/LocationContext";
 
-// --- DADOS VISUAIS E OPÇÕES ---
+// --- DADOS VISUAIS ---
 const featuredBanner = {
   imageUrl: "/banner-gamificacao.jpg",
   title: "Ganhe Recompensas Incríveis!",
   subtitle: "Acumule pontos em cada pedido e troque por descontos exclusivos.",
 };
-const sortOptions = [
-  { label: "Mais Próximos", value: "distance-asc" },
-  { label: "Melhor Avaliados", value: "rating-desc" },
-];
-const ratingFilters = ["Todos", 4.0, 4.5];
 
 // --- COMPONENTE PRINCIPAL ---
 export function HomePage() {
@@ -28,23 +21,19 @@ export function HomePage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
-  const [currentSort, setCurrentSort] = useState("distance-asc");
-  const [minRating, setMinRating] = useState(0);
   const [selectedCategory, setSelectedCategory] = useState("Todos");
   const [categories, setCategories] = useState(["Todos"]);
+  const [filters, setFilters] = useState({});
   const { location, loading: locationLoading, error: locationError } = useLocation();
 
   // --- EFEITOS (HOOKS) ---
-  // Busca inicial dos restaurantes. Se a geolocalização for negada, fazemos fallback silencioso.
   useEffect(() => {
-    // Aguarda até ter localização OU um erro de geolocalização (para fazer fallback sem coordenadas)
     if (!location && !locationError) return;
 
     const fetchRestaurants = async () => {
       setIsLoading(true);
       setError(null);
       try {
-        // Se location for undefined (geolocalização negada), o service buscará sem coordenadas
         const data = await RestaurantService.getAllRestaurants(location);
         const list = Array.isArray(data) ? data : data?.data || [];
         setAllRestaurants(list);
@@ -61,7 +50,7 @@ export function HomePage() {
     fetchRestaurants();
   }, [location, locationError]);
 
-  // Atualizações em tempo real (opcional)
+  // Atualizações em tempo real
   useEffect(() => {
     if (!supabase) return;
 
@@ -89,56 +78,42 @@ export function HomePage() {
     };
   }, []);
 
-  // --- LÓGICA DE FILTRO E ORDENAÇÃO ---
-  const filteredAndSortedRestaurants = allRestaurants
+  // --- LÓGICA DE FILTRO ---
+  const filteredRestaurants = allRestaurants
     .filter((restaurant) => {
       const name = (restaurant.restaurant_name || restaurant.name || "").toLowerCase();
       const matchesSearch = name.includes(searchTerm.toLowerCase());
-      const ratingValue = restaurant.rating ?? 0;
-      const matchesRating = minRating === 0 || ratingValue >= minRating;
-      const matchesCategory =
-        selectedCategory === "Todos" || restaurant.category === selectedCategory;
-      return matchesSearch && matchesRating && matchesCategory;
-    })
-    .sort((a, b) => {
-      if (currentSort === "rating-desc") {
-        return (b.rating ?? 0) - (a.rating ?? 0);
-      }
-      if (currentSort === "distance-asc") {
-        const dist = (r) =>
-          r.distance_meters ?? r.distance ?? Number.POSITIVE_INFINITY;
-        return dist(a) - dist(b);
-      }
-      return 0;
+      const matchesCategory = selectedCategory === "Todos" || restaurant.category === selectedCategory;
+      return matchesSearch && matchesCategory;
     });
 
-  // --- FUNÇÕES DE EVENTO (HANDLERS) ---
-  const handleClearFilters = useCallback(() => {
-    setSearchTerm("");
-    setMinRating(0);
-    setSelectedCategory("Todos");
-    setCurrentSort("distance-asc");
-  }, []);
+  // --- FUNÇÕES DE EVENTO ---
   const handleCategoryClick = useCallback((category) => {
     setSelectedCategory(category);
   }, []);
-  const handleRatingFilterClick = useCallback((rating) => {
-    setMinRating(rating);
-  }, []);
-  const handleSortChange = useCallback((sortValue) => {
-    setCurrentSort(sortValue);
+
+  const handleFiltersChange = useCallback((newFilters) => {
+    setFilters(newFilters);
   }, []);
 
-  // --- COMPONENTE DE SKELETON ---
-  const SkeletonCard = () => (
-    <div className="bg-white rounded-xl shadow-md animate-pulse">
-      <div className="h-40 bg-gray-200 rounded-t-xl"></div>
-      <div className="p-4 space-y-3">
-        <div className="h-4 bg-gray-200 rounded w-3/4"></div>
-        <div className="h-3 bg-gray-200 rounded w-1/2"></div>
-      </div>
-    </div>
-  );
+  const handleRetry = useCallback(() => {
+    if (location || locationError) {
+      const fetchRestaurants = async () => {
+        setIsLoading(true);
+        setError(null);
+        try {
+          const data = await RestaurantService.getAllRestaurants(location);
+          const list = Array.isArray(data) ? data : data?.data || [];
+          setAllRestaurants(list);
+        } catch (err) {
+          setError(err?.message || "Não foi possível carregar restaurantes.");
+        } finally {
+          setIsLoading(false);
+        }
+      };
+      fetchRestaurants();
+    }
+  }, [location, locationError]);
 
   // --- RENDERIZAÇÃO PRINCIPAL ---
   return (
@@ -163,8 +138,8 @@ export function HomePage() {
         </div>
       </div>
 
-      {/* Área de Filtros */}
-      <div className="sticky top-[80px] bg-white/80 backdrop-blur-sm py-4 z-10">
+      {/* Área de Busca e Filtros */}
+      <div className="sticky top-[80px] bg-white/80 backdrop-blur-sm py-4 z-10 mb-8">
         {/* Barra de Busca */}
         <div className="relative mb-4">
           <Input
@@ -176,38 +151,24 @@ export function HomePage() {
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
         </div>
 
-        {/* Filtros Rápidos de Categoria + Botão de Filtros Avançados */}
-        <div className="flex items-center gap-4">
-          <div className="flex-grow flex items-center gap-2 overflow-x-auto pb-2 no-scrollbar">
-            {categories.map((category) => (
-              <button
-                key={category}
-                onClick={() => handleCategoryClick(category)}
-                className={`px-4 py-2 rounded-full text-sm font-semibold whitespace-nowrap transition-colors ${
-                  selectedCategory === category
-                    ? "bg-gray-800 text-white shadow-md"
-                    : "bg-gray-200 text-gray-700 hover:bg-gray-300"
-                }`}
-              >
-                {category}
-              </button>
-            ))}
-          </div>
-          <FilterDrawer
-            selectedCategory={selectedCategory}
-            onCategoryClick={handleCategoryClick}
-            minRating={minRating}
-            onRatingFilterClick={handleRatingFilterClick}
-            currentSort={currentSort}
-            onSortChange={handleSortChange}
-            onClearFilters={handleClearFilters}
-            categories={categories}
-            ratingFilters={ratingFilters}
-            sortOptions={sortOptions}
-          />
+        {/* Filtros Rápidos de Categoria */}
+        <div className="flex items-center gap-2 overflow-x-auto pb-2 no-scrollbar">
+          {categories.map((category) => (
+            <button
+              key={category}
+              onClick={() => handleCategoryClick(category)}
+              className={`px-4 py-2 rounded-full text-sm font-semibold whitespace-nowrap transition-colors ${
+                selectedCategory === category
+                  ? "bg-orange-500 text-white shadow-md"
+                  : "bg-gray-200 text-gray-700 hover:bg-gray-300"
+              }`}
+            >
+              {category}
+            </button>
+          ))}
         </div>
 
-        {/* Aviso não-bloqueante quando a geolocalização for negada */}
+        {/* Aviso de localização */}
         {locationError && (
           <div className="mt-3 text-sm bg-amber-50 text-amber-800 border border-amber-200 rounded px-3 py-2">
             Não conseguimos acessar sua localização no navegador. Mostrando restaurantes sem ordenação por distância.
@@ -215,32 +176,22 @@ export function HomePage() {
         )}
       </div>
 
-      {/* Renderização da Lista e Mensagens */}
+      {/* Lista de Restaurantes */}
       <div className="mt-8">
         {locationLoading && (
           <div className="text-center py-16 text-gray-500">
-            <p>A obter a sua localização...</p>
+            <p>Obtendo a sua localização...</p>
           </div>
         )}
 
-        {isLoading && !locationLoading && (
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-            {[...Array(8)].map((_, i) => (
-              <SkeletonCard key={i} />
-            ))}
-          </div>
-        )}
-
-        {/* Importante: não consideramos locationError como erro fatal */}
-        {!isLoading && error && (
-          <div className="text-center py-16 text-red-500">
-            <p>Falha ao carregar restaurantes: {error}</p>
-          </div>
-        )}
-
-        {!isLoading && !error && (
-          <RestaurantList restaurants={filteredAndSortedRestaurants} />
-        )}
+        <RestaurantList 
+          restaurants={filteredRestaurants}
+          loading={isLoading && !locationLoading}
+          error={!isLoading ? error : null}
+          onRetry={handleRetry}
+          filters={filters}
+          onFiltersChange={handleFiltersChange}
+        />
       </div>
     </>
   );
