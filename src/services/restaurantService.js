@@ -1,4 +1,4 @@
-// Local: src/services/restaurantService.js
+
 
 import { createClient } from '@supabase/supabase-js';
 
@@ -39,115 +39,63 @@ const RestaurantService = {
     return data.data || data;
   },
 
-  // ✅ CORRIGIDO: Detalhes do restaurante COM cardápio
+  // ✅ VERSÃO FINAL: API já retorna o cardápio
   getRestaurantDetails: async (restaurantId) => {
-    console.log('🔄 Buscando detalhes do restaurante via API:', restaurantId);
+    console.log('🔗 Buscando restaurante:', restaurantId);
     
     try {
-      // Primeira tentativa: buscar via API (que pode incluir o cardápio)
-      const response = await fetch(`${API_URL}/restaurant/${restaurantId}`);
+      // Adicionar timestamp para evitar cache
+      const timestamp = new Date().getTime();
+      const url = `${API_URL}/restaurant/${restaurantId}?_t=${timestamp}`;
+      
+      const response = await fetch(url, {
+        headers: {
+          'Cache-Control': 'no-cache',
+          'Pragma': 'no-cache'
+        }
+      });
+      
+      console.log('📡 Status da resposta:', response.status);
+      
       const data = await processResponse(response);
       const restaurant = data.data || data;
       
-      console.log('📊 Dados da API:', restaurant);
-      
-      // SEMPRE busca o cardápio no Supabase (independente da API)
-      console.log('🔍 Buscando cardápio no Supabase...');
-      
-      // Debug: primeiro vamos ver TODOS os itens desta tabela
-      const { data: allItems, error: debugError } = await supabase
-        .from('menu_items')
-        .select('*');
-      
-      console.log('🗃️ TODOS os itens na tabela menu_items:', allItems);
-      console.log('🗃️ Total de itens na tabela:', allItems?.length || 0);
-      
-      // Agora busca específico para este restaurante
-      const { data: menuItems, error: menuError } = await supabase
-        .from('menu_items')
-        .select('*')
-        .eq('restaurant_id', restaurantId);
-        // Removemos o filtro is_available temporariamente para debug
-      
-      console.log('🍕 Query específica - restaurantId:', restaurantId);
-      console.log('🍕 Itens encontrados para este restaurante:', menuItems);
-      console.log('🍕 Erro (se houver):', menuError);
-      
-      if (menuError) {
-        console.error('❌ Erro ao buscar cardápio no Supabase:', menuError);
-      } else {
-        console.log('✅ Processando itens do cardápio...');
-        // Agora filtra apenas os disponíveis
-        const availableItems = menuItems?.filter(item => item.is_available !== false) || [];
-        console.log('✅ Itens disponíveis:', availableItems);
-        restaurant.menu_items = availableItems;
-      }
+      console.log('🍕 Menu items recebidos:', restaurant.menu_items);
+      console.log('📊 Total de itens:', restaurant.menu_items?.length || 0);
       
       return restaurant;
       
     } catch (error) {
-      console.error('❌ Erro na API, tentando buscar diretamente no Supabase:', error);
-      
-      // Fallback: buscar tudo diretamente no Supabase
-      const { data: restaurant, error: restaurantError } = await supabase
-        .from('restaurant_profiles')
-        .select('*')
-        .eq('id', restaurantId)
-        .single();
-
-      if (restaurantError) {
-        throw new Error(`Restaurante não encontrado: ${restaurantError.message}`);
-      }
-
-      // Busca o cardápio separadamente
-      const { data: menuItems, error: menuError } = await supabase
-        .from('menu_items')
-        .select('*')
-        .eq('restaurant_id', restaurantId)
-        .eq('is_available', true)
-        .order('created_at', { ascending: true });
-
-      if (menuError) {
-        console.warn('⚠️ Erro ao buscar cardápio:', menuError);
-      }
-
-      restaurant.menu_items = menuItems || [];
-      console.log('🎯 Dados finais (Supabase):', restaurant);
-      
-      return restaurant;
+      console.error('❌ Erro ao buscar restaurante:', error);
+      throw error;
     }
   },
 
-  // ✅ NOVO: Função específica para buscar apenas o cardápio
+  // Função específica para buscar apenas o cardápio via Supabase (backup)
   getMenuItems: async (restaurantId) => {
-    console.log('🍕 Buscando cardápio para restaurante:', restaurantId);
-    
     const { data: menuItems, error } = await supabase
       .from('menu_items')
       .select('*')
-      .eq('restaurant_id', restaurantId)  // ✅ CORRIGIDO: restaurant_id
+      .eq('restaurant_id', restaurantId)
       .eq('is_available', true)
       .order('created_at', { ascending: true });
 
     if (error) {
-      console.error('❌ Erro ao buscar cardápio:', error);
       throw new Error(`Erro ao buscar cardápio: ${error.message}`);
     }
 
-    console.log('✅ Cardápio encontrado:', menuItems);
     return menuItems || [];
   },
 
-  // ✅ NOVO: Função para verificar se restaurante tem cardápio
+  // Função para verificar se restaurante tem cardápio
   hasMenuItems: async (restaurantId) => {
     const { count, error } = await supabase
       .from('menu_items')
       .select('id', { count: 'exact' })
-      .eq('restaurant_id', restaurantId)  // ✅ CORRIGIDO: restaurant_id
+      .eq('restaurant_id', restaurantId)
       .eq('is_available', true);
 
     if (error) {
-      console.error('❌ Erro ao verificar cardápio:', error);
       return false;
     }
 
