@@ -150,18 +150,40 @@ export function RestaurantCard({ restaurant }) {
             <div className="flex items-center justify-between gap-2">
               <DeliveryInfo />
               
-              {/* Distância - vamos sempre mostrar para debug */}
+              {/* Distância ou informação sobre localização */}
               <div className="flex gap-2">
-                {distance !== undefined && distance !== null && distance !== "" ? (
+                {distance !== undefined && distance !== null && distance !== "" && distance > 0 ? (
                   <span className="flex items-center gap-1 text-sm font-medium text-blue-600 bg-blue-50 px-2 py-1 rounded-full">
                     <MapPin className="w-3 h-3" />
                     {distance} km
                   </span>
                 ) : (
-                  <span className="flex items-center gap-1 text-xs text-gray-400 bg-gray-50 px-2 py-1 rounded-full">
+                  <button 
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      if (navigator.geolocation) {
+                        navigator.geolocation.getCurrentPosition(
+                          (position) => {
+                            console.log("Localização obtida:", position.coords);
+                            // Aqui você pode implementar a lógica para recalcular as distâncias
+                            // ou disparar uma ação para atualizar os dados
+                            window.location.reload(); // Solução simples: recarregar a página
+                          },
+                          (error) => {
+                            console.error("Erro ao obter localização:", error);
+                            alert("Não foi possível obter sua localização. Verifique as permissões do navegador.");
+                          }
+                        );
+                      } else {
+                        alert("Seu navegador não suporta geolocalização.");
+                      }
+                    }}
+                    className="flex items-center gap-1 text-xs text-orange-600 bg-orange-50 px-2 py-1 rounded-full hover:bg-orange-100 transition-colors"
+                  >
                     <MapPin className="w-3 h-3" />
-                    Calculando...
-                  </span>
+                    Ativar localização
+                  </button>
                 )}
               </div>
             </div>
