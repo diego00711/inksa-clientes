@@ -1,4 +1,4 @@
-// Local: src/pages/CartPage.jsx (VERSÃO COM TRADUÇÃO PARA O MERCADO PAGO)
+// Local: src/pages/CartPage.jsx (VERSÃO COM CORREÇÃO PARA O FRETE)
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
@@ -45,18 +45,40 @@ export function CartPage() {
           return;
         }
 
+        console.log('🚚 Calculando frete para:', { restaurant_id: restaurantId, ...locationData });
+
         const feeData = await calculateDeliveryFee({
           restaurant_id: restaurantId,
           ...locationData,
         });
 
-        setDeliveryFee(feeData.delivery_fee);
+        console.log('📦 Resposta completa do frete:', feeData);
+
+        // ✅ CORREÇÃO PRINCIPAL: Acessar o valor corretamente
+        let finalFee = 0;
+        
+        if (feeData && feeData.status === 'success' && feeData.data) {
+          // Estrutura nova: { status: 'success', data: { delivery_fee: 5.15 } }
+          finalFee = feeData.data.delivery_fee;
+        } else if (feeData && typeof feeData.delivery_fee === 'number') {
+          // Estrutura alternativa: { delivery_fee: 5.15 }
+          finalFee = feeData.delivery_fee;
+        } else if (typeof feeData === 'number') {
+          // Valor direto
+          finalFee = feeData;
+        }
+
+        // Garantir que é um número válido
+        finalFee = Number(finalFee) || 0;
+        
+        console.log('✅ Taxa de entrega definida:', finalFee);
+        setDeliveryFee(finalFee);
 
       } catch (error) {
-        console.error("Erro ao calcular frete:", error);
+        console.error("❌ Erro ao calcular frete:", error);
         addToast('error', "Não foi possível calcular o frete.");
         setFeeError("Não foi possível calcular o frete.");
-        setDeliveryFee(null);
+        setDeliveryFee(5.00); // Taxa padrão em caso de erro
       } finally {
         setIsCalculatingFee(false);
       }
@@ -122,14 +144,14 @@ export function CartPage() {
         cliente_email: "test_user_12345678@testuser.com", 
         itens: [
           ...cartItems.map(item => ({ 
-            title: item.name,                            // ✅ CORRIGIDO
-            quantity: item.quantity,                       // ✅ CORRIGIDO
-            unit_price: parseFloat(item.price ?? 0)      // ✅ CORRIGIDO
+            title: item.name,                            
+            quantity: item.quantity,                       
+            unit_price: parseFloat(item.price ?? 0)      
           })),
           { 
-            title: "Taxa de Entrega",                    // ✅ CORRIGIDO
-            quantity: 1,                                   // ✅ CORRIGIDO
-            unit_price: createdOrderResponse.delivery_fee || 0 // ✅ CORRIGIDO
+            title: "Taxa de Entrega",                    
+            quantity: 1,                                   
+            unit_price: createdOrderResponse.delivery_fee || deliveryFee || 0 
           }
         ],
       };
@@ -157,10 +179,11 @@ export function CartPage() {
     }
   };
   
-  const finalTotal = subTotal + (deliveryFee ?? 0);
+  // ✅ CORREÇÃO: Garantir que deliveryFee é sempre um número para o cálculo
+  const safeFee = Number(deliveryFee) || 0;
+  const finalTotal = subTotal + safeFee;
 
   return (
-    // O resto do seu código JSX (a parte visual) permanece exatamente o mesmo
     <div className="container mx-auto px-4 py-8">
       <div className="flex items-center mb-6">
         <Button variant="ghost" size="icon" onClick={() => navigate(-1)}><ChevronLeft className="h-6 w-6" /></Button>
@@ -205,7 +228,9 @@ export function CartPage() {
               <span>
                 {isCalculatingFee && <Loader2 className="h-4 w-4 animate-spin inline-block" />}
                 {feeError && <span className="text-red-500">{feeError}</span>}
-                {deliveryFee !== null && !isCalculatingFee && `R$ ${deliveryFee.toFixed(2)}`}
+                {deliveryFee !== null && !isCalculatingFee && !feeError && (
+                  <span>R$ {safeFee.toFixed(2)}</span>
+                )}
               </span>
             </div>
             <div className="flex justify-between items-center text-lg font-bold mt-2">
@@ -221,7 +246,7 @@ export function CartPage() {
             <Button 
               className="flex-1 bg-primary text-primary-foreground hover:bg-primary/90" 
               onClick={handleFinalizarPedido} 
-              disabled={isProcessingOrder || isCalculatingFee || feeError || deliveryFee === null || deliveryFee < 0}
+              disabled={isProcessingOrder || isCalculatingFee || feeError || deliveryFee === null}
             >
               {isProcessingOrder ? ( <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Processando...</> ) : ( 'Finalizar Pedido e Pagar' )}
             </Button>
