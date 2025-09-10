@@ -209,7 +209,10 @@ export function RestaurantList({
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Avaliação mínima</label>
-                <select className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-orange-500">
+                <select 
+                  className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-orange-500"
+                  onChange={(e) => onFiltersChange?.({ ...filters, minRating: e.target.value })}
+                >
                   <option value="">Qualquer</option>
                   <option value="4">4+ estrelas</option>
                   <option value="3">3+ estrelas</option>
@@ -217,7 +220,10 @@ export function RestaurantList({
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Taxa de entrega</label>
-                <select className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-orange-500">
+                <select 
+                  className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-orange-500"
+                  onChange={(e) => onFiltersChange?.({ ...filters, deliveryFee: e.target.value })}
+                >
                   <option value="">Qualquer</option>
                   <option value="free">Entrega grátis</option>
                   <option value="low">Até R$ 5,00</option>
@@ -225,7 +231,10 @@ export function RestaurantList({
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
-                <select className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-orange-500">
+                <select 
+                  className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-orange-500"
+                  onChange={(e) => onFiltersChange?.({ ...filters, status: e.target.value })}
+                >
                   <option value="">Todos</option>
                   <option value="open">Apenas abertos</option>
                 </select>
