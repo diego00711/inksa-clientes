@@ -125,7 +125,7 @@ const RestaurantService = {
     const { data: menuItems, error } = await supabase
       .from('menu_items')
       .select('*')
-      .eq('user_id', restaurantId)  // ✅ CORRIGIDO: user_id em vez de restaurant_id
+      .eq('restaurant_id', restaurantId)  // ✅ CORRIGIDO: restaurant_id
       .eq('is_available', true)
       .order('created_at', { ascending: true });
 
@@ -143,7 +143,7 @@ const RestaurantService = {
     const { count, error } = await supabase
       .from('menu_items')
       .select('id', { count: 'exact' })
-      .eq('user_id', restaurantId)  // ✅ CORRIGIDO: user_id em vez de restaurant_id
+      .eq('restaurant_id', restaurantId)  // ✅ CORRIGIDO: restaurant_id
       .eq('is_available', true);
 
     if (error) {
