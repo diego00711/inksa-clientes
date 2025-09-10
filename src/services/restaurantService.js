@@ -23,7 +23,7 @@ const processResponse = async (response) => {
 };
 
 const RestaurantService = {
-  // Lista restaurantes — backend expõe /api/restaurant (singular)
+  // Lista restaurantes
   getAllRestaurants: async (location) => {
     let url = `${API_URL}/restaurant`;
 
@@ -39,12 +39,108 @@ const RestaurantService = {
     return data.data || data;
   },
 
-  // Detalhes do restaurante
+  // ✅ CORRIGIDO: Detalhes do restaurante COM cardápio
   getRestaurantDetails: async (restaurantId) => {
-    const response = await fetch(`${API_URL}/restaurant/${restaurantId}`);
-    const data = await processResponse(response);
-    return data.data || data;
+    console.log('🔄 Buscando detalhes do restaurante via API:', restaurantId);
+    
+    try {
+      // Primeira tentativa: buscar via API (que pode incluir o cardápio)
+      const response = await fetch(`${API_URL}/restaurant/${restaurantId}`);
+      const data = await processResponse(response);
+      const restaurant = data.data || data;
+      
+      console.log('📊 Dados da API:', restaurant);
+      
+      // Se a API não retornou o cardápio, vamos buscar diretamente no Supabase
+      if (!restaurant.menu_items || restaurant.menu_items.length === 0) {
+        console.log('🔍 Cardápio não encontrado na API, buscando no Supabase...');
+        
+        // Busca o cardápio diretamente no Supabase
+        const { data: menuItems, error: menuError } = await supabase
+          .from('menu_items')
+          .select('*')
+          .eq('restaurant_id', restaurantId)
+          .eq('is_available', true)
+          .order('created_at', { ascending: true });
+
+        if (menuError) {
+          console.error('❌ Erro ao buscar cardápio no Supabase:', menuError);
+        } else {
+          console.log('✅ Itens do cardápio encontrados no Supabase:', menuItems);
+          restaurant.menu_items = menuItems || [];
+        }
+      }
+      
+      return restaurant;
+      
+    } catch (error) {
+      console.error('❌ Erro na API, tentando buscar diretamente no Supabase:', error);
+      
+      // Fallback: buscar tudo diretamente no Supabase
+      const { data: restaurant, error: restaurantError } = await supabase
+        .from('restaurant_profiles')
+        .select('*')
+        .eq('id', restaurantId)
+        .single();
+
+      if (restaurantError) {
+        throw new Error(`Restaurante não encontrado: ${restaurantError.message}`);
+      }
+
+      // Busca o cardápio separadamente
+      const { data: menuItems, error: menuError } = await supabase
+        .from('menu_items')
+        .select('*')
+        .eq('restaurant_id', restaurantId)
+        .eq('is_available', true)
+        .order('created_at', { ascending: true });
+
+      if (menuError) {
+        console.warn('⚠️ Erro ao buscar cardápio:', menuError);
+      }
+
+      restaurant.menu_items = menuItems || [];
+      console.log('🎯 Dados finais (Supabase):', restaurant);
+      
+      return restaurant;
+    }
   },
+
+  // ✅ NOVO: Função específica para buscar apenas o cardápio
+  getMenuItems: async (restaurantId) => {
+    console.log('🍕 Buscando cardápio para restaurante:', restaurantId);
+    
+    const { data: menuItems, error } = await supabase
+      .from('menu_items')
+      .select('*')
+      .eq('restaurant_id', restaurantId)
+      .eq('is_available', true)
+      .order('created_at', { ascending: true });
+
+    if (error) {
+      console.error('❌ Erro ao buscar cardápio:', error);
+      throw new Error(`Erro ao buscar cardápio: ${error.message}`);
+    }
+
+    console.log('✅ Cardápio encontrado:', menuItems);
+    return menuItems || [];
+  },
+
+  // ✅ NOVO: Função para verificar se restaurante tem cardápio
+  hasMenuItems: async (restaurantId) => {
+    const { count, error } = await supabase
+      .from('menu_items')
+      .select('id', { count: 'exact' })
+      .eq('restaurant_id', restaurantId)
+      .eq('is_available', true);
+
+    if (error) {
+      console.error('❌ Erro ao verificar cardápio:', error);
+      return false;
+    }
+
+    return count > 0;
+  }
 };
 
 export default RestaurantService;
