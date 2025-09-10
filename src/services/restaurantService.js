@@ -51,24 +51,36 @@ const RestaurantService = {
       
       console.log('📊 Dados da API:', restaurant);
       
-      // Se a API não retornou o cardápio, vamos buscar diretamente no Supabase
-      if (!restaurant.menu_items || restaurant.menu_items.length === 0) {
-        console.log('🔍 Cardápio não encontrado na API, buscando no Supabase...');
-        
-        // Busca o cardápio diretamente no Supabase
-        const { data: menuItems, error: menuError } = await supabase
-          .from('menu_items')
-          .select('*')
-          .eq('restaurant_id', restaurantId)
-          .eq('is_available', true)
-          .order('created_at', { ascending: true });
-
-        if (menuError) {
-          console.error('❌ Erro ao buscar cardápio no Supabase:', menuError);
-        } else {
-          console.log('✅ Itens do cardápio encontrados no Supabase:', menuItems);
-          restaurant.menu_items = menuItems || [];
-        }
+      // SEMPRE busca o cardápio no Supabase (independente da API)
+      console.log('🔍 Buscando cardápio no Supabase...');
+      
+      // Debug: primeiro vamos ver TODOS os itens desta tabela
+      const { data: allItems, error: debugError } = await supabase
+        .from('menu_items')
+        .select('*');
+      
+      console.log('🗃️ TODOS os itens na tabela menu_items:', allItems);
+      console.log('🗃️ Total de itens na tabela:', allItems?.length || 0);
+      
+      // Agora busca específico para este restaurante
+      const { data: menuItems, error: menuError } = await supabase
+        .from('menu_items')
+        .select('*')
+        .eq('restaurant_id', restaurantId);
+        // Removemos o filtro is_available temporariamente para debug
+      
+      console.log('🍕 Query específica - restaurantId:', restaurantId);
+      console.log('🍕 Itens encontrados para este restaurante:', menuItems);
+      console.log('🍕 Erro (se houver):', menuError);
+      
+      if (menuError) {
+        console.error('❌ Erro ao buscar cardápio no Supabase:', menuError);
+      } else {
+        console.log('✅ Processando itens do cardápio...');
+        // Agora filtra apenas os disponíveis
+        const availableItems = menuItems?.filter(item => item.is_available !== false) || [];
+        console.log('✅ Itens disponíveis:', availableItems);
+        restaurant.menu_items = availableItems;
       }
       
       return restaurant;
@@ -113,7 +125,7 @@ const RestaurantService = {
     const { data: menuItems, error } = await supabase
       .from('menu_items')
       .select('*')
-      .eq('restaurant_id', restaurantId)
+      .eq('user_id', restaurantId)  // ✅ CORRIGIDO: user_id em vez de restaurant_id
       .eq('is_available', true)
       .order('created_at', { ascending: true });
 
@@ -131,7 +143,7 @@ const RestaurantService = {
     const { count, error } = await supabase
       .from('menu_items')
       .select('id', { count: 'exact' })
-      .eq('restaurant_id', restaurantId)
+      .eq('user_id', restaurantId)  // ✅ CORRIGIDO: user_id em vez de restaurant_id
       .eq('is_available', true);
 
     if (error) {
