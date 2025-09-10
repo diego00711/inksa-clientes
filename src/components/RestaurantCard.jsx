@@ -146,17 +146,24 @@ export function RestaurantCard({ restaurant }) {
 
           {/* Informações de Entrega e Distância */}
           <div className="space-y-2">
-            {/* Primeira linha: Taxa de entrega */}
+            {/* Primeira linha: Taxa de entrega e Distância */}
             <div className="flex items-center justify-between gap-2">
               <DeliveryInfo />
               
-              {/* Distância (destaque) */}
-              {distance !== undefined && distance !== null && (
-                <span className="flex items-center gap-1 text-sm font-medium text-blue-600 bg-blue-50 px-2 py-1 rounded-full">
-                  <MapPin className="w-3 h-3" />
-                  {distance} km
-                </span>
-              )}
+              {/* Distância - vamos sempre mostrar para debug */}
+              <div className="flex gap-2">
+                {distance !== undefined && distance !== null && distance !== "" ? (
+                  <span className="flex items-center gap-1 text-sm font-medium text-blue-600 bg-blue-50 px-2 py-1 rounded-full">
+                    <MapPin className="w-3 h-3" />
+                    {distance} km
+                  </span>
+                ) : (
+                  <span className="flex items-center gap-1 text-xs text-gray-400 bg-gray-50 px-2 py-1 rounded-full">
+                    <MapPin className="w-3 h-3" />
+                    Calculando...
+                  </span>
+                )}
+              </div>
             </div>
             
             {/* Segunda linha: Tempo de entrega */}
