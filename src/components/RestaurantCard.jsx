@@ -144,26 +144,29 @@ export function RestaurantCard({ restaurant }) {
             </div>
           </div>
 
-          {/* Informações de Entrega */}
-          <div className="flex items-center justify-between gap-2">
-            <DeliveryInfo />
+          {/* Informações de Entrega e Distância */}
+          <div className="space-y-2">
+            {/* Primeira linha: Taxa de entrega */}
+            <div className="flex items-center justify-between gap-2">
+              <DeliveryInfo />
+              
+              {/* Distância (destaque) */}
+              {distance !== undefined && distance !== null && (
+                <span className="flex items-center gap-1 text-sm font-medium text-blue-600 bg-blue-50 px-2 py-1 rounded-full">
+                  <MapPin className="w-3 h-3" />
+                  {distance} km
+                </span>
+              )}
+            </div>
             
-            {/* Tempo de entrega */}
+            {/* Segunda linha: Tempo de entrega */}
             {deliveryTime && (
-              <span className="flex items-center gap-1 text-sm text-gray-600 bg-gray-50 px-2 py-1 rounded-full">
-                <Clock className="w-3 h-3" />
-                {deliveryTime}
-              </span>
+              <div className="flex items-center gap-1 text-sm text-gray-600">
+                <Clock className="w-4 h-4" />
+                <span>{deliveryTime}</span>
+              </div>
             )}
           </div>
-
-          {/* Informações Extras */}
-          {distance !== undefined && distance !== null && (
-            <div className="flex items-center gap-1 text-sm text-gray-500">
-              <MapPin className="w-4 h-4" />
-              <span>Distância: {distance} km</span>
-            </div>
-          )}
 
           {/* Indicador de Hover (apenas para lojas abertas) */}
           {isOpen && (
