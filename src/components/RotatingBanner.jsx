@@ -128,8 +128,10 @@ const RotatingBanner = () => {
   const currentBanner = banners[currentIndex];
   console.log('🎯 Current banner being displayed:', currentBanner);
   
-  // Limpar URL da imagem removendo ? extra no final
-  const cleanImageUrl = currentBanner.image_url?.replace(/\?+$/, '');
+  // Limpar URL da imagem removendo ? extra no final e outros caracteres problemáticos
+  const cleanImageUrl = currentBanner.image_url?.replace(/\?+$/, '').replace(/\s+/g, '');
+  console.log('🧹 Original URL:', currentBanner.image_url);
+  console.log('🧹 Cleaned URL:', cleanImageUrl);
 
   return (
     <div style={{
