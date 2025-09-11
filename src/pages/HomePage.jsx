@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import { Link } from "react-router-dom";
 import RestaurantService, { supabase } from "../services/restaurantService";
 import { RestaurantList } from "../components/RestaurantList";
-import { RotatingBanner } from "../components/RotatingBanner"; // ✅ Novo import
+import RotatingBanner from "../components/RotatingBanner"; // ✅ Novo import
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
