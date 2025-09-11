@@ -107,7 +107,7 @@ const RotatingBanner = () => {
       <div 
         className="banner-slide"
         style={{
-          backgroundImage: `url(${currentBanner.image_url})`,
+          backgroundImage: `url(${cleanImageUrl})`,
           backgroundSize: 'cover',
           backgroundPosition: 'center',
           backgroundRepeat: 'no-repeat'
