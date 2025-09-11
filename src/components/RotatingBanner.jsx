@@ -30,8 +30,11 @@ const RotatingBanner = () => {
       const data = await response.json();
       console.log('📊 Dados recebidos:', data);
       
+      // Garantir que data é um array
+      const bannersArray = Array.isArray(data) ? data : [];
+      
       // Filtrar apenas banners ativos
-      const activeBanners = data.filter(banner => banner.ativo);
+      const activeBanners = bannersArray.filter(banner => banner && banner.ativo === true);
       console.log('✅ Banners ativos:', activeBanners);
       
       setBanners(activeBanners);
