@@ -14,6 +14,7 @@ import MyOrdersPage from "./pages/MyOrdersPage";
 import { LocationProvider } from "./context/LocationContext";
 import { ToastProvider } from "./context/ToastContext";
 import ClientEvaluationsCenter from "./pages/ClientEvaluationsCenter"; 
+import ClientGamificationDevPage from "./pages/ClientGamificationDevPage"; // ✅ Nova importação
 
 function App() {
   return (
@@ -35,6 +36,7 @@ function App() {
                 <Route path="perfil" element={<ProfilePage />} />
                 <Route path="meus-pedidos" element={<MyOrdersPage />} />
                 <Route path="avaliacoes" element={<ClientEvaluationsCenter />} />
+                <Route path="gamificacao" element={<ClientGamificationDevPage />} /> {/* ✅ Nova rota */}
               </Route>
             </Routes>
           </ToastProvider>
