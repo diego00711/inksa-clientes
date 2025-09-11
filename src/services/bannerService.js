@@ -1,213 +1,134 @@
-// src/services/bannerService.js
-
-import { supabase } from './restaurantService';
+// bannerService.js - Atualizado para usar o backend Flask
+const API_URL = import.meta.env.VITE_API_URL || 'https://inksa-auth-flask-dev.onrender.com';
 
 class BannerService {
-  // Buscar todos os banners ativos
-  async getActiveBanners() {
-    try {
-      const { data, error } = await supabase
-        .from('banners')
-        .select(`
-          *,
-          restaurant_profiles (
-            restaurant_name,
-            logo_url
-          )
-        `)
-        .eq('is_active', true)
-        .or('campaign_end_date.is.null,campaign_end_date.gte.' + new Date().toISOString())
-        .order('is_sponsored', { ascending: false }) // Prioriza patrocinados
-        .order('display_order', { ascending: true });
+  constructor() {
+    this.baseURL = `${API_URL}/api/banners`;
+  }
 
-      if (error) throw error;
-      return data || [];
+  // Obter token de autenticação
+  getAuthToken() {
+    return localStorage.getItem('token');
+  }
+
+  // Headers com autenticação
+  getHeaders(includeAuth = true) {
+    const headers = {
+      'Content-Type': 'application/json',
+    };
+    
+    if (includeAuth) {
+      const token = this.getAuthToken();
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+    }
+    
+    return headers;
+  }
+
+  // ========== MÉTODOS PÚBLICOS ==========
+
+  // Listar banners (público para clientes, completo para admin)
+  async getBanners() {
+    try {
+      const response = await fetch(this.baseURL, {
+        method: 'GET',
+        headers: this.getHeaders(false), // Não exige auth para clientes
+      });
+
+      if (!response.ok) {
+        throw new Error(`Erro ao buscar banners: ${response.status}`);
+      }
+
+      const data = await response.json();
+      return data.data || [];
     } catch (error) {
       console.error('Erro ao buscar banners:', error);
-      throw error;
+      // Retornar banners padrão em caso de erro
+      return this.getDefaultBanners();
     }
   }
 
-  // Criar banner patrocinado para restaurante
-  async createSponsoredBanner(bannerData) {
+  // Obter um banner específico
+  async getBanner(id) {
     try {
-      const sponsoredBanner = {
-        ...bannerData,
-        is_sponsored: true,
-        banner_type: 'sponsored',
-        campaign_start_date: bannerData.campaign_start_date || new Date().toISOString(),
-        click_count: 0,
-        impression_count: 0
-      };
+      const response = await fetch(`${this.baseURL}/${id}`, {
+        method: 'GET',
+        headers: this.getHeaders(false),
+      });
 
-      const { data, error } = await supabase
-        .from('banners')
-        .insert([sponsoredBanner])
-        .select();
+      if (!response.ok) {
+        throw new Error(`Erro ao buscar banner: ${response.status}`);
+      }
 
-      if (error) throw error;
-      return data[0];
+      const data = await response.json();
+      return data.data;
     } catch (error) {
-      console.error('Erro ao criar banner patrocinado:', error);
+      console.error('Erro ao buscar banner:', error);
       throw error;
     }
   }
 
-  // Criar banner promocional da plataforma
-  async createPromotionalBanner(bannerData) {
+  // ========== MÉTODOS ADMIN ==========
+
+  // Criar novo banner (apenas admin)
+  async createBanner(bannerData) {
     try {
-      const promotionalBanner = {
-        ...bannerData,
-        is_sponsored: false,
-        banner_type: 'promotional',
-        click_count: 0,
-        impression_count: 0
-      };
+      const response = await fetch(this.baseURL, {
+        method: 'POST',
+        headers: this.getHeaders(true),
+        body: JSON.stringify(bannerData),
+      });
 
-      const { data, error } = await supabase
-        .from('banners')
-        .insert([promotionalBanner])
-        .select();
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || `Erro ao criar banner: ${response.status}`);
+      }
 
-      if (error) throw error;
-      return data[0];
+      const data = await response.json();
+      return data.data;
     } catch (error) {
-      console.error('Erro ao criar banner promocional:', error);
+      console.error('Erro ao criar banner:', error);
       throw error;
     }
   }
 
-  // Atualizar banner
-  async updateBanner(id, updates) {
+  // Atualizar banner (apenas admin)
+  async updateBanner(id, bannerData) {
     try {
-      const { data, error } = await supabase
-        .from('banners')
-        .update({ ...updates, updated_at: new Date().toISOString() })
-        .eq('id', id)
-        .select();
+      const response = await fetch(`${this.baseURL}/${id}`, {
+        method: 'PUT',
+        headers: this.getHeaders(true),
+        body: JSON.stringify(bannerData),
+      });
 
-      if (error) throw error;
-      return data[0];
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || `Erro ao atualizar banner: ${response.status}`);
+      }
+
+      const data = await response.json();
+      return data.data;
     } catch (error) {
       console.error('Erro ao atualizar banner:', error);
       throw error;
     }
   }
 
-  // Relatório de performance de banners
-  async getBannerAnalytics(bannerId = null) {
-    try {
-      let query = supabase
-        .from('banners')
-        .select(`
-          id,
-          title,
-          banner_type,
-          is_sponsored,
-          click_count,
-          impression_count,
-          cost_per_click,
-          total_budget,
-          campaign_start_date,
-          campaign_end_date,
-          restaurant_profiles (
-            restaurant_name
-          )
-        `);
-
-      if (bannerId) {
-        query = query.eq('id', bannerId);
-      }
-
-      const { data, error } = await query;
-      if (error) throw error;
-
-      // Calcular métricas
-      return data.map(banner => ({
-        ...banner,
-        ctr: banner.impression_count > 0 ? (banner.click_count / banner.impression_count * 100).toFixed(2) : 0,
-        total_spent: banner.click_count * (banner.cost_per_click || 0),
-        remaining_budget: banner.total_budget ? banner.total_budget - (banner.click_count * (banner.cost_per_click || 0)) : null
-      }));
-    } catch (error) {
-      console.error('Erro ao buscar analytics:', error);
-      throw error;
-    }
-  }
-
-  // Pausar campanha quando orçamento esgotar
-  async checkAndPauseCampaigns() {
-    try {
-      const { data: campaigns, error } = await supabase
-        .from('banners')
-        .select('id, click_count, cost_per_click, total_budget')
-        .eq('is_sponsored', true)
-        .eq('is_active', true);
-
-      if (error) throw error;
-
-      for (const campaign of campaigns) {
-        const totalSpent = campaign.click_count * (campaign.cost_per_click || 0);
-        if (campaign.total_budget && totalSpent >= campaign.total_budget) {
-          await this.updateBanner(campaign.id, { is_active: false });
-          console.log(`Campanha ${campaign.id} pausada - orçamento esgotado`);
-        }
-      }
-    } catch (error) {
-      console.error('Erro ao verificar campanhas:', error);
-    }
-  }
-
-  // Buscar banners por restaurante
-  async getBannersByRestaurant(restaurantId) {
-    try {
-      const { data, error } = await supabase
-        .from('banners')
-        .select('*')
-        .eq('restaurant_id', restaurantId)
-        .order('created_at', { ascending: false });
-
-      if (error) throw error;
-      return data || [];
-    } catch (error) {
-      console.error('Erro ao buscar banners do restaurante:', error);
-      throw error;
-    }
-  }
-
-  // Upload de imagem para o bucket
-  async uploadBannerImage(file, fileName) {
-    try {
-      const { data, error } = await supabase.storage
-        .from('banner-images')
-        .upload(fileName, file, {
-          cacheControl: '3600',
-          upsert: false
-        });
-
-      if (error) throw error;
-
-      // Obter URL pública da imagem
-      const { data: urlData } = supabase.storage
-        .from('banner-images')
-        .getPublicUrl(fileName);
-
-      return urlData.publicUrl;
-    } catch (error) {
-      console.error('Erro ao fazer upload da imagem:', error);
-      throw error;
-    }
-  }
-
-  // Deletar banner
+  // Deletar banner (apenas admin)
   async deleteBanner(id) {
     try {
-      const { error } = await supabase
-        .from('banners')
-        .delete()
-        .eq('id', id);
+      const response = await fetch(`${this.baseURL}/${id}`, {
+        method: 'DELETE',
+        headers: this.getHeaders(true),
+      });
 
-      if (error) throw error;
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || `Erro ao deletar banner: ${response.status}`);
+      }
+
       return true;
     } catch (error) {
       console.error('Erro ao deletar banner:', error);
@@ -215,19 +136,41 @@ class BannerService {
     }
   }
 
-  // Reordenar banners
-  async reorderBanners(bannerIds) {
+  // Ativar/Desativar banner (apenas admin)
+  async toggleBannerStatus(id) {
     try {
-      const updates = bannerIds.map((id, index) => ({
-        id,
-        display_order: index
-      }));
+      const response = await fetch(`${this.baseURL}/${id}/toggle-status`, {
+        method: 'PUT',
+        headers: this.getHeaders(true),
+      });
 
-      const { error } = await supabase
-        .from('banners')
-        .upsert(updates);
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || `Erro ao alterar status: ${response.status}`);
+      }
 
-      if (error) throw error;
+      const data = await response.json();
+      return data.data;
+    } catch (error) {
+      console.error('Erro ao alterar status do banner:', error);
+      throw error;
+    }
+  }
+
+  // Reordenar banners (apenas admin)
+  async reorderBanners(bannerOrders) {
+    try {
+      const response = await fetch(`${this.baseURL}/reorder`, {
+        method: 'PUT',
+        headers: this.getHeaders(true),
+        body: JSON.stringify({ banner_orders: bannerOrders }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || `Erro ao reordenar banners: ${response.status}`);
+      }
+
       return true;
     } catch (error) {
       console.error('Erro ao reordenar banners:', error);
@@ -235,57 +178,130 @@ class BannerService {
     }
   }
 
-  // Ativar/desativar banner
-  async toggleBannerStatus(id, isActive) {
+  // Obter estatísticas dos banners (apenas admin)
+  async getBannerStats() {
     try {
-      return await this.updateBanner(id, { is_active: isActive });
+      const response = await fetch(`${this.baseURL}/stats`, {
+        method: 'GET',
+        headers: this.getHeaders(true),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || `Erro ao buscar estatísticas: ${response.status}`);
+      }
+
+      const data = await response.json();
+      return data.data;
     } catch (error) {
-      console.error('Erro ao alterar status do banner:', error);
+      console.error('Erro ao buscar estatísticas:', error);
       throw error;
     }
   }
-}
 
-export default new BannerService(); supabase.storage
-        .from('banner-images')
-        .getPublicUrl(fileName);
+  // ========== MÉTODOS DE UPLOAD ==========
 
-      return urlData.publicUrl;
+  // Upload de imagem (se você tiver um endpoint separado para upload)
+  async uploadImage(file) {
+    try {
+      const formData = new FormData();
+      formData.append('image', file);
+
+      const response = await fetch(`${API_URL}/api/upload/banner-image`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${this.getAuthToken()}`,
+        },
+        body: formData,
+      });
+
+      if (!response.ok) {
+        throw new Error(`Erro no upload: ${response.status}`);
+      }
+
+      const data = await response.json();
+      return data.url; // URL da imagem upada
     } catch (error) {
-      console.error('Erro ao fazer upload da imagem:', error);
+      console.error('Erro no upload da imagem:', error);
       throw error;
     }
   }
 
-  // Reordenar banners
-  async reorderBanners(bannerIds) {
+  // ========== FALLBACKS ==========
+
+  // Banners padrão caso a API falhe
+  getDefaultBanners() {
+    return [
+      {
+        id: 'default-1',
+        title: 'Bem-vindo ao Inksa Delivery!',
+        subtitle: 'Peça comida deliciosa com facilidade',
+        image_url: '/default-banner-1.jpg',
+        link_url: '/',
+        display_order: 0
+      },
+      {
+        id: 'default-2',
+        title: 'Promoções Especiais',
+        subtitle: 'Descontos incríveis te esperando',
+        image_url: '/default-banner-2.jpg',
+        link_url: '/promocoes',
+        display_order: 1
+      }
+    ];
+  }
+
+  // Validar dados do banner antes do envio
+  validateBannerData(data) {
+    const errors = [];
+
+    if (!data.title || data.title.trim().length === 0) {
+      errors.push('Título é obrigatório');
+    }
+
+    if (!data.image_url || data.image_url.trim().length === 0) {
+      errors.push('URL da imagem é obrigatória');
+    }
+
+    if (data.title && data.title.length > 255) {
+      errors.push('Título deve ter no máximo 255 caracteres');
+    }
+
+    if (data.subtitle && data.subtitle.length > 500) {
+      errors.push('Subtítulo deve ter no máximo 500 caracteres');
+    }
+
+    if (data.link_url && !this.isValidUrl(data.link_url)) {
+      errors.push('URL do link deve ser válida');
+    }
+
+    if (data.image_url && !this.isValidUrl(data.image_url)) {
+      errors.push('URL da imagem deve ser válida');
+    }
+
+    return errors;
+  }
+
+  // Validar se é uma URL válida
+  isValidUrl(string) {
     try {
-      const updates = bannerIds.map((id, index) => ({
-        id,
-        display_order: index
-      }));
-
-      const { error } = await supabase
-        .from('banners')
-        .upsert(updates);
-
-      if (error) throw error;
+      // Aceitar URLs relativas (começando com /) ou absolutas
+      if (string.startsWith('/')) {
+        return true;
+      }
+      new URL(string);
       return true;
-    } catch (error) {
-      console.error('Erro ao reordenar banners:', error);
-      throw error;
+    } catch (_) {
+      return false;
     }
   }
 
-  // Ativar/desativar banner
-  async toggleBannerStatus(id, isActive) {
-    try {
-      return await this.updateBanner(id, { is_active: isActive });
-    } catch (error) {
-      console.error('Erro ao alterar status do banner:', error);
-      throw error;
-    }
+  // Limpar cache (se você implementar cache no frontend)
+  clearCache() {
+    // Implementar se necessário
+    localStorage.removeItem('banners_cache');
   }
 }
 
+// Exportar instância singleton
 export default new BannerService();
