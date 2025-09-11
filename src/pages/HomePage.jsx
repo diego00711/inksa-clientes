@@ -1,21 +1,15 @@
 // Local: src/pages/HomePage.jsx
 
 import { useState, useEffect, useCallback } from "react";
-import { Link } from "react-router-dom"; // ✅ Adicionado import do Link
+import { Link } from "react-router-dom";
 import RestaurantService, { supabase } from "../services/restaurantService";
 import { RestaurantList } from "../components/RestaurantList";
+import { RotatingBanner } from "../components/RotatingBanner"; // ✅ Novo import
 import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button"; // ✅ Adicionado import do Button
-import { Card, CardContent } from "@/components/ui/card"; // ✅ Adicionado imports do Card
-import { Search, Trophy, Star, Gift, Zap } from "lucide-react"; // ✅ Adicionados novos ícones
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Search, Trophy, Star, Gift, Zap } from "lucide-react";
 import { useLocation } from "../context/LocationContext";
-
-// --- DADOS VISUAIS ---
-const featuredBanner = {
-  imageUrl: "/banner-gamificacao.jpg",
-  title: "Ganhe Recompensas Incríveis!",
-  subtitle: "Acumule pontos em cada pedido e troque por descontos exclusivos.",
-};
 
 // --- COMPONENTE PRINCIPAL ---
 export function HomePage() {
@@ -124,24 +118,10 @@ export function HomePage() {
       <h1 className="text-4xl font-extrabold mb-4 text-gray-800">Bem-vindo ao Inksa Delivery!</h1>
       <p className="text-lg text-gray-600 mb-10">Encontre o melhor restaurante para você.</p>
 
-      {/* Banner */}
-      <div className="relative w-full h-64 rounded-xl overflow-hidden shadow-lg mb-12">
-        <img
-          src={featuredBanner.imageUrl}
-          alt={featuredBanner.title}
-          className="w-full h-full object-cover brightness-[.4]"
-        />
-        <div className="absolute inset-0 flex flex-col items-center justify-center text-center p-4">
-          <h2 className="text-white text-4xl font-extrabold mb-2 drop-shadow-lg">
-            {featuredBanner.title}
-          </h2>
-          <p className="text-white text-lg max-w-md drop-shadow-lg">
-            {featuredBanner.subtitle}
-          </p>
-        </div>
-      </div>
+      {/* ✅ Banner Rotativo (substitui o banner estático) */}
+      <RotatingBanner />
 
-      {/* ✅ NOVO: Card promocional da Gamificação */}
+      {/* Card promocional da Gamificação */}
       <Card className="mb-8 bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-xl">
         <CardContent className="p-6">
           <div className="flex items-center justify-between">
