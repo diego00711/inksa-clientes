@@ -177,10 +177,10 @@ const RotatingBanner = () => {
           }}
         >
           <img
-            src={banner.imagem_url}
-            alt={banner.titulo}
-            onLoad={() => handleImageLoad(banner.titulo)}
-            onError={(e) => handleImageError(e, banner.titulo)}
+            src={banner.image_url}    // Campo correto do backend
+            alt={banner.title}        // Campo correto do backend
+            onLoad={() => handleImageLoad(banner.title)}
+            onError={(e) => handleImageError(e, banner.title)}
             style={{
               width: '100%',
               height: '100%',
@@ -189,7 +189,7 @@ const RotatingBanner = () => {
           />
           
           {/* Overlay com informações do banner */}
-          {banner.titulo && (
+          {banner.title && (
             <div style={{
               position: 'absolute',
               bottom: 0,
@@ -201,11 +201,11 @@ const RotatingBanner = () => {
               textAlign: 'center'
             }}>
               <h2 style={{ margin: 0, fontSize: '1.5rem' }}>
-                {banner.titulo}
+                {banner.title}        {/* Campo correto do backend */}
               </h2>
-              {banner.descricao && (
+              {banner.subtitle && (
                 <p style={{ margin: '0.5rem 0 0', opacity: 0.9 }}>
-                  {banner.descricao}
+                  {banner.subtitle}   {/* Campo correto do backend */}
                 </p>
               )}
             </div>
