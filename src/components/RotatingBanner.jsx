@@ -1,7 +1,6 @@
-// RotatingBanner.jsx - Versão Corrigida
+// RotatingBanner.jsx - Código Completo Corrigido
 
 import React, { useState, useEffect } from 'react';
-import './RotatingBanner.css';
 
 const RotatingBanner = () => {
   const [banners, setBanners] = useState([]);
@@ -72,11 +71,18 @@ const RotatingBanner = () => {
 
   if (loading) {
     return (
-      <div className="banner-container loading">
-        <div className="banner-skeleton">
-          <div className="skeleton-text"></div>
-          <div className="skeleton-text short"></div>
-        </div>
+      <div className="banner-container loading" style={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        height: '300px',
+        background: '#f5f5f5',
+        color: '#666',
+        fontSize: '1.1rem',
+        borderRadius: '12px',
+        marginBottom: '2rem'
+      }}>
+        <div>Carregando banners...</div>
       </div>
     );
   }
@@ -84,7 +90,17 @@ const RotatingBanner = () => {
   if (error) {
     console.error('🚨 Banner error state:', error);
     return (
-      <div className="banner-container error">
+      <div className="banner-container error" style={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        height: '300px',
+        background: '#f5f5f5',
+        color: '#666',
+        fontSize: '1.1rem',
+        borderRadius: '12px',
+        marginBottom: '2rem'
+      }}>
         <p>Erro ao carregar banners: {error}</p>
       </div>
     );
@@ -93,7 +109,17 @@ const RotatingBanner = () => {
   if (banners.length === 0) {
     console.warn('⚠️ No banners to display');
     return (
-      <div className="banner-container empty">
+      <div className="banner-container empty" style={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        height: '300px',
+        background: '#f5f5f5',
+        color: '#666',
+        fontSize: '1.1rem',
+        borderRadius: '12px',
+        marginBottom: '2rem'
+      }}>
         <p>Nenhum banner disponível no momento.</p>
       </div>
     );
@@ -101,29 +127,81 @@ const RotatingBanner = () => {
 
   const currentBanner = banners[currentIndex];
   console.log('🎯 Current banner being displayed:', currentBanner);
+  
+  // Limpar URL da imagem removendo ? extra no final
+  const cleanImageUrl = currentBanner.image_url?.replace(/\?+$/, '');
 
   return (
-    <div className="banner-container">
+    <div style={{
+      position: 'relative',
+      width: '100%',
+      height: '300px',
+      marginBottom: '2rem',
+      borderRadius: '12px',
+      overflow: 'hidden',
+      boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)'
+    }}>
       <div 
-        className="banner-slide"
         style={{
+          width: '100%',
+          height: '100%',
+          position: 'relative',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          transition: 'all 0.5s ease-in-out',
           backgroundImage: `url(${cleanImageUrl})`,
           backgroundSize: 'cover',
           backgroundPosition: 'center',
           backgroundRepeat: 'no-repeat'
         }}
       >
-        <div className="banner-content">
-          <h2 className="banner-title">{currentBanner.title}</h2>
-          {currentBanner.subtitle && currentBanner.subtitle !== 'EMPTY' && (
-            <p className="banner-subtitle">{currentBanner.subtitle}</p>
+        <div style={{
+          textAlign: 'center',
+          color: 'white',
+          zIndex: 2,
+          padding: '2rem',
+          background: 'rgba(0, 0, 0, 0.3)',
+          borderRadius: '8px',
+          backdropFilter: 'blur(5px)'
+        }}>
+          <h2 style={{
+            fontSize: '2rem',
+            fontWeight: 'bold',
+            marginBottom: '0.5rem',
+            textShadow: '2px 2px 4px rgba(0, 0, 0, 0.5)',
+            margin: '0 0 0.5rem 0'
+          }}>
+            {currentBanner.title}
+          </h2>
+          {currentBanner.subtitle && currentBanner.subtitle !== 'EMPTY' && currentBanner.subtitle !== '' && (
+            <p style={{
+              fontSize: '1.1rem',
+              marginBottom: '1rem',
+              opacity: 0.9,
+              textShadow: '1px 1px 2px rgba(0, 0, 0, 0.5)',
+              margin: '0 0 1rem 0'
+            }}>
+              {currentBanner.subtitle}
+            </p>
           )}
-          {currentBanner.link_url && currentBanner.link_url !== 'text' && (
+          {currentBanner.link_url && currentBanner.link_url !== 'text' && currentBanner.link_url !== '/' && (
             <a 
               href={currentBanner.link_url} 
-              className="banner-cta"
+              style={{
+                display: 'inline-block',
+                background: '#ff6b35',
+                color: 'white',
+                padding: '0.75rem 1.5rem',
+                borderRadius: '6px',
+                textDecoration: 'none',
+                fontWeight: '600',
+                transition: 'background-color 0.3s ease'
+              }}
               target="_blank"
               rel="noopener noreferrer"
+              onMouseEnter={(e) => e.target.style.background = '#e55a2b'}
+              onMouseLeave={(e) => e.target.style.background = '#ff6b35'}
             >
               Saiba Mais
             </a>
@@ -132,11 +210,27 @@ const RotatingBanner = () => {
       </div>
       
       {banners.length > 1 && (
-        <div className="banner-indicators">
+        <div style={{
+          position: 'absolute',
+          bottom: '1rem',
+          left: '50%',
+          transform: 'translateX(-50%)',
+          display: 'flex',
+          gap: '0.5rem',
+          zIndex: 3
+        }}>
           {banners.map((_, index) => (
             <button
               key={index}
-              className={`indicator ${index === currentIndex ? 'active' : ''}`}
+              style={{
+                width: '12px',
+                height: '12px',
+                borderRadius: '50%',
+                background: index === currentIndex ? 'white' : 'rgba(255, 255, 255, 0.5)',
+                border: 'none',
+                cursor: 'pointer',
+                transition: 'background-color 0.3s ease'
+              }}
               onClick={() => setCurrentIndex(index)}
               aria-label={`Banner ${index + 1}`}
             />
