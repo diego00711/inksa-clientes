@@ -40,11 +40,11 @@ const RotatingBanner = () => {
           console.log('✅ Banners encontrados:', data.data.length);
           console.log('📋 Banners data:', data.data);
           
-          // Filtrar apenas banners ativos (para segurança extra)
-          const activeBanners = data.data.filter(banner => banner.is_active !== false);
-          console.log('✅ Active banners after filter:', activeBanners.length);
+          // Para clientes, todos os banners retornados já são ativos
+          // O backend já filtra is_active=true para requisições não-admin
+          console.log('✅ All banners from backend are active:', data.data.length);
           
-          setBanners(activeBanners);
+          setBanners(data.data);
         } else {
           console.warn('⚠️ Estrutura de dados inesperada:', data);
           setError('Formato de dados inesperado');
