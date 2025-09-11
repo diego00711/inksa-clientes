@@ -1,10 +1,13 @@
 // Local: src/pages/HomePage.jsx
 
 import { useState, useEffect, useCallback } from "react";
+import { Link } from "react-router-dom"; // ✅ Adicionado import do Link
 import RestaurantService, { supabase } from "../services/restaurantService";
 import { RestaurantList } from "../components/RestaurantList";
 import { Input } from "@/components/ui/input";
-import { Search } from "lucide-react";
+import { Button } from "@/components/ui/button"; // ✅ Adicionado import do Button
+import { Card, CardContent } from "@/components/ui/card"; // ✅ Adicionado imports do Card
+import { Search, Trophy, Star, Gift, Zap } from "lucide-react"; // ✅ Adicionados novos ícones
 import { useLocation } from "../context/LocationContext";
 
 // --- DADOS VISUAIS ---
@@ -137,6 +140,44 @@ export function HomePage() {
           </p>
         </div>
       </div>
+
+      {/* ✅ NOVO: Card promocional da Gamificação */}
+      <Card className="mb-8 bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-xl">
+        <CardContent className="p-6">
+          <div className="flex items-center justify-between">
+            <div className="flex-1">
+              <div className="flex items-center gap-3 mb-3">
+                <Trophy className="w-8 h-8 text-yellow-300" />
+                <h3 className="text-2xl font-bold">Sistema de Gamificação</h3>
+              </div>
+              <p className="text-blue-100 mb-4 text-lg">
+                Ganhe pontos, desbloqueie badges e troque por recompensas incríveis!
+              </p>
+              <div className="flex items-center gap-6 text-sm">
+                <div className="flex items-center gap-2">
+                  <Star className="w-4 h-4 text-yellow-300" />
+                  <span>Pontos por pedidos</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Gift className="w-4 h-4 text-green-300" />
+                  <span>Recompensas exclusivas</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Zap className="w-4 h-4 text-orange-300" />
+                  <span>Em desenvolvimento</span>
+                </div>
+              </div>
+            </div>
+            <div className="ml-6">
+              <Link to="/gamificacao">
+                <Button variant="secondary" size="lg" className="bg-white text-blue-600 hover:bg-blue-50 font-semibold">
+                  Saiba Mais
+                </Button>
+              </Link>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Área de Busca e Filtros */}
       <div className="sticky top-[80px] bg-white/80 backdrop-blur-sm py-4 z-10 mb-8">
