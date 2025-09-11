@@ -1,219 +1,227 @@
-// Local: src/pages/HomePage.jsx
-
-import { useState, useEffect, useCallback } from "react";
-import { Link } from "react-router-dom";
+import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { MapPin, Search, Star, Clock, Utensils } from "lucide-react";
 import RestaurantService, { supabase } from "../services/restaurantService";
 import { RestaurantList } from "../components/RestaurantList";
-import RotatingBanner from "../components/RotatingBanner"; // ✅ Novo import
+import RotatingBanner from "../components/RotatingBanner"; // Banner dinâmico
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import { Search, Trophy, Star, Gift, Zap } from "lucide-react";
-import { useLocation } from "../context/LocationContext";
 
-// --- COMPONENTE PRINCIPAL ---
-export function HomePage() {
-  // --- ESTADOS ---
-  const [allRestaurants, setAllRestaurants] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState(null);
+const HomePage = () => {
+  const [restaurants, setRestaurants] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("Todos");
-  const [categories, setCategories] = useState(["Todos"]);
-  const [filters, setFilters] = useState({});
-  const { location, loading: locationLoading, error: locationError } = useLocation();
+  const [userLocation, setUserLocation] = useState(null);
+  const [locationError, setLocationError] = useState("");
+  const navigate = useNavigate();
 
-  // --- EFEITOS (HOOKS) ---
+  const categories = ["Todos", "Comida Brasileira", "Pizza", "Hambúrguer", "Japonesa", "Italiana", "Sobremesas"];
+
   useEffect(() => {
-    if (!location && !locationError) return;
+    loadRestaurants();
+    getCurrentLocation();
+  }, []);
 
-    const fetchRestaurants = async () => {
-      setIsLoading(true);
-      setError(null);
-      try {
-        const data = await RestaurantService.getAllRestaurants(location);
-        const list = Array.isArray(data) ? data : data?.data || [];
-        setAllRestaurants(list);
-
-        const uniqueCategories = ["Todos", ...new Set(list.map((r) => r.category).filter(Boolean))];
-        setCategories(uniqueCategories);
-      } catch (err) {
-        setError(err?.message || "Não foi possível carregar restaurantes.");
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchRestaurants();
-  }, [location, locationError]);
-
-  // Atualizações em tempo real
-  useEffect(() => {
-    if (!supabase) return;
-
-    const channel = supabase
-      .channel("restaurant-updates")
-      .on(
-        "postgres_changes",
-        {
-          event: "UPDATE",
-          schema: "public",
-          table: "restaurant_profiles",
+  const getCurrentLocation = () => {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          setUserLocation({
+            latitude: position.coords.latitude,
+            longitude: position.coords.longitude,
+          });
         },
-        (payload) => {
-          setAllRestaurants((currentRestaurants) =>
-            currentRestaurants.map((restaurant) =>
-              restaurant.id === payload.new.id ? { ...restaurant, ...payload.new } : restaurant
-            )
-          );
+        (error) => {
+          console.error("Erro ao obter localização:", error);
+          setLocationError("Não conseguimos acessar sua localização no navegador. Mostrando restaurantes sem ordenação por distância.");
         }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, []);
-
-  // --- LÓGICA DE FILTRO ---
-  const filteredRestaurants = allRestaurants
-    .filter((restaurant) => {
-      const name = (restaurant.restaurant_name || restaurant.name || "").toLowerCase();
-      const matchesSearch = name.includes(searchTerm.toLowerCase());
-      const matchesCategory = selectedCategory === "Todos" || restaurant.category === selectedCategory;
-      return matchesSearch && matchesCategory;
-    });
-
-  // --- FUNÇÕES DE EVENTO ---
-  const handleCategoryClick = useCallback((category) => {
-    setSelectedCategory(category);
-  }, []);
-
-  const handleFiltersChange = useCallback((newFilters) => {
-    setFilters(newFilters);
-  }, []);
-
-  const handleRetry = useCallback(() => {
-    if (location || locationError) {
-      const fetchRestaurants = async () => {
-        setIsLoading(true);
-        setError(null);
-        try {
-          const data = await RestaurantService.getAllRestaurants(location);
-          const list = Array.isArray(data) ? data : data?.data || [];
-          setAllRestaurants(list);
-        } catch (err) {
-          setError(err?.message || "Não foi possível carregar restaurantes.");
-        } finally {
-          setIsLoading(false);
-        }
-      };
-      fetchRestaurants();
+      );
+    } else {
+      setLocationError("Geolocalização não é suportada neste navegador.");
     }
-  }, [location, locationError]);
+  };
 
-  // --- RENDERIZAÇÃO PRINCIPAL ---
+  const loadRestaurants = async () => {
+    try {
+      setLoading(true);
+      const data = await RestaurantService.getRestaurants();
+      setRestaurants(data);
+    } catch (error) {
+      console.error("Erro ao carregar restaurantes:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const filteredRestaurants = restaurants.filter((restaurant) => {
+    const matchesSearch = restaurant.restaurant_name
+      ?.toLowerCase()
+      .includes(searchTerm.toLowerCase());
+    const matchesCategory =
+      selectedCategory === "Todos" || restaurant.category === selectedCategory;
+    return matchesSearch && matchesCategory;
+  });
+
+  const handleRestaurantClick = (restaurant) => {
+    navigate(`/restaurant/${restaurant.id}`);
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <div className="container mx-auto px-4 py-8">
+          <div className="animate-pulse">
+            <div className="h-64 bg-gray-200 rounded-lg mb-8"></div>
+            <div className="h-8 bg-gray-200 rounded w-1/3 mb-4"></div>
+            <div className="h-4 bg-gray-200 rounded w-2/3 mb-8"></div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {[...Array(6)].map((_, i) => (
+                <div key={i} className="h-64 bg-gray-200 rounded-lg"></div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <>
-      <h1 className="text-4xl font-extrabold mb-4 text-gray-800">Bem-vindo ao Inksa Delivery!</h1>
-      <p className="text-lg text-gray-600 mb-10">Encontre o melhor restaurante para você.</p>
+    <div className="min-h-screen bg-gray-50">
+      <div className="container mx-auto px-4 py-8">
+        {/* Banner Dinâmico */}
+        <div className="mb-8">
+          <RotatingBanner />
+        </div>
 
-      {/* ✅ Banner Rotativo (substitui o banner estático) */}
-      <RotatingBanner />
+        {/* Cabeçalho da Página */}
+        <div className="text-center mb-8">
+          <h1 className="text-4xl font-bold text-gray-900 mb-4">
+            Bem-vindo ao Inksa Delivery!
+          </h1>
+          <p className="text-xl text-gray-600 mb-6">
+            Encontre o melhor restaurante para você.
+          </p>
+        </div>
 
-      {/* Card promocional da Gamificação */}
-      <Card className="mb-8 bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-xl">
-        <CardContent className="p-6">
+        {/* Sistema de Gamificação */}
+        <div className="bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg p-6 text-white mb-8">
           <div className="flex items-center justify-between">
-            <div className="flex-1">
-              <div className="flex items-center gap-3 mb-3">
-                <Trophy className="w-8 h-8 text-yellow-300" />
-                <h3 className="text-2xl font-bold">Sistema de Gamificação</h3>
-              </div>
-              <p className="text-blue-100 mb-4 text-lg">
+            <div>
+              <h2 className="text-2xl font-bold mb-2 flex items-center">
+                <span className="mr-2">🏆</span>
+                Sistema de Gamificação
+              </h2>
+              <p className="text-lg opacity-90 mb-4">
                 Ganhe pontos, desbloqueie badges e troque por recompensas incríveis!
               </p>
-              <div className="flex items-center gap-6 text-sm">
-                <div className="flex items-center gap-2">
-                  <Star className="w-4 h-4 text-yellow-300" />
+              <div className="flex items-center space-x-6 text-sm">
+                <div className="flex items-center">
+                  <Star className="w-4 h-4 mr-1" />
                   <span>Pontos por pedidos</span>
                 </div>
-                <div className="flex items-center gap-2">
-                  <Gift className="w-4 h-4 text-green-300" />
+                <div className="flex items-center">
+                  <span className="w-4 h-4 mr-1">🏅</span>
                   <span>Recompensas exclusivas</span>
                 </div>
-                <div className="flex items-center gap-2">
-                  <Zap className="w-4 h-4 text-orange-300" />
+                <div className="flex items-center">
+                  <span className="w-4 h-4 mr-1">⚡</span>
                   <span>Em desenvolvimento</span>
                 </div>
               </div>
             </div>
-            <div className="ml-6">
-              <Link to="/gamificacao">
-                <Button variant="secondary" size="lg" className="bg-white text-blue-600 hover:bg-blue-50 font-semibold">
-                  Saiba Mais
-                </Button>
-              </Link>
+            <Button
+              variant="secondary"
+              className="bg-white text-blue-600 hover:bg-gray-100"
+              onClick={() => navigate("/gamification")}
+            >
+              Saiba Mais
+            </Button>
+          </div>
+        </div>
+
+        {/* Barra de Pesquisa */}
+        <div className="bg-white rounded-lg shadow-md p-6 mb-8">
+          <div className="flex flex-col md:flex-row gap-4">
+            <div className="flex-1 relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+              <Input
+                type="text"
+                placeholder="Buscar por nome do restaurante..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10 h-12"
+              />
+            </div>
+            <Button className="h-12 px-6">
+              <Search className="w-5 h-5 mr-2" />
+              Buscar
+            </Button>
+          </div>
+        </div>
+
+        {/* Filtros de Categoria */}
+        <div className="mb-8">
+          <h3 className="text-lg font-semibold mb-4">Categorias</h3>
+          <div className="flex flex-wrap gap-2">
+            {categories.map((category) => (
+              <button
+                key={category}
+                onClick={() => setSelectedCategory(category)}
+                className={`px-4 py-2 rounded-full transition-colors ${
+                  selectedCategory === category
+                    ? "bg-orange-500 text-white"
+                    : "bg-white text-gray-700 hover:bg-orange-100"
+                } border border-orange-200`}
+              >
+                {category}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Aviso de Localização */}
+        {locationError && (
+          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6">
+            <div className="flex items-start">
+              <MapPin className="w-5 h-5 text-yellow-600 mr-2 mt-0.5" />
+              <p className="text-yellow-800 text-sm">{locationError}</p>
             </div>
           </div>
-        </CardContent>
-      </Card>
-
-      {/* Área de Busca e Filtros */}
-      <div className="sticky top-[80px] bg-white/80 backdrop-blur-sm py-4 z-10 mb-8">
-        {/* Barra de Busca */}
-        <div className="relative mb-4">
-          <Input
-            placeholder="Buscar por nome do restaurante..."
-            className="w-full pl-10 h-12 text-base"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-        </div>
-
-        {/* Filtros Rápidos de Categoria */}
-        <div className="flex items-center gap-2 overflow-x-auto pb-2 no-scrollbar">
-          {categories.map((category) => (
-            <button
-              key={category}
-              onClick={() => handleCategoryClick(category)}
-              className={`px-4 py-2 rounded-full text-sm font-semibold whitespace-nowrap transition-colors ${
-                selectedCategory === category
-                  ? "bg-orange-500 text-white shadow-md"
-                  : "bg-gray-200 text-gray-700 hover:bg-gray-300"
-              }`}
-            >
-              {category}
-            </button>
-          ))}
-        </div>
-
-        {/* Aviso de localização */}
-        {locationError && (
-          <div className="mt-3 text-sm bg-amber-50 text-amber-800 border border-amber-200 rounded px-3 py-2">
-            Não conseguimos acessar sua localização no navegador. Mostrando restaurantes sem ordenação por distância.
-          </div>
-        )}
-      </div>
-
-      {/* Lista de Restaurantes */}
-      <div className="mt-8">
-        {locationLoading && (
-          <div className="text-center py-16 text-gray-500">
-            <p>Obtendo a sua localização...</p>
-          </div>
         )}
 
-        <RestaurantList 
-          restaurants={filteredRestaurants}
-          loading={isLoading && !locationLoading}
-          error={!isLoading ? error : null}
-          onRetry={handleRetry}
-          filters={filters}
-          onFiltersChange={handleFiltersChange}
-        />
+        {/* Lista de Restaurantes */}
+        <div>
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-2xl font-bold text-gray-900">
+              Restaurantes Disponíveis
+            </h2>
+            <span className="text-gray-600">
+              {filteredRestaurants.length} restaurante(s) encontrado(s)
+            </span>
+          </div>
+
+          {filteredRestaurants.length === 0 ? (
+            <div className="text-center py-12">
+              <Utensils className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                Nenhum restaurante encontrado
+              </h3>
+              <p className="text-gray-600">
+                Tente ajustar sua pesquisa ou categoria.
+              </p>
+            </div>
+          ) : (
+            <RestaurantList
+              restaurants={filteredRestaurants}
+              onRestaurantClick={handleRestaurantClick}
+              userLocation={userLocation}
+            />
+          )}
+        </div>
       </div>
-    </>
+    </div>
   );
-}
+};
+
+export default HomePage;
