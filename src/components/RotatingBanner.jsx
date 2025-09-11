@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { ChevronLeft, ChevronRight, ExternalLink } from 'lucide-react';
 import { supabase } from '../services/restaurantService';
 
 export function RotatingBanner() {
@@ -11,14 +11,54 @@ export function RotatingBanner() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
 
+  // Registrar impressão do banner
+  const trackImpression = async (bannerId) => {
+    if (!bannerId || bannerId === 'default' || bannerId === 'fallback') return;
+    
+    try {
+      await supabase
+        .from('banners')
+        .update({ 
+          impression_count: supabase.raw('impression_count + 1') 
+        })
+        .eq('id', bannerId);
+    } catch (error) {
+      console.error('Erro ao rastrear impressão:', error);
+    }
+  };
+
+  // Registrar clique do banner
+  const trackClick = async (bannerId) => {
+    if (!bannerId || bannerId === 'default' || bannerId === 'fallback') return;
+    
+    try {
+      await supabase
+        .from('banners')
+        .update({ 
+          click_count: supabase.raw('click_count + 1') 
+        })
+        .eq('id', bannerId);
+    } catch (error) {
+      console.error('Erro ao rastrear clique:', error);
+    }
+  };
+
   // Buscar banners do Supabase
   useEffect(() => {
     const fetchBanners = async () => {
       try {
         const { data, error } = await supabase
           .from('banners')
-          .select('*')
+          .select(`
+            *,
+            restaurant_profiles (
+              restaurant_name,
+              logo_url
+            )
+          `)
           .eq('is_active', true)
+          .or('campaign_end_date.is.null,campaign_end_date.gte.' + new Date().toISOString())
+          .order('is_sponsored', { ascending: false }) // Prioriza patrocinados
           .order('display_order', { ascending: true });
 
         if (error) throw error;
@@ -30,7 +70,9 @@ export function RotatingBanner() {
             title: 'Ganhe Recompensas Incríveis!',
             subtitle: 'Acumule pontos em cada pedido e troque por descontos exclusivos.',
             image_url: '/banner-gamificacao.jpg',
-            link_url: '/gamificacao'
+            link_url: '/gamificacao',
+            banner_type: 'promotional',
+            is_sponsored: false
           }]);
         } else {
           setBanners(data);
@@ -44,7 +86,9 @@ export function RotatingBanner() {
           title: 'Bem-vindo ao Inksa Delivery!',
           subtitle: 'Os melhores restaurantes na palma da sua mão.',
           image_url: '/banner-gamificacao.jpg',
-          link_url: '/'
+          link_url: '/',
+          banner_type: 'promotional',
+          is_sponsored: false
         }]);
       } finally {
         setIsLoading(false);
@@ -53,6 +97,13 @@ export function RotatingBanner() {
 
     fetchBanners();
   }, []);
+
+  // Registrar impressão quando banner muda
+  useEffect(() => {
+    if (banners.length > 0 && banners[currentBannerIndex]) {
+      trackImpression(banners[currentBannerIndex].id);
+    }
+  }, [currentBannerIndex, banners]);
 
   // Rotação automática dos banners
   useEffect(() => {
@@ -82,6 +133,11 @@ export function RotatingBanner() {
 
   const goToSlide = (index) => {
     setCurrentBannerIndex(index);
+  };
+
+  // Handle click com tracking
+  const handleBannerClick = (banner) => {
+    trackClick(banner.id);
   };
 
   if (isLoading) {
@@ -115,6 +171,24 @@ export function RotatingBanner() {
       {/* Overlay gradient */}
       <div className="absolute inset-0 bg-gradient-to-r from-black/60 via-transparent to-black/20" />
       
+      {/* Badge de patrocinado */}
+      {currentBanner.is_sponsored && (
+        <div className="absolute top-4 right-4 bg-yellow-400 text-yellow-900 px-3 py-1 rounded-full text-sm font-bold">
+          Patrocinado
+        </div>
+      )}
+
+      {/* Logo do restaurante (se for banner patrocinado) */}
+      {currentBanner.is_sponsored && currentBanner.restaurant_profiles?.logo_url && (
+        <div className="absolute top-4 left-4 w-16 h-16 bg-white rounded-full p-2 shadow-lg">
+          <img
+            src={currentBanner.restaurant_profiles.logo_url}
+            alt={currentBanner.restaurant_profiles.restaurant_name}
+            className="w-full h-full object-cover rounded-full"
+          />
+        </div>
+      )}
+      
       {/* Conteúdo do banner */}
       <div className="absolute inset-0 flex flex-col items-center justify-center text-center p-4">
         <h2 className="text-white text-4xl font-extrabold mb-2 drop-shadow-lg max-w-3xl">
@@ -124,6 +198,16 @@ export function RotatingBanner() {
           <p className="text-white text-lg max-w-md drop-shadow-lg">
             {currentBanner.subtitle}
           </p>
+        )}
+        
+        {/* Nome do restaurante patrocinador */}
+        {currentBanner.is_sponsored && (
+          <div className="mt-4 flex items-center gap-2 bg-white/20 backdrop-blur-sm px-4 py-2 rounded-full">
+            <ExternalLink className="w-4 h-4 text-white" />
+            <span className="text-white font-medium">
+              {currentBanner.sponsor_name || currentBanner.restaurant_profiles?.restaurant_name}
+            </span>
+          </div>
         )}
       </div>
 
@@ -148,10 +232,10 @@ export function RotatingBanner() {
         </>
       )}
 
-      {/* Indicadores de slide (apenas se houver múltiplos banners) */}
+      {/* Indicadores de slide */}
       {banners.length > 1 && (
         <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2">
-          {banners.map((_, index) => (
+          {banners.map((banner, index) => (
             <button
               key={index}
               onClick={() => goToSlide(index)}
@@ -159,7 +243,7 @@ export function RotatingBanner() {
                 index === currentBannerIndex 
                   ? 'bg-white scale-110' 
                   : 'bg-white/50 hover:bg-white/75'
-              }`}
+              } ${banner.is_sponsored ? 'ring-2 ring-yellow-400' : ''}`}
               aria-label={`Ir para slide ${index + 1}`}
             />
           ))}
@@ -184,7 +268,11 @@ export function RotatingBanner() {
   // Se o banner tem link, envolver em Link, senão renderizar apenas o conteúdo
   if (currentBanner.link_url) {
     return (
-      <Link to={currentBanner.link_url} className="block cursor-pointer">
+      <Link 
+        to={currentBanner.link_url} 
+        className="block cursor-pointer"
+        onClick={() => handleBannerClick(currentBanner)}
+      >
         <BannerContent />
       </Link>
     );
