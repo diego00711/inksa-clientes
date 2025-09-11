@@ -32,10 +32,23 @@ const RotatingBanner = () => {
       
       // Garantir que data é um array
       const bannersArray = Array.isArray(data) ? data : [];
+      console.log('📋 Todos os banners:', bannersArray);
       
-      // Filtrar apenas banners ativos
-      const activeBanners = bannersArray.filter(banner => banner && banner.ativo === true);
+      // Mostrar status de cada banner
+      bannersArray.forEach((banner, index) => {
+        console.log(`Banner ${index + 1}:`, {
+          titulo: banner.titulo,
+          ativo: banner.ativo,
+          id: banner.id
+        });
+      });
+      
+      // Filtrar apenas banners ativos (aceita tanto boolean true quanto string "true")
+      const activeBanners = bannersArray.filter(banner => {
+        return banner && (banner.ativo === true || banner.ativo === "true" || banner.ativo === 1);
+      });
       console.log('✅ Banners ativos:', activeBanners);
+      console.log(`📊 Total: ${bannersArray.length} banners, ${activeBanners.length} ativos`);
       
       setBanners(activeBanners);
       setLoading(false);
