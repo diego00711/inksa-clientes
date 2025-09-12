@@ -1,4 +1,4 @@
-// RotatingBanner.jsx - VERSÃO CORRIGIDA PARA ALINHAMENTO DE TEXTO
+// RotatingBanner.jsx - VERSÃO COM OVERLAY CONDICIONAL
 
 import React, { useState, useEffect, useCallback } from 'react';
 
@@ -85,31 +85,24 @@ const RotatingBanner = () => {
     return <div style={{ height: '300px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#f5f5f5', borderRadius: '12px' }}>Erro ao carregar.</div>;
   }
   if (banners.length === 0 && !loading) {
-    return null; // Ou um placeholder, se preferir
+    return null;
   }
 
   const currentBanner = banners[currentIndex];
-  if (!currentBanner) return null; // Evita erro se banners estiver vazio
+  if (!currentBanner) return null;
   
   const cleanImageUrl = currentBanner.image_url?.replace(/\?+$/, '').replace(/\s+/g, '');
 
-  // --- LÓGICA DE ESTILO CORRIGIDA ---
+  // --- LÓGICA DE ESTILO ---
   const getTextContainerStyles = (position) => {
     let justifyContent = 'center';
     if (position === 'left') justifyContent = 'flex-start';
     if (position === 'right') justifyContent = 'flex-end';
     
     return {
-      position: 'absolute',
-      top: 0,
-      left: 0,
-      right: 0,
-      bottom: 0,
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: justifyContent, // Aplica o alinhamento horizontal aqui
-      padding: '2rem',
-      zIndex: 2,
+      position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
+      display: 'flex', alignItems: 'center', justifyContent: justifyContent,
+      padding: '2rem', zIndex: 2,
     };
   };
 
@@ -119,57 +112,56 @@ const RotatingBanner = () => {
     if (position === 'right') textAlign = 'right';
 
     return {
-      background: 'rgba(0, 0, 0, 0.3)',
-      backdropFilter: 'blur(5px)',
-      padding: '2rem',
-      borderRadius: '8px',
-      color: 'white',
-      maxWidth: '500px',
-      width: '100%',
-      textAlign: textAlign, // Aplica o alinhamento do texto interno aqui
+      background: 'rgba(0, 0, 0, 0.3)', backdropFilter: 'blur(5px)',
+      padding: '2rem', borderRadius: '8px', color: 'white',
+      maxWidth: '500px', width: '100%', textAlign: textAlign,
     };
   };
 
   const textPosition = currentBanner.text_position || 'center';
   const textContainerStyles = getTextContainerStyles(textPosition);
   const textBoxStyles = getTextBoxStyles(textPosition);
-  // --- FIM DA LÓGICA CORRIGIDA ---
+
+  // --- NOVA LÓGICA: VERIFICA SE HÁ CONTEÚDO DE TEXTO ---
+  const hasTextContent = currentBanner.title || (currentBanner.subtitle && currentBanner.subtitle !== 'EMPTY');
 
   return (
     <div style={{
-      position: 'relative',
-      width: '100%',
-      height: `${imageDimensions.height}px`,
-      marginBottom: '2rem',
-      borderRadius: '12px',
-      overflow: 'hidden',
-      boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
-      transition: 'height 0.3s ease-in-out',
-      backgroundImage: `url(${cleanImageUrl})`,
-      backgroundSize: 'cover',
-      backgroundPosition: 'center',
+      position: 'relative', width: '100%', height: `${imageDimensions.height}px`,
+      marginBottom: '2rem', borderRadius: '12px', overflow: 'hidden',
+      boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)', transition: 'height 0.3s ease-in-out',
+      backgroundImage: `url(${cleanImageUrl})`, backgroundSize: 'cover', backgroundPosition: 'center',
     }}>
-      {/* Contêiner que posiciona o bloco de texto */}
-      <div style={textContainerStyles}>
-        {/* O bloco de texto em si */}
-        <div style={textBoxStyles}>
-          <h2 style={{ fontSize: '2rem', fontWeight: 'bold', textShadow: '2px 2px 4px rgba(0,0,0,0.5)', margin: '0 0 0.5rem 0' }}>
-            {currentBanner.title}
-          </h2>
-          {currentBanner.subtitle && currentBanner.subtitle !== 'EMPTY' && (
-            <p style={{ fontSize: '1.1rem', textShadow: '1px 1px 2px rgba(0,0,0,0.5)', margin: '0 0 1rem 0' }}>
-              {currentBanner.subtitle}
-            </p>
-          )}
-          {currentBanner.link_url && currentBanner.link_url !== 'text' && (
-            <a href={currentBanner.link_url} target="_blank" rel="noopener noreferrer" style={{ display: 'inline-block', background: '#ff6b35', color: 'white', padding: '0.75rem 1.5rem', borderRadius: '6px', textDecoration: 'none', fontWeight: '600' }}>
-              Saiba Mais
-            </a>
-          )}
-        </div>
-      </div>
       
-      {/* Setas e Indicadores (sem alterações) */}
+      {/* --- RENDERIZAÇÃO CONDICIONAL DO BLOCO DE TEXTO --- */}
+      {hasTextContent && (
+        <div style={textContainerStyles}>
+          <div style={textBoxStyles}>
+            {/* O título é opcional, mas se existir, será mostrado */}
+            {currentBanner.title && (
+              <h2 style={{ fontSize: '2rem', fontWeight: 'bold', textShadow: '2px 2px 4px rgba(0,0,0,0.5)', margin: '0 0 0.5rem 0' }}>
+                {currentBanner.title}
+              </h2>
+            )}
+            
+            {/* O subtítulo também é opcional */}
+            {currentBanner.subtitle && currentBanner.subtitle !== 'EMPTY' && (
+              <p style={{ fontSize: '1.1rem', textShadow: '1px 1px 2px rgba(0,0,0,0.5)', margin: '0 0 1rem 0' }}>
+                {currentBanner.subtitle}
+              </p>
+            )}
+
+            {/* O botão só aparece se houver um link válido */}
+            {currentBanner.link_url && currentBanner.link_url !== 'text' && currentBanner.link_url !== '/' && (
+              <a href={currentBanner.link_url} target="_blank" rel="noopener noreferrer" style={{ display: 'inline-block', background: '#ff6b35', color: 'white', padding: '0.75rem 1.5rem', borderRadius: '6px', textDecoration: 'none', fontWeight: '600' }}>
+                Saiba Mais
+              </a>
+            )}
+          </div>
+        </div>
+      )}
+      
+      {/* Setas e Indicadores (sempre visíveis se houver mais de 1 banner) */}
       {banners.length > 1 && (
         <>
           <button onClick={goToPrevious} style={{ position: 'absolute', top: '50%', left: '1rem', transform: 'translateY(-50%)', background: 'rgba(0,0,0,0.4)', color: 'white', border: 'none', borderRadius: '50%', width: '40px', height: '40px', fontSize: '1.5rem', cursor: 'pointer', zIndex: 3, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>&#10094;</button>
