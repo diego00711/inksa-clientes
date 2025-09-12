@@ -1,4 +1,4 @@
-// RotatingBanner.jsx - Código com Posição de Texto Ajustável
+// RotatingBanner.jsx - VERSÃO CORRIGIDA PARA ALINHAMENTO DE TEXTO
 
 import React, { useState, useEffect, useCallback } from 'react';
 
@@ -33,7 +33,6 @@ const RotatingBanner = () => {
         
         if (data.status === 'success' && Array.isArray(data.data)) {
           setBanners(data.data);
-          if (data.data.length === 0) console.warn('⚠️ Nenhum banner para exibir');
         } else {
           setError('Formato de dados inesperado');
         }
@@ -52,14 +51,12 @@ const RotatingBanner = () => {
       const cleanImageUrl = currentBanner.image_url?.replace(/\?+$/, '').replace(/\s+/g, '');
 
       if (cleanImageUrl) {
-        setLoading(true);
         loadImage(cleanImageUrl)
           .then(dimensions => {
             const calculatedHeight = (window.innerWidth / dimensions.width) * dimensions.height;
             setImageDimensions({ height: Math.min(calculatedHeight, 450), width: dimensions.width });
           })
-          .catch(() => setImageDimensions({ height: 300, width: 1200 }))
-          .finally(() => setLoading(false));
+          .catch(() => setImageDimensions({ height: 300, width: 1200 }));
       }
     }
   }, [currentIndex, banners]);
@@ -74,16 +71,12 @@ const RotatingBanner = () => {
   }, [banners.length]);
 
   const goToPrevious = () => {
-    const isFirstBanner = currentIndex === 0;
-    const newIndex = isFirstBanner ? banners.length - 1 : currentIndex - 1;
-    setCurrentIndex(newIndex);
+    setCurrentIndex((prev) => (prev === 0 ? banners.length - 1 : prev - 1));
   };
 
   const goToNext = useCallback(() => {
-    const isLastBanner = currentIndex === banners.length - 1;
-    const newIndex = isLastBanner ? 0 : currentIndex + 1;
-    setCurrentIndex(newIndex);
-  }, [currentIndex, banners.length]);
+    setCurrentIndex((prev) => (prev === banners.length - 1 ? 0 : prev + 1));
+  }, [banners.length]);
 
   if (loading && banners.length === 0) {
     return <div style={{ height: '300px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#f5f5f5', borderRadius: '12px' }}>Carregando...</div>;
@@ -92,78 +85,84 @@ const RotatingBanner = () => {
     return <div style={{ height: '300px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#f5f5f5', borderRadius: '12px' }}>Erro ao carregar.</div>;
   }
   if (banners.length === 0 && !loading) {
-    return <div style={{ height: '300px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#f5f5f5', borderRadius: '12px' }}>Nenhum banner disponível.</div>;
+    return null; // Ou um placeholder, se preferir
   }
 
   const currentBanner = banners[currentIndex];
-  const cleanImageUrl = currentBanner?.image_url?.replace(/\?+$/, '').replace(/\s+/g, '');
+  if (!currentBanner) return null; // Evita erro se banners estiver vazio
+  
+  const cleanImageUrl = currentBanner.image_url?.replace(/\?+$/, '').replace(/\s+/g, '');
 
-  // --- NOVA LÓGICA PARA POSICIONAMENTO DO TEXTO ---
-  const getTextPositionStyles = (position) => {
-    switch (position) {
-      case 'left':
-        return { justifyContent: 'flex-start', textAlign: 'left' };
-      case 'right':
-        return { justifyContent: 'flex-end', textAlign: 'right' };
-      case 'center':
-      default:
-        return { justifyContent: 'center', textAlign: 'center' };
-    }
+  // --- LÓGICA DE ESTILO CORRIGIDA ---
+  const getTextContainerStyles = (position) => {
+    let justifyContent = 'center';
+    if (position === 'left') justifyContent = 'flex-start';
+    if (position === 'right') justifyContent = 'flex-end';
+    
+    return {
+      position: 'absolute',
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: justifyContent, // Aplica o alinhamento horizontal aqui
+      padding: '2rem',
+      zIndex: 2,
+    };
   };
 
-  // Pega a posição do banner atual, ou usa 'center' como padrão
-  const textPosition = currentBanner?.text_position || 'center';
-  const positionStyles = getTextPositionStyles(textPosition);
-  // --- FIM DA NOVA LÓGICA ---
+  const getTextBoxStyles = (position) => {
+    let textAlign = 'center';
+    if (position === 'left') textAlign = 'left';
+    if (position === 'right') textAlign = 'right';
+
+    return {
+      background: 'rgba(0, 0, 0, 0.3)',
+      backdropFilter: 'blur(5px)',
+      padding: '2rem',
+      borderRadius: '8px',
+      color: 'white',
+      maxWidth: '500px',
+      width: '100%',
+      textAlign: textAlign, // Aplica o alinhamento do texto interno aqui
+    };
+  };
+
+  const textPosition = currentBanner.text_position || 'center';
+  const textContainerStyles = getTextContainerStyles(textPosition);
+  const textBoxStyles = getTextBoxStyles(textPosition);
+  // --- FIM DA LÓGICA CORRIGIDA ---
 
   return (
     <div style={{
-      position: 'relative', width: '100%', height: `${imageDimensions.height}px`,
-      marginBottom: '2rem', borderRadius: '12px', overflow: 'hidden',
-      boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)', transition: 'height 0.3s ease-in-out'
+      position: 'relative',
+      width: '100%',
+      height: `${imageDimensions.height}px`,
+      marginBottom: '2rem',
+      borderRadius: '12px',
+      overflow: 'hidden',
+      boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
+      transition: 'height 0.3s ease-in-out',
+      backgroundImage: `url(${cleanImageUrl})`,
+      backgroundSize: 'cover',
+      backgroundPosition: 'center',
     }}>
-      {/* Container da Imagem */}
-      <div style={{
-        width: '100%', height: '100%', backgroundImage: `url(${cleanImageUrl})`,
-        backgroundSize: 'cover', backgroundPosition: 'center'
-      }} />
-
-      {/* Container do Conteúdo - AGORA POSICIONADO DINAMICAMENTE */}
-      <div style={{
-        position: 'absolute', top: 0, left: 0, width: '100%', height: '100%',
-        display: 'flex', alignItems: 'center', padding: '2rem',
-        ...positionStyles // Aplica os estilos de posicionamento aqui
-      }}>
-        <div style={{
-          color: 'white', zIndex: 2, background: 'rgba(0, 0, 0, 0.3)',
-          borderRadius: '8px', backdropFilter: 'blur(5px)', padding: '2rem',
-          // Garante que o box não ocupe a largura toda quando alinhado à esquerda/direita
-          maxWidth: '500px' 
-        }}>
-          <h2 style={{
-            fontSize: '2rem', fontWeight: 'bold', marginBottom: '0.5rem',
-            textShadow: '2px 2px 4px rgba(0, 0, 0, 0.5)', margin: 0
-          }}>
+      {/* Contêiner que posiciona o bloco de texto */}
+      <div style={textContainerStyles}>
+        {/* O bloco de texto em si */}
+        <div style={textBoxStyles}>
+          <h2 style={{ fontSize: '2rem', fontWeight: 'bold', textShadow: '2px 2px 4px rgba(0,0,0,0.5)', margin: '0 0 0.5rem 0' }}>
             {currentBanner.title}
           </h2>
           {currentBanner.subtitle && currentBanner.subtitle !== 'EMPTY' && (
-            <p style={{
-              fontSize: '1.1rem', marginTop: '0.5rem', marginBottom: '1rem', opacity: 0.9,
-              textShadow: '1px 1px 2px rgba(0, 0, 0, 0.5)', margin: '0.5rem 0 1rem 0'
-            }}>
+            <p style={{ fontSize: '1.1rem', textShadow: '1px 1px 2px rgba(0,0,0,0.5)', margin: '0 0 1rem 0' }}>
               {currentBanner.subtitle}
             </p>
           )}
           {currentBanner.link_url && currentBanner.link_url !== 'text' && (
-            <a href={currentBanner.link_url} style={{
-                display: 'inline-block', background: '#ff6b35', color: 'white',
-                padding: '0.75rem 1.5rem', borderRadius: '6px', textDecoration: 'none',
-                fontWeight: '600', transition: 'background-color 0.3s ease'
-              }}
-              target="_blank" rel="noopener noreferrer"
-              onMouseEnter={(e) => e.target.style.background = '#e55a2b'}
-              onMouseLeave={(e) => e.target.style.background = '#ff6b35'}
-            >
+            <a href={currentBanner.link_url} target="_blank" rel="noopener noreferrer" style={{ display: 'inline-block', background: '#ff6b35', color: 'white', padding: '0.75rem 1.5rem', borderRadius: '6px', textDecoration: 'none', fontWeight: '600' }}>
               Saiba Mais
             </a>
           )}
@@ -173,11 +172,11 @@ const RotatingBanner = () => {
       {/* Setas e Indicadores (sem alterações) */}
       {banners.length > 1 && (
         <>
-          <button onClick={goToPrevious} style={{...}}>&#10094;</button>
-          <button onClick={goToNext} style={{...}}>&#10095;</button>
-          <div style={{...}}>
+          <button onClick={goToPrevious} style={{ position: 'absolute', top: '50%', left: '1rem', transform: 'translateY(-50%)', background: 'rgba(0,0,0,0.4)', color: 'white', border: 'none', borderRadius: '50%', width: '40px', height: '40px', fontSize: '1.5rem', cursor: 'pointer', zIndex: 3, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>&#10094;</button>
+          <button onClick={goToNext} style={{ position: 'absolute', top: '50%', right: '1rem', transform: 'translateY(-50%)', background: 'rgba(0,0,0,0.4)', color: 'white', border: 'none', borderRadius: '50%', width: '40px', height: '40px', fontSize: '1.5rem', cursor: 'pointer', zIndex: 3, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>&#10095;</button>
+          <div style={{ position: 'absolute', bottom: '1rem', left: '50%', transform: 'translateX(-50%)', display: 'flex', gap: '0.5rem', zIndex: 3 }}>
             {banners.map((_, index) => (
-              <button key={index} onClick={() => setCurrentIndex(index)} style={{...}} />
+              <button key={index} onClick={() => setCurrentIndex(index)} style={{ width: '12px', height: '12px', borderRadius: '50%', background: index === currentIndex ? 'white' : 'rgba(255,255,255,0.5)', border: 'none', cursor: 'pointer' }} />
             ))}
           </div>
         </>
