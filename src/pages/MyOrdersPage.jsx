@@ -3,7 +3,7 @@ import AuthService from '../services/authService';
 import { Link, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Trash2 } from 'lucide-react';
 import { useToast } from '../context/ToastContext.jsx';
-import { PickupCodeDisplay } from '../components/PickupCodeDisplay.jsx';  // ✅ IMPORTAR
+import { PickupCodeDisplay } from '../components/PickupCodeDisplay.jsx';
 
 const API_BASE = import.meta.env.VITE_API_URL || 'https://inksa-auth-flask-dev.onrender.com';
 const API_URL = `${API_BASE}/api`;
@@ -31,7 +31,11 @@ const MyOrdersPage = () => {
       if (!response.ok) {
         throw new Error(result.error || 'Não foi possível buscar os pedidos.');
       }
-      setOrders(result.data || []);
+      
+      // ✅ CORRIGIDO: Aceita tanto array direto quanto objeto com data
+      console.log('📦 Resposta do backend:', result);
+      setOrders(Array.isArray(result) ? result : (result.data || []));
+      
     } catch (err) {
       setError(err.message);
       console.error('Erro ao buscar pedidos:', err);
@@ -39,7 +43,7 @@ const MyOrdersPage = () => {
     } finally {
       setLoading(false);
     }
-  }, [navigate, addToast]);
+  }, [addToast]);
 
   useEffect(() => {
     fetchOrders();
@@ -64,7 +68,6 @@ const MyOrdersPage = () => {
     }
   };
 
-  // ✅ MAPEAMENTO DE STATUS ATUALIZADO
   const getStatusClasses = (status) => {
     const statusMap = {
       'pending': 'bg-yellow-100 text-yellow-800',
@@ -90,7 +93,6 @@ const MyOrdersPage = () => {
     return statusMap[status] || 'bg-gray-100 text-gray-800';
   };
 
-  // ✅ TRADUÇÃO DE STATUS PARA EXIBIÇÃO
   const translateStatus = (status) => {
     const translations = {
       'pending': 'Pendente',
@@ -139,7 +141,6 @@ const MyOrdersPage = () => {
           </div>
         </div>
 
-        {/* ✅ INFORMAÇÕES DO PEDIDO */}
         <div className="mt-4 border-t border-gray-100 pt-4">
           <p className="text-gray-700">
             <strong>Valor Total:</strong> R$ {parseFloat(order.total_amount).toFixed(2)}
@@ -149,7 +150,6 @@ const MyOrdersPage = () => {
           </p>
         </div>
 
-        {/* ✅ CÓDIGOS DE RETIRADA E ENTREGA */}
         <PickupCodeDisplay orderId={order.id} orderStatus={order.status} />
       </div>
     ));
