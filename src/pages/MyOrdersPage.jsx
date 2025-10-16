@@ -3,6 +3,7 @@ import AuthService from '../services/authService';
 import { Link, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Trash2 } from 'lucide-react';
 import { useToast } from '../context/ToastContext.jsx';
+import { PickupCodeDisplay } from '../components/PickupCodeDisplay.jsx';  // ✅ IMPORTAR
 
 const API_BASE = import.meta.env.VITE_API_URL || 'https://inksa-auth-flask-dev.onrender.com';
 const API_URL = `${API_BASE}/api`;
@@ -63,16 +64,46 @@ const MyOrdersPage = () => {
     }
   };
 
+  // ✅ MAPEAMENTO DE STATUS ATUALIZADO
   const getStatusClasses = (status) => {
     const statusMap = {
-      Pendente: 'bg-yellow-100 text-yellow-800',
-      Aceito: 'bg-blue-100 text-blue-800',
+      'pending': 'bg-yellow-100 text-yellow-800',
+      'Pendente': 'bg-yellow-100 text-yellow-800',
+      'accepted': 'bg-blue-100 text-blue-800',
+      'Aceito': 'bg-blue-100 text-blue-800',
+      'preparing': 'bg-indigo-100 text-indigo-800',
       'Em Preparo': 'bg-indigo-100 text-indigo-800',
+      'Preparando': 'bg-indigo-100 text-indigo-800',
+      'ready': 'bg-purple-100 text-purple-800',
+      'Pronto': 'bg-purple-100 text-purple-800',
       'Pronto para Entrega': 'bg-purple-100 text-purple-800',
-      Concluído: 'bg-green-100 text-green-800',
-      Cancelado: 'bg-red-100 text-red-800',
+      'accepted_by_delivery': 'bg-pink-100 text-pink-800',
+      'Aguardando Retirada': 'bg-pink-100 text-pink-800',
+      'delivering': 'bg-orange-100 text-orange-800',
+      'Saiu para Entrega': 'bg-orange-100 text-orange-800',
+      'delivered': 'bg-green-100 text-green-800',
+      'Entregue': 'bg-green-100 text-green-800',
+      'Concluído': 'bg-green-100 text-green-800',
+      'cancelled': 'bg-red-100 text-red-800',
+      'Cancelado': 'bg-red-100 text-red-800',
     };
     return statusMap[status] || 'bg-gray-100 text-gray-800';
+  };
+
+  // ✅ TRADUÇÃO DE STATUS PARA EXIBIÇÃO
+  const translateStatus = (status) => {
+    const translations = {
+      'pending': 'Pendente',
+      'accepted': 'Aceito',
+      'preparing': 'Em Preparo',
+      'ready': 'Pronto para Entrega',
+      'accepted_by_delivery': 'Entregador a Caminho',
+      'delivering': 'Saiu para Entrega',
+      'delivered': 'Entregue',
+      'cancelled': 'Cancelado',
+      'archived': 'Arquivado'
+    };
+    return translations[status] || status;
   };
 
   const renderContent = () => {
@@ -94,9 +125,9 @@ const MyOrdersPage = () => {
           </div>
           <div className="flex items-center gap-2">
             <span className={`px-3 py-1 text-sm font-bold rounded-full ${getStatusClasses(order.status)}`}>
-              {order.status}
+              {translateStatus(order.status)}
             </span>
-            {(order.status === 'Concluído' || order.status === 'Cancelado') && (
+            {(order.status === 'delivered' || order.status === 'Concluído' || order.status === 'Cancelado' || order.status === 'cancelled') && (
               <button
                 onClick={() => handleDeleteOrder(order.id)}
                 className="text-gray-400 hover:text-red-600 transition-colors"
@@ -107,6 +138,8 @@ const MyOrdersPage = () => {
             )}
           </div>
         </div>
+
+        {/* ✅ INFORMAÇÕES DO PEDIDO */}
         <div className="mt-4 border-t border-gray-100 pt-4">
           <p className="text-gray-700">
             <strong>Valor Total:</strong> R$ {parseFloat(order.total_amount).toFixed(2)}
@@ -115,6 +148,9 @@ const MyOrdersPage = () => {
             <strong>Data:</strong> {new Date(order.created_at).toLocaleString('pt-BR')}
           </p>
         </div>
+
+        {/* ✅ CÓDIGOS DE RETIRADA E ENTREGA */}
+        <PickupCodeDisplay orderId={order.id} orderStatus={order.status} />
       </div>
     ));
   };
