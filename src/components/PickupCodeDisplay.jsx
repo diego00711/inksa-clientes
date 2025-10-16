@@ -1,32 +1,37 @@
-// src/components/PickupCodeDisplay.jsx
-// Componente para exibir o código de retirada para o entregador
-
 import React, { useState, useEffect } from 'react';
-import { Package, Copy, Check } from 'lucide-react';
+import { Shield, Package, Truck, CheckCircle, Clock } from 'lucide-react';
 import AuthService from '../services/authService';
 
 const API_BASE = import.meta.env.VITE_API_URL || 'https://inksa-auth-flask-dev.onrender.com';
 const API_URL = `${API_BASE}/api`;
 
-export function PickupCodeDisplay({ orderId, orderStatus }) {
-  const [pickupCode, setPickupCode] = useState(null);
-  const [deliveryCode, setDeliveryCode] = useState(null);
-  const [loading, setLoading] = useState(true);
+export const PickupCodeDisplay = ({ orderId, orderStatus }) => {
+  const [codes, setCodes] = useState(null);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  const [copied, setCopied] = useState(false);
 
   useEffect(() => {
     const fetchCodes = async () => {
+      const statusesWithCodes = ['accepted_by_delivery', 'delivering', 'delivered'];
+      if (!statusesWithCodes.includes(orderStatus)) {
+        return;
+      }
+
+      setLoading(true);
+      setError(null);
+
       try {
         const authToken = AuthService.getToken();
-        if (!authToken) return;
+        if (!authToken) {
+          throw new Error('Token não encontrado');
+        }
 
         const response = await fetch(`${API_URL}/orders/${orderId}/codes`, {
-          headers: { 
+          headers: {
             'Authorization': `Bearer ${authToken}`,
             'Content-Type': 'application/json'
           },
-          credentials: 'include',
+          credentials: 'include'
         });
 
         if (!response.ok) {
@@ -34,8 +39,7 @@ export function PickupCodeDisplay({ orderId, orderStatus }) {
         }
 
         const data = await response.json();
-        setPickupCode(data.pickup_code);
-        setDeliveryCode(data.delivery_code);
+        setCodes(data);
       } catch (err) {
         console.error('Erro ao buscar códigos:', err);
         setError(err.message);
@@ -45,121 +49,101 @@ export function PickupCodeDisplay({ orderId, orderStatus }) {
     };
 
     fetchCodes();
-  }, [orderId]);
+  }, [orderId, orderStatus]);
 
-  const handleCopy = async (code) => {
-    try {
-      await navigator.clipboard.writeText(code);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    } catch (err) {
-      console.error('Erro ao copiar:', err);
-    }
-  };
-
-  // Não mostrar se não estiver nos status corretos
-  const shouldShowPickupCode = ['accepted_by_delivery', 'delivering'].includes(orderStatus);
-  const shouldShowDeliveryCode = orderStatus === 'delivering';
-
-  if (!shouldShowPickupCode && !shouldShowDeliveryCode) {
+  const statusesWithCodes = ['accepted_by_delivery', 'delivering', 'delivered'];
+  if (!statusesWithCodes.includes(orderStatus)) {
     return null;
   }
 
   if (loading) {
     return (
-      <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-        <p className="text-sm text-blue-700 text-center">Carregando códigos...</p>
+      <div className="mt-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
+        <div className="flex items-center gap-2 text-blue-700">
+          <Clock className="animate-spin" size={20} />
+          <span className="text-sm font-medium">Carregando códigos...</span>
+        </div>
       </div>
     );
   }
 
   if (error) {
-    return null; // Não mostrar erro, apenas não exibir nada
+    return (
+      <div className="mt-4 p-4 bg-red-50 rounded-lg border border-red-200">
+        <p className="text-sm text-red-700">❌ {error}</p>
+      </div>
+    );
   }
 
+  if (!codes) {
+    return null;
+  }
+
+  const showPickupCode = ['accepted_by_delivery', 'delivering', 'delivered'].includes(orderStatus);
+  const showDeliveryCode = ['delivering', 'delivered'].includes(orderStatus);
+
   return (
-    <div className="mt-4 space-y-3">
-      {/* CÓDIGO DE RETIRADA */}
-      {shouldShowPickupCode && pickupCode && (
-        <div className="p-4 bg-gradient-to-r from-purple-50 to-pink-50 border-2 border-purple-200 rounded-lg">
-          <div className="flex items-center gap-2 mb-3">
-            <div className="p-2 bg-purple-100 rounded-lg">
-              <Package className="w-5 h-5 text-purple-600" />
-            </div>
-            <div>
-              <h3 className="text-sm font-bold text-purple-900">
-                {orderStatus === 'accepted_by_delivery' 
-                  ? '🚚 Entregador a caminho!' 
-                  : '📦 Mostre este código ao entregador'}
-              </h3>
-              <p className="text-xs text-purple-700">Código de Retirada</p>
-            </div>
-          </div>
+    <div className="mt-4 border-t border-gray-100 pt-4">
+      <div className="flex items-center gap-2 mb-3">
+        <Shield className="text-blue-600" size={20} />
+        <h3 className="text-lg font-bold text-gray-800">Códigos de Verificação</h3>
+      </div>
 
-          <div className="flex items-center justify-between bg-white border-2 border-purple-300 rounded-lg p-4">
-            <div className="text-center flex-1">
-              <p className="text-4xl font-bold tracking-widest text-purple-700 font-mono">
-                {pickupCode}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {showPickupCode && (
+          <div className="bg-gradient-to-br from-blue-50 to-blue-100 p-4 rounded-lg border-2 border-blue-300 shadow-md">
+            <div className="flex items-center gap-2 mb-2">
+              <Package className="text-blue-700" size={18} />
+              <span className="text-sm font-semibold text-blue-800">Código de Retirada</span>
+            </div>
+            <div className="bg-white p-3 rounded-md border-2 border-dashed border-blue-400">
+              <p className="text-3xl font-bold text-center text-blue-900 tracking-widest font-mono">
+                {codes.pickup_code}
               </p>
             </div>
-            <button
-              onClick={() => handleCopy(pickupCode)}
-              className="ml-4 p-2 bg-purple-100 hover:bg-purple-200 rounded-lg transition-colors"
-              title="Copiar código"
-            >
-              {copied ? (
-                <Check className="w-5 h-5 text-green-600" />
-              ) : (
-                <Copy className="w-5 h-5 text-purple-600" />
-              )}
-            </button>
+            <p className="text-xs text-blue-700 mt-2 text-center">
+              {orderStatus === 'accepted_by_delivery' && '🚴 Entregador está a caminho do restaurante'}
+              {orderStatus === 'delivering' && '✅ Pedido retirado pelo entregador'}
+              {orderStatus === 'delivered' && '✅ Pedido foi retirado'}
+            </p>
           </div>
+        )}
 
-          <p className="text-xs text-purple-600 mt-2 text-center">
-            ℹ️ O entregador precisa deste código para retirar o pedido no restaurante
-          </p>
-        </div>
-      )}
-
-      {/* CÓDIGO DE ENTREGA */}
-      {shouldShowDeliveryCode && deliveryCode && (
-        <div className="p-4 bg-gradient-to-r from-green-50 to-emerald-50 border-2 border-green-200 rounded-lg">
-          <div className="flex items-center gap-2 mb-3">
-            <div className="p-2 bg-green-100 rounded-lg">
-              <Package className="w-5 h-5 text-green-600" />
+        {showDeliveryCode && (
+          <div className="bg-gradient-to-br from-green-50 to-green-100 p-4 rounded-lg border-2 border-green-300 shadow-md">
+            <div className="flex items-center gap-2 mb-2">
+              <Truck className="text-green-700" size={18} />
+              <span className="text-sm font-semibold text-green-800">Código de Entrega</span>
             </div>
-            <div>
-              <h3 className="text-sm font-bold text-green-900">
-                🏠 Código de Confirmação de Entrega
-              </h3>
-              <p className="text-xs text-green-700">Use quando receber o pedido</p>
-            </div>
-          </div>
-
-          <div className="flex items-center justify-between bg-white border-2 border-green-300 rounded-lg p-4">
-            <div className="text-center flex-1">
-              <p className="text-4xl font-bold tracking-widest text-green-700 font-mono">
-                {deliveryCode}
+            <div className="bg-white p-3 rounded-md border-2 border-dashed border-green-400">
+              <p className="text-3xl font-bold text-center text-green-900 tracking-widest font-mono">
+                {codes.delivery_code}
               </p>
             </div>
-            <button
-              onClick={() => handleCopy(deliveryCode)}
-              className="ml-4 p-2 bg-green-100 hover:bg-green-200 rounded-lg transition-colors"
-              title="Copiar código"
-            >
-              {copied ? (
-                <Check className="w-5 h-5 text-green-600" />
-              ) : (
-                <Copy className="w-5 h-5 text-green-600" />
-              )}
-            </button>
+            <p className="text-xs text-green-700 mt-2 text-center">
+              {orderStatus === 'delivering' && '🚚 Mostre este código ao entregador'}
+              {orderStatus === 'delivered' && '✅ Pedido foi entregue'}
+            </p>
           </div>
+        )}
+      </div>
 
-          <p className="text-xs text-green-600 mt-2 text-center">
-            ℹ️ Mostre este código ao entregador quando receber seu pedido
-          </p>
+      <div className="mt-4 p-3 bg-amber-50 rounded-lg border border-amber-200">
+        <div className="flex items-start gap-2">
+          <CheckCircle className="text-amber-600 flex-shrink-0 mt-0.5" size={16} />
+          <div className="text-xs text-amber-800">
+            {orderStatus === 'accepted_by_delivery' && (
+              <p><strong>Status:</strong> O entregador está a caminho do restaurante para retirar seu pedido.</p>
+            )}
+            {orderStatus === 'delivering' && (
+              <p><strong>Status:</strong> Seu pedido está a caminho! Mostre o código de entrega quando o entregador chegar.</p>
+            )}
+            {orderStatus === 'delivered' && (
+              <p><strong>Concluído!</strong> Seu pedido foi entregue com sucesso. Bom apetite! 🍽️</p>
+            )}
+          </div>
         </div>
-      )}
+      </div>
     </div>
   );
-}
+};
