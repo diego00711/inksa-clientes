@@ -1,6 +1,5 @@
-// src/services/orderService.js
+// inksa-clientes/src/services/orderService.js - VERSÃO COMPLETA
 
-// ✅ 1. Importa as funções auxiliares do nosso novo arquivo api.js
 import { CLIENT_API_URL, processResponse, createAuthHeaders } from './api';
 
 /**
@@ -10,7 +9,6 @@ export const calculateDeliveryFee = async (deliveryData) => {
   console.log('🚚 Iniciando cálculo de frete:', deliveryData);
   
   try {
-    // A URL deve ser completa, usando a variável do api.js
     const url = `${CLIENT_API_URL}/api/delivery/calculate_fee`;
     
     const response = await fetch(url, {
@@ -21,18 +19,13 @@ export const calculateDeliveryFee = async (deliveryData) => {
       body: JSON.stringify(deliveryData),
     });
     
-    console.log('📡 Status da resposta:', response.status);
-    
     if (!response.ok) {
-      console.log('❌ Resposta não OK, usando fallback');
       throw new Error(`HTTP ${response.status}`);
     }
 
     const data = await processResponse(response);
-    console.log('✅ Resposta do backend:', data);
     
-    // ✅ CORREÇÃO PRINCIPAL: Garantir que sempre retorna um número válido
-    let deliveryFee = 5.00; // Valor padrão
+    let deliveryFee = 5.00;
     
     if (data && data.status === 'success' && data.data && typeof data.data.delivery_fee === 'number') {
       deliveryFee = data.data.delivery_fee;
@@ -40,10 +33,9 @@ export const calculateDeliveryFee = async (deliveryData) => {
       deliveryFee = data.delivery_fee;
     }
     
-    // Garantir que é um número válido
     deliveryFee = Number(deliveryFee) || 5.00;
     
-    const result = {
+    return {
       status: 'success',
       data: {
         delivery_fee: deliveryFee,
@@ -51,23 +43,16 @@ export const calculateDeliveryFee = async (deliveryData) => {
       }
     };
     
-    console.log('✅ Frete processado:', result);
-    return result;
-    
   } catch (error) {
     console.error('❌ Erro ao calcular frete:', error);
     
-    // ✅ FALLBACK ROBUSTO - Sempre retorna um número válido
-    const fallbackResult = {
+    return {
       status: 'success',
       data: {
-        delivery_fee: 5.00, // Taxa padrão garantida como número
+        delivery_fee: 5.00,
         message: 'Taxa padrão aplicada (erro na conexão)'
       }
     };
-    
-    console.log('🔄 Usando fallback:', fallbackResult);
-    return fallbackResult;
   }
 };
 
@@ -81,7 +66,7 @@ export const createOrder = async (orderData) => {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      ...createAuthHeaders(), // Usa a função auxiliar para o token
+      ...createAuthHeaders(),
     },
     body: JSON.stringify(orderData),
   });
@@ -107,14 +92,11 @@ export const createPaymentPreference = async (preferenceData) => {
 };
 
 /**
- * ✅ 2. NOVA FUNÇÃO ADICIONADA
- * Busca os pedidos que um cliente já recebeu e que estão pendentes de avaliação.
- * @param {string} clientId - O ID do perfil do cliente.
- * @param {AbortSignal} [signal] - Para cancelar a requisição se necessário.
+ * ✅ NOVO: Busca pedidos pendentes de avaliação do CLIENTE
+ * Usa o novo endpoint unificado de reviews
  */
-export const getOrdersPendingClientReview = async (clientId, signal) => {
-  // IMPORTANTE: Confirme se a URL do seu backend para esta funcionalidade é esta.
-  const url = `${CLIENT_API_URL}/api/orders/pending-client-review`;
+export const getOrdersPendingClientReview = async (signal) => {
+  const url = `${CLIENT_API_URL}/api/reviews/orders/pending-reviews`;
 
   const response = await fetch(url, {
     method: 'GET',
@@ -123,6 +105,39 @@ export const getOrdersPendingClientReview = async (clientId, signal) => {
   });
   
   const data = await processResponse(response);
-  // Garante que sempre retornará um array
-  return data?.data ?? data ?? [];
+  
+  // O endpoint retorna { pending_reviews: [...], total: N }
+  return data?.pending_reviews ?? [];
+};
+
+/**
+ * ✅ NOVO: Cria avaliação unificada (restaurante + entregador)
+ */
+export const createUnifiedReview = async (orderId, reviewData) => {
+  const url = `${CLIENT_API_URL}/api/reviews/orders/${orderId}/review`;
+
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      ...createAuthHeaders(),
+    },
+    body: JSON.stringify(reviewData),
+  });
+
+  return processResponse(response);
+};
+
+/**
+ * ✅ NOVO: Verifica status de avaliação de um pedido
+ */
+export const getReviewStatus = async (orderId) => {
+  const url = `${CLIENT_API_URL}/api/reviews/orders/${orderId}/review-status`;
+
+  const response = await fetch(url, {
+    method: 'GET',
+    headers: createAuthHeaders(),
+  });
+
+  return processResponse(response);
 };
