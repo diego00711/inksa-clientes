@@ -1,4 +1,4 @@
-// src/pages/ClientEvaluationsCenter.jsx
+// src/pages/ClientEvaluationsCenter.jsx - VERSÃO ATUALIZADA
 
 import React, { useState, useEffect } from "react";
 import { Star, MessageCircle, Utensils, Truck, Clock, ThumbsUp, ShoppingBag, UserCheck } from "lucide-react";
@@ -6,7 +6,6 @@ import RestaurantReviewForm from "../components/RestaurantReviewForm";
 import DeliveryReviewForm from "../components/DeliveryReviewForm";
 import useDeliveredOrders from "../hooks/useDeliveredOrders";
 import { useProfile } from "../context/ProfileContext";
-// ✅ 1. Importa a nova função do serviço
 import { getClientReviewsReceived } from "../services/reviewService";
 
 // Componente para renderizar uma única avaliação recebida
@@ -39,15 +38,18 @@ const ReceivedReviewCard = ({ review }) => {
 
 export default function ClientEvaluationsCenter() {
   const { profile, loading: loadingProfile } = useProfile();
-  const { orders, loading: loadingOrders } = useDeliveredOrders(profile?.id);
+  
+  // ✅ CORREÇÃO: Adiciona refetch ao hook
+  const { orders, loading: loadingOrders, refetch } = useDeliveredOrders(profile?.id);
+  
   const [highlightOrderId, setHighlightOrderId] = useState(null);
 
-  // ✅ 2. Adiciona estados para as avaliações recebidas
+  // Estados para as avaliações recebidas
   const [receivedReviewsData, setReceivedReviewsData] = useState(null);
   const [loadingReceived, setLoadingReceived] = useState(true);
   const [errorReceived, setErrorReceived] = useState(null);
 
-  // ✅ 3. useEffect para buscar as avaliações recebidas
+  // useEffect para buscar as avaliações recebidas
   useEffect(() => {
     if (profile) {
       setLoadingReceived(true);
@@ -66,7 +68,6 @@ export default function ClientEvaluationsCenter() {
 
 
   if (loadingProfile) {
-    // ... (tela de carregamento principal)
     return (
       <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50">
         <div className="text-center">
@@ -78,7 +79,6 @@ export default function ClientEvaluationsCenter() {
   }
 
   if (!profile) {
-    // ... (tela de perfil não encontrado)
     return (
       <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50">
         <div className="text-center">
@@ -113,7 +113,7 @@ export default function ClientEvaluationsCenter() {
 
       <div className="max-w-7xl mx-auto px-4 py-6 space-y-6">
         
-        {/* ✅ 4. Seção "Como você está sendo avaliado?" agora é dinâmica */}
+        {/* Seção "Como você está sendo avaliado?" */}
         <div className="bg-white rounded-xl shadow-lg border border-blue-100 overflow-hidden">
           <div className="bg-gradient-to-r from-indigo-500 to-purple-500 p-4 md:p-6">
             <div className="flex items-center justify-between">
@@ -166,7 +166,7 @@ export default function ClientEvaluationsCenter() {
           </div>
         </div>
 
-        {/* Seção "Avalie seus pedidos" (sem alterações) */}
+        {/* Seção "Avalie seus pedidos" */}
         <div className="bg-white rounded-xl shadow-lg border border-blue-100 overflow-hidden">
           <div className="bg-gradient-to-r from-blue-500 to-cyan-500 p-4 md:p-6">
             <div className="flex items-center gap-3">
@@ -213,7 +213,7 @@ export default function ClientEvaluationsCenter() {
                         <div className="flex items-center justify-between mb-3">
                           <div className="flex items-center gap-3">
                             <div className="bg-gradient-to-r from-blue-500 to-indigo-500 p-2 rounded-lg">
-                              <span className="text-white font-bold text-sm">#{order.id}</span>
+                              <span className="text-white font-bold text-sm">#{order.id.slice(0, 8)}</span>
                             </div>
                             <div className="flex-1">
                               <h3 className="font-bold text-gray-800 text-sm md:text-base">
@@ -264,6 +264,8 @@ export default function ClientEvaluationsCenter() {
                                   orderId={order.id}
                                   onSuccess={() => {
                                     alert("Avaliação do restaurante enviada!");
+                                    setHighlightOrderId(null);
+                                    refetch(); // ✅ ATUALIZA A LISTA
                                   }}
                                 />
                               </div>
@@ -287,6 +289,8 @@ export default function ClientEvaluationsCenter() {
                                   orderId={order.id}
                                   onSuccess={() => {
                                     alert("Avaliação do entregador enviada!");
+                                    setHighlightOrderId(null);
+                                    refetch(); // ✅ ATUALIZA A LISTA
                                   }}
                                 />
                               </div>

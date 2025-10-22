@@ -1,22 +1,19 @@
-// src/hooks/useDeliveredOrders.js
+// inksa-clientes/src/hooks/useDeliveredOrders.js - VERSÃO COMPLETA
 
 import { useState, useEffect } from 'react';
-// ✅ 1. CORREÇÃO: Importa a função específica, não o objeto 'orderService'
 import { getOrdersPendingClientReview } from '../services/orderService';
 
 /**
- * Custom Hook para buscar e gerenciar a lista de pedidos entregues
- * que estão pendentes de avaliação por parte do cliente.
- * @param {string} profileId - O ID do perfil do cliente.
- * @param {string} role - O papel do usuário (ex: 'client').
+ * Custom Hook para buscar pedidos entregues pendentes de avaliação (CLIENTE)
+ * Busca pedidos que o cliente já recebeu mas ainda não avaliou
  */
-export default function useDeliveredOrders(profileId, role) {
+export default function useDeliveredOrders(profileId) {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    if (!profileId || role !== 'client') { // Só executa para o papel 'client'
+    if (!profileId) {
       setLoading(false);
       return;
     }
@@ -27,13 +24,20 @@ export default function useDeliveredOrders(profileId, role) {
     const fetchOrders = async () => {
       setLoading(true);
       setError(null);
+      
       try {
-        // ✅ 2. CORREÇÃO: Chama a função importada diretamente
-        const pendingOrders = await getOrdersPendingClientReview(profileId, signal);
+        console.log('🔍 Buscando pedidos pendentes de avaliação...');
+        
+        // ✅ Chama o novo endpoint que lista apenas não avaliados
+        const pendingOrders = await getOrdersPendingClientReview(signal);
+        
+        console.log(`✅ ${pendingOrders.length} pedidos pendentes encontrados`);
+        
         setOrders(pendingOrders || []);
+        
       } catch (err) {
         if (err.name !== 'AbortError') {
-          console.error(`Erro ao buscar pedidos para ${role}:`, err);
+          console.error('❌ Erro ao buscar pedidos:', err);
           setError(err.message || "Não foi possível carregar os pedidos.");
         }
       } finally {
@@ -46,7 +50,18 @@ export default function useDeliveredOrders(profileId, role) {
     return () => {
       controller.abort();
     };
-  }, [profileId, role]);
+  }, [profileId]);
 
-  return { orders, loading, error };
+  // ✅ Função para refazer busca (útil após criar avaliação)
+  const refetch = () => {
+    setLoading(true);
+    setError(null);
+    
+    getOrdersPendingClientReview()
+      .then(data => setOrders(data || []))
+      .catch(err => setError(err.message))
+      .finally(() => setLoading(false));
+  };
+
+  return { orders, loading, error, refetch };
 }
