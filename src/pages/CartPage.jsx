@@ -1,4 +1,4 @@
-// Local: src/pages/CartPage.jsx (VERSÃO CORRIGIDA - EMAIL REAL DO USUÁRIO)
+// Local: src/pages/CartPage.jsx (VERSÃO COM DEBUG - VERIFICA O EMAIL)
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
@@ -108,6 +108,17 @@ export function CartPage() {
       return;
     }
 
+    // 🔍 DEBUG: Verificar se o usuário tem email
+    console.log('👤 === DEBUG USUÁRIO ===');
+    console.log('User completo:', user);
+    console.log('User email:', user?.email);
+    console.log('Is authenticated:', isAuthenticated);
+    
+    if (!user || !user.email) {
+      addToast('error', 'Erro: Email do usuário não encontrado. Por favor, faça login novamente.');
+      return;
+    }
+
     setIsProcessingOrder(true);
     try {
       const deliveryInfo = { 
@@ -137,7 +148,9 @@ export function CartPage() {
         ...deliveryInfo, 
       };
 
+      console.log('📦 Criando pedido:', orderPayload);
       const createdOrderResponse = await createOrder(orderPayload, userToken);
+      console.log('✅ Pedido criado:', createdOrderResponse);
       
       // ✅ CORREÇÃO PRINCIPAL: Usar o email real do usuário autenticado
       const preferencePayload = {
@@ -157,7 +170,13 @@ export function CartPage() {
         ],
       };
 
+      // 🔍 DEBUG: Ver o payload antes de enviar
+      console.log('💳 === DEBUG PAGAMENTO ===');
+      console.log('Payload completo:', JSON.stringify(preferencePayload, null, 2));
+      console.log('Email sendo enviado:', preferencePayload.cliente_email);
+
       const paymentPreference = await createPaymentPreference(preferencePayload);
+      console.log('✅ Preferência criada:', paymentPreference);
       
       if (paymentPreference.checkout_link) {
         clearCart();
@@ -167,7 +186,7 @@ export function CartPage() {
       }
 
     } catch (error) {
-      console.error('Erro ao finalizar pedido ou criar preferência de pagamento:', error); 
+      console.error('❌ Erro completo:', error); 
       addToast('error', error.message || 'Erro ao finalizar pedido: Verifique o console para mais detalhes.');
     } finally {
       setIsProcessingOrder(false);
