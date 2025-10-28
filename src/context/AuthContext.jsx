@@ -1,4 +1,4 @@
-// src/context/AuthContext.jsx - VERSÃO CORRIGIDA COM EMAIL
+// src/context/AuthContext.jsx - VERSÃO FINAL CORRIGIDA COM EMAIL
 
 import { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import authService from '../services/authService';
@@ -14,21 +14,30 @@ export const AuthProvider = ({ children }) => {
     const token = authService.getToken();
     if (token) {
       try {
-        // ✅ BUSCA OS DADOS DE AUTENTICAÇÃO (inclui email, id do auth)
-        const authData = await authService.getCurrentUser();
+        // ✅ OPÇÃO 1: Tenta buscar dados de auth (se o backend tiver /api/auth/me)
+        let authData = null;
+        try {
+          authData = await authService.getCurrentAuthUser();
+          console.log('✅ Dados de autenticação obtidos:', authData);
+        } catch (error) {
+          console.log('⚠️ Endpoint /api/auth/me não disponível, usando dados do localStorage');
+          // Fallback: pega os dados do localStorage (salvos no login)
+          const storedUser = authService.getCurrentUser();
+          authData = storedUser;
+        }
         
-        // ✅ BUSCA O PERFIL DO CLIENTE (inclui nome, endereço, telefone, etc)
+        // ✅ OPÇÃO 2: Busca o perfil do cliente
         const profileData = await clientService.getProfile();
+        console.log('✅ Perfil do cliente obtido:', profileData);
         
-        // ✅ COMBINA OS DOIS: perfil + email do auth
+        // ✅ COMBINA: perfil + email
         const combinedUser = {
-          ...profileData,           // Dados do perfil (nome, endereço, etc)
-          email: authData.email,    // Email do Supabase Auth
-          auth_id: authData.id,     // ID do Supabase Auth
-          user_id: profileData.id   // ID do client_profile
+          ...profileData,                    // Dados do perfil (nome, endereço, etc)
+          email: authData?.email,            // Email do Supabase Auth
+          id: profileData.id || authData?.id // ID do client_profile
         };
         
-        console.log('✅ Usuário completo carregado:', combinedUser);
+        console.log('✅ Usuário completo montado:', combinedUser);
         setUser(combinedUser);
       } catch (error) {
         console.error("Falha ao buscar perfil, fazendo logout:", error);
@@ -45,7 +54,10 @@ export const AuthProvider = ({ children }) => {
 
   const login = async (email, password) => {
     try {
-      await authService.login(email, password);
+      const loginResponse = await authService.login(email, password);
+      console.log('✅ Login realizado:', loginResponse);
+      
+      // Após o login, busca o perfil completo
       await fetchAndSetUser();
     } catch (error) {
       console.error("Erro no login (AuthContext):", error);
@@ -59,7 +71,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   const value = {
-    user,                         // Objeto completo: perfil + email
+    user,                              // Objeto completo: perfil + email
     userToken: authService.getToken(), // Token para as requisições
     isAuthenticated: !!user,
     isLoading,
