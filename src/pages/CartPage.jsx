@@ -1,4 +1,4 @@
-// Local: src/pages/CartPage.jsx (VERSÃO COM CORREÇÃO PARA O FRETE)
+// Local: src/pages/CartPage.jsx (VERSÃO CORRIGIDA - EMAIL REAL DO USUÁRIO)
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
@@ -139,9 +139,10 @@ export function CartPage() {
 
       const createdOrderResponse = await createOrder(orderPayload, userToken);
       
+      // ✅ CORREÇÃO PRINCIPAL: Usar o email real do usuário autenticado
       const preferencePayload = {
         pedido_id: createdOrderResponse.id,
-        cliente_email: "test_user_12345678@testuser.com", 
+        cliente_email: user.email, // ✅ USA O EMAIL REAL DO USUÁRIO LOGADO
         itens: [
           ...cartItems.map(item => ({ 
             title: item.name,                            
