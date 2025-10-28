@@ -1,27 +1,37 @@
-// src/context/AuthContext.jsx - VERSÃO FINAL E CORRIGIDA
+// src/context/AuthContext.jsx - VERSÃO CORRIGIDA COM EMAIL
 
 import { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import authService from '../services/authService';
-import clientService from '../services/clientService'; // ✅ 1. Importa o serviço correto do cliente
+import clientService from '../services/clientService';
 
 export const AuthContext = createContext(null);
 
 export const AuthProvider = ({ children }) => {
-  // ✅ 2. Simplificação: 'user' guardará o perfil completo. 'isAuthenticated' será derivado dele.
   const [user, setUser] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
 
   const fetchAndSetUser = useCallback(async () => {
-    // Esta função agora é a única fonte da verdade para buscar o perfil.
     const token = authService.getToken();
     if (token) {
       try {
-        // ✅ 3. Usa o clientService para buscar o perfil da rota /api/client/profile
+        // ✅ BUSCA OS DADOS DE AUTENTICAÇÃO (inclui email, id do auth)
+        const authData = await authService.getCurrentUser();
+        
+        // ✅ BUSCA O PERFIL DO CLIENTE (inclui nome, endereço, telefone, etc)
         const profileData = await clientService.getProfile();
-        setUser(profileData); // Armazena o perfil completo: { id, name, avatar_url, ... }
+        
+        // ✅ COMBINA OS DOIS: perfil + email do auth
+        const combinedUser = {
+          ...profileData,           // Dados do perfil (nome, endereço, etc)
+          email: authData.email,    // Email do Supabase Auth
+          auth_id: authData.id,     // ID do Supabase Auth
+          user_id: profileData.id   // ID do client_profile
+        };
+        
+        console.log('✅ Usuário completo carregado:', combinedUser);
+        setUser(combinedUser);
       } catch (error) {
         console.error("Falha ao buscar perfil, fazendo logout:", error);
-        // Se o token for inválido ou o perfil não for encontrado, desloga.
         authService.logout();
         setUser(null);
       }
@@ -35,13 +45,11 @@ export const AuthProvider = ({ children }) => {
 
   const login = async (email, password) => {
     try {
-      // O serviço de login já salva o token no localStorage
       await authService.login(email, password);
-      // ✅ 4. Após o login, chama a função para buscar e definir o perfil completo.
       await fetchAndSetUser();
     } catch (error) {
       console.error("Erro no login (AuthContext):", error);
-      throw error; // Relança o erro para a página de login poder mostrar a mensagem.
+      throw error;
     }
   };
 
@@ -50,14 +58,14 @@ export const AuthProvider = ({ children }) => {
     setUser(null);
   };
 
-  // ✅ 5. O valor do contexto é simplificado.
   const value = {
-    user, // O objeto de perfil completo
-    isAuthenticated: !!user, // A autenticação é verdadeira se o objeto 'user' existir
+    user,                         // Objeto completo: perfil + email
+    userToken: authService.getToken(), // Token para as requisições
+    isAuthenticated: !!user,
     isLoading,
     login,
     logout,
-    refreshUser: fetchAndSetUser, // A função de refresh agora é a mesma que busca o usuário
+    refreshUser: fetchAndSetUser,
   };
 
   return (
