@@ -1,4 +1,4 @@
-// Local: src/pages/CartPage.jsx (VERSÃO COM DEBUG - VERIFICA O EMAIL)
+// Local: src/pages/CartPage.jsx (NOVA VERSÃO - Backend cria pedido + preferência)
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
@@ -6,9 +6,8 @@ import { Button } from "@/components/ui/button";
 import { ChevronLeft, ShoppingCart, PlusCircle, MinusCircle, Trash2, Loader2 } from "lucide-react";
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
-import { createOrder, createPaymentPreference, calculateDeliveryFee } from '../services/orderService';
+import { createPaymentPreference, calculateDeliveryFee } from '../services/orderService';
 import { useToast } from '../context/ToastContext.jsx';
-import { v4 as uuidv4 } from 'uuid';
 
 export function CartPage() {
   const { cartItems, addItemToCart, removeItemFromCart, clearCart, subTotal } = useCart();
@@ -20,6 +19,7 @@ export function CartPage() {
   const [deliveryFee, setDeliveryFee] = useState(null);
   const [isCalculatingFee, setIsCalculatingFee] = useState(false);
   const [feeError, setFeeError] = useState(null);
+  const [deliveryDistance, setDeliveryDistance] = useState(null);
 
   useEffect(() => {
     const fetchDeliveryFee = async () => {
@@ -54,31 +54,32 @@ export function CartPage() {
 
         console.log('📦 Resposta completa do frete:', feeData);
 
-        // ✅ CORREÇÃO PRINCIPAL: Acessar o valor corretamente
         let finalFee = 0;
+        let distance = 0;
         
         if (feeData && feeData.status === 'success' && feeData.data) {
-          // Estrutura nova: { status: 'success', data: { delivery_fee: 5.15 } }
           finalFee = feeData.data.delivery_fee;
+          distance = feeData.data.distance_km || 0;
         } else if (feeData && typeof feeData.delivery_fee === 'number') {
-          // Estrutura alternativa: { delivery_fee: 5.15 }
           finalFee = feeData.delivery_fee;
+          distance = feeData.distance_km || 0;
         } else if (typeof feeData === 'number') {
-          // Valor direto
           finalFee = feeData;
         }
 
-        // Garantir que é um número válido
         finalFee = Number(finalFee) || 0;
+        distance = Number(distance) || 0;
         
         console.log('✅ Taxa de entrega definida:', finalFee);
+        console.log('✅ Distância:', distance, 'km');
         setDeliveryFee(finalFee);
+        setDeliveryDistance(distance);
 
       } catch (error) {
         console.error("❌ Erro ao calcular frete:", error);
         addToast('error', "Não foi possível calcular o frete.");
         setFeeError("Não foi possível calcular o frete.");
-        setDeliveryFee(5.00); // Taxa padrão em caso de erro
+        setDeliveryFee(5.00);
       } finally {
         setIsCalculatingFee(false);
       }
@@ -88,15 +89,18 @@ export function CartPage() {
   }, [cartItems, addToast]);
 
   const handleFinalizarPedido = async () => {
+    // ✅ VALIDAÇÕES
     if (!isAuthenticated) { 
       addToast('warning', 'Você precisa estar logado para fazer um pedido.');
       navigate('/login'); 
       return; 
     }
+    
     if (cartItems.length === 0) { 
       addToast('warning', 'Seu carrinho está vazio!'); 
       return; 
     }
+    
     const restaurantIds = [...new Set(cartItems.map(item => item.restaurant_id))];
     if (restaurantIds.length > 1) { 
       addToast('warning', 'Você só pode fazer pedidos de um restaurante por vez.'); 
@@ -108,86 +112,121 @@ export function CartPage() {
       return;
     }
 
-    // 🔍 DEBUG: Verificar se o usuário tem email
+    // ✅ VERIFICAR EMAIL
     console.log('👤 === DEBUG USUÁRIO ===');
     console.log('User completo:', user);
     console.log('User email:', user?.email);
-    console.log('Is authenticated:', isAuthenticated);
+    console.log('User id:', user?.id);
     
     if (!user || !user.email) {
       addToast('error', 'Erro: Email do usuário não encontrado. Por favor, faça login novamente.');
       return;
     }
 
+    if (!user.id) {
+      addToast('error', 'Erro: ID do usuário não encontrado. Por favor, faça login novamente.');
+      return;
+    }
+
     setIsProcessingOrder(true);
+    
     try {
-      const deliveryInfo = { 
-        client_latitude: -27.8153, 
-        client_longitude: -50.3258, 
-        delivery_address: "Rua Exemplo Fixo, 123, Lages SC",
-        delivery_fee: deliveryFee 
-      };
-
-      const realRestaurantId = restaurantIds[0];
-      const realClientId = user.id;
-      const realDeliveryId = "f85108d3-b07e-4eb4-bfbe-c7d070cd1b44";
-
-      const orderUUID = uuidv4(); 
-
-      const orderPayload = {
-        id: orderUUID, 
-        restaurant_id: realRestaurantId,
-        client_id: realClientId,
-        delivery_id: realDeliveryId,
-        items: cartItems.map(item => ({ 
-            menu_item_id: item.id, 
-            quantity: item.quantity, 
-            price: parseFloat(item.price ?? 0) 
-        })),
-        total_amount_items: subTotal, 
-        ...deliveryInfo, 
-      };
-
-      console.log('📦 Criando pedido:', orderPayload);
-      const createdOrderResponse = await createOrder(orderPayload, userToken);
-      console.log('✅ Pedido criado:', createdOrderResponse);
+      const restaurantId = restaurantIds[0];
+      const clientId = user.id;
       
-      // ✅ CORREÇÃO PRINCIPAL: Usar o email real do usuário autenticado
+      // 🚀 NOVO FLUXO: Enviar TODOS os dados para criar_preferencia
+      // O backend vai criar o pedido E a preferência em uma única transação!
       const preferencePayload = {
-        pedido_id: createdOrderResponse.id,
-        cliente_email: user.email, // ✅ USA O EMAIL REAL DO USUÁRIO LOGADO
+        // 📋 DADOS DO PEDIDO
+        client_id: clientId,
+        restaurant_id: restaurantId,
+        
+        // 📦 ITENS (produtos + taxa de entrega)
         itens: [
           ...cartItems.map(item => ({ 
-            title: item.name,                            
-            quantity: item.quantity,                       
-            unit_price: parseFloat(item.price ?? 0)      
+            title: item.name,
+            quantity: item.quantity,
+            unit_price: parseFloat(item.price ?? 0),
+            menu_item_id: item.id // ✅ Incluir ID do menu item para referência
           })),
           { 
-            title: "Taxa de Entrega",                    
-            quantity: 1,                                   
-            unit_price: createdOrderResponse.delivery_fee || deliveryFee || 0 
+            title: "Taxa de Entrega",
+            quantity: 1,
+            unit_price: deliveryFee || 0
           }
         ],
+        
+        // 💰 VALORES
+        total_amount_items: subTotal,
+        delivery_fee: deliveryFee || 0,
+        total_amount: subTotal + (deliveryFee || 0),
+        
+        // 📍 ENDEREÇO E LOCALIZAÇÃO
+        delivery_address: "Rua Exemplo Fixo, 123, Lages SC", // TODO: Pegar do perfil do usuário
+        client_latitude: -27.8153,
+        client_longitude: -50.3258,
+        delivery_distance_km: deliveryDistance || 0,
+        
+        // 📝 OBSERVAÇÕES (opcional)
+        notes: "", // TODO: Adicionar campo de observações se necessário
+        
+        // 📧 EMAIL PARA MERCADO PAGO
+        cliente_email: user.email,
+        
+        // 🔗 URLs DE RETORNO
+        urls_retorno: {
+          sucesso: `${window.location.origin}/pagamento/sucesso`,
+          falha: `${window.location.origin}/pagamento/falha`,
+          pendente: `${window.location.origin}/pagamento/pendente`
+        }
       };
 
-      // 🔍 DEBUG: Ver o payload antes de enviar
-      console.log('💳 === DEBUG PAGAMENTO ===');
+      console.log('💳 === CRIANDO PEDIDO + PREFERÊNCIA ===');
       console.log('Payload completo:', JSON.stringify(preferencePayload, null, 2));
-      console.log('Email sendo enviado:', preferencePayload.cliente_email);
+      console.log('Email:', preferencePayload.cliente_email);
+      console.log('Client ID:', preferencePayload.client_id);
+      console.log('Restaurant ID:', preferencePayload.restaurant_id);
+      console.log('Total de itens:', preferencePayload.itens.length);
+      console.log('Valor total:', preferencePayload.total_amount);
 
-      const paymentPreference = await createPaymentPreference(preferencePayload);
-      console.log('✅ Preferência criada:', paymentPreference);
+      // 🚀 ÚNICA CHAMADA: Backend cria pedido + preferência
+      const paymentResponse = await createPaymentPreference(preferencePayload);
       
-      if (paymentPreference.checkout_link) {
+      console.log('✅ Resposta do backend:', paymentResponse);
+      console.log('✅ Pedido ID:', paymentResponse.pedido_id);
+      console.log('✅ Checkout link:', paymentResponse.checkout_link);
+      
+      if (paymentResponse.checkout_link) {
+        // ✅ Salvar o ID do pedido no localStorage (para tracking)
+        if (paymentResponse.pedido_id) {
+          localStorage.setItem('last_order_id', paymentResponse.pedido_id);
+        }
+        
+        // ✅ Limpar o carrinho
         clearCart();
-        window.location.href = paymentPreference.checkout_link; 
+        
+        // ✅ Redirecionar para o Mercado Pago
+        console.log('🔄 Redirecionando para:', paymentResponse.checkout_link);
+        window.location.href = paymentResponse.checkout_link;
       } else { 
-        throw new Error("Link de checkout não foi gerado."); 
+        throw new Error("Link de checkout não foi gerado pelo servidor."); 
       }
 
     } catch (error) {
-      console.error('❌ Erro completo:', error); 
-      addToast('error', error.message || 'Erro ao finalizar pedido: Verifique o console para mais detalhes.');
+      console.error('❌ Erro completo ao finalizar pedido:', error);
+      
+      // Mensagem de erro mais detalhada
+      let errorMessage = 'Erro ao finalizar pedido.';
+      
+      if (error.response?.data?.erro) {
+        errorMessage = error.response.data.erro;
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      
+      console.error('❌ Mensagem de erro:', errorMessage);
+      addToast('error', errorMessage);
+      
     } finally {
       setIsProcessingOrder(false);
     }
@@ -199,14 +238,15 @@ export function CartPage() {
     }
   };
   
-  // ✅ CORREÇÃO: Garantir que deliveryFee é sempre um número para o cálculo
   const safeFee = Number(deliveryFee) || 0;
   const finalTotal = subTotal + safeFee;
 
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="flex items-center mb-6">
-        <Button variant="ghost" size="icon" onClick={() => navigate(-1)}><ChevronLeft className="h-6 w-6" /></Button>
+        <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
+          <ChevronLeft className="h-6 w-6" />
+        </Button>
         <h1 className="text-3xl font-bold ml-4">Meu Carrinho</h1>
       </div>
 
@@ -215,25 +255,52 @@ export function CartPage() {
           <ShoppingCart className="mx-auto h-24 w-24 text-gray-300" />
           <h2 className="mt-6 text-xl font-semibold">Seu carrinho está vazio</h2>
           <p className="mt-2 text-gray-500">Adicione itens para continuar.</p>
-          <Button asChild className="mt-6"><Link to="/">Ver restaurantes</Link></Button>
+          <Button asChild className="mt-6">
+            <Link to="/">Ver restaurantes</Link>
+          </Button>
         </div>
       ) : (
         <div className="bg-white p-4 sm:p-8 rounded-lg shadow-md">
           <div className="space-y-6 mb-8">
             {cartItems.map(item => (
               <div key={item.id} className="flex items-center gap-4">
-                <img src={item.image_url || '/inka-logo.png'} alt={item.name} className="w-20 h-20 rounded-md object-cover" />
+                <img 
+                  src={item.image_url || '/inka-logo.png'} 
+                  alt={item.name} 
+                  className="w-20 h-20 rounded-md object-cover" 
+                />
                 <div className="flex-grow">
                   <h3 className="font-semibold">{item.name}</h3>
                   <p className="text-sm text-gray-600">R$ {parseFloat(item.price ?? 0).toFixed(2)}</p>
                 </div>
                 <div className="flex items-center gap-2">
-                  <Button variant="ghost" size="icon" onClick={() => removeItemFromCart(item.id)}><MinusCircle className="h-5 w-5" /></Button>
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    onClick={() => removeItemFromCart(item.id)}
+                  >
+                    <MinusCircle className="h-5 w-5" />
+                  </Button>
                   <span className="font-bold w-8 text-center">{item.quantity}</span>
-                  <Button variant="ghost" size="icon" onClick={() => addItemToCart(item)}><PlusCircle className="h-5 w-5" /></Button>
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    onClick={() => addItemToCart(item)}
+                  >
+                    <PlusCircle className="h-5 w-5" />
+                  </Button>
                 </div>
-                <div className="font-bold w-24 text-right">R$ {(parseFloat(item.price ?? 0) * item.quantity).toFixed(2)}</div>
-                <Button variant="ghost" size="icon" className="text-gray-400 hover:text-red-500" onClick={() => handleRemoveItemCompletely(item.id)}><Trash2 className="h-5 w-5" /></Button>
+                <div className="font-bold w-24 text-right">
+                  R$ {(parseFloat(item.price ?? 0) * item.quantity).toFixed(2)}
+                </div>
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  className="text-gray-400 hover:text-red-500" 
+                  onClick={() => handleRemoveItemCompletely(item.id)}
+                >
+                  <Trash2 className="h-5 w-5" />
+                </Button>
               </div>
             ))}
           </div>
@@ -253,6 +320,12 @@ export function CartPage() {
                 )}
               </span>
             </div>
+            {deliveryDistance && deliveryDistance > 0 && (
+              <div className="flex justify-between items-center text-sm text-gray-500">
+                <span>Distância</span>
+                <span>{deliveryDistance.toFixed(1)} km</span>
+              </div>
+            )}
             <div className="flex justify-between items-center text-lg font-bold mt-2">
               <span>Total</span>
               <span>R$ {finalTotal.toFixed(2)}</span>
@@ -260,7 +333,12 @@ export function CartPage() {
           </div>
           
           <div className="flex justify-between mt-8 gap-4 flex-col sm:flex-row">
-            <Button variant="outline" onClick={clearCart} className="flex-1 text-red-500 border-red-500 hover:bg-red-500/10" disabled={isProcessingOrder}>
+            <Button 
+              variant="outline" 
+              onClick={clearCart} 
+              className="flex-1 text-red-500 border-red-500 hover:bg-red-500/10" 
+              disabled={isProcessingOrder}
+            >
               Limpar Carrinho
             </Button>
             <Button 
@@ -268,7 +346,14 @@ export function CartPage() {
               onClick={handleFinalizarPedido} 
               disabled={isProcessingOrder || isCalculatingFee || feeError || deliveryFee === null}
             >
-              {isProcessingOrder ? ( <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Processando...</> ) : ( 'Finalizar Pedido e Pagar' )}
+              {isProcessingOrder ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" /> 
+                  Processando...
+                </>
+              ) : (
+                'Finalizar Pedido e Pagar'
+              )}
             </Button>
           </div>
         </div>
