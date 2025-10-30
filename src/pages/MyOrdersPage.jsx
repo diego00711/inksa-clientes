@@ -1,9 +1,11 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import AuthService from '../services/authService';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { ArrowLeft, Trash2 } from 'lucide-react';
+
+import AuthService from '../services/authService';
 import { useToast } from '../context/ToastContext.jsx';
 import { PickupCodeDisplay } from '../components/PickupCodeDisplay.jsx';
+import { deleteOrder as deleteOrderApi } from '../services/orderService'; // ✅ novo
 
 const API_BASE = import.meta.env.VITE_API_URL || 'https://inksa-auth-flask-dev.onrender.com';
 const API_URL = `${API_BASE}/api`;
@@ -12,34 +14,31 @@ const MyOrdersPage = () => {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const navigate = useNavigate();
-  const { addToast } = useToast();
+  const addToast = useToast();
 
   const fetchOrders = useCallback(async () => {
     try {
       const authToken = AuthService.getToken();
       if (!authToken) {
         AuthService.logout();
-        addToast('error', 'Sessão expirada. Por favor, faça o login novamente.');
+        addToast('Sessão expirada. Por favor, faça o login novamente.', 'error'); // ✅ ordem (msg, type)
         return;
       }
+
       const response = await fetch(`${API_URL}/orders`, {
         headers: { Authorization: `Bearer ${authToken}` },
         credentials: 'include',
       });
+
       const result = await response.json();
-      if (!response.ok) {
-        throw new Error(result.error || 'Não foi possível buscar os pedidos.');
-      }
-      
-      // ✅ CORRIGIDO: Aceita tanto array direto quanto objeto com data
-      console.log('📦 Resposta do backend:', result);
+      if (!response.ok) throw new Error(result.error || 'Não foi possível buscar os pedidos.');
+
+      // aceita array direto ou objeto { data: [] }
       setOrders(Array.isArray(result) ? result : (result.data || []));
-      
     } catch (err) {
       setError(err.message);
       console.error('Erro ao buscar pedidos:', err);
-      addToast('error', err.message || 'Erro ao carregar os pedidos.');
+      addToast(err.message || 'Erro ao carregar os pedidos.', 'error'); // ✅ ordem (msg, type)
     } finally {
       setLoading(false);
     }
@@ -47,77 +46,68 @@ const MyOrdersPage = () => {
 
   useEffect(() => {
     fetchOrders();
-    const intervalId = setInterval(() => {
-      fetchOrders();
-    }, 10000);
-    return () => clearInterval(intervalId);
+    const id = setInterval(fetchOrders, 10000);
+    return () => clearInterval(id);
   }, [fetchOrders]);
 
   const handleDeleteOrder = async (orderId) => {
-    if (!window.confirm('Tem certeza que deseja excluir este pedido? Esta ação não pode ser desfeita.')) {
-      return;
-    }
+    if (!window.confirm('Tem certeza que deseja excluir este pedido? Esta ação não pode ser desfeita.')) return;
 
     try {
-      await AuthService.deleteOrder(orderId);
-      addToast('success', 'Pedido excluído com sucesso!');
-      setOrders((prev) => prev.filter((order) => order.id !== orderId));
+      await deleteOrderApi(orderId); // ✅ usa service dedicado
+      setOrders((prev) => prev.filter((o) => o.id !== orderId));
+      addToast('Pedido excluído com sucesso!', 'success');
     } catch (err) {
       console.error('Erro ao excluir pedido:', err);
-      addToast('error', err.message || 'Falha ao excluir o pedido.');
+      addToast(err.message || 'Falha ao excluir o pedido.', 'error');
     }
   };
 
   const getStatusClasses = (status) => {
-    const statusMap = {
-      'pending': 'bg-yellow-100 text-yellow-800',
-      'Pendente': 'bg-yellow-100 text-yellow-800',
-      'accepted': 'bg-blue-100 text-blue-800',
-      'Aceito': 'bg-blue-100 text-blue-800',
-      'preparing': 'bg-indigo-100 text-indigo-800',
+    const map = {
+      pending: 'bg-yellow-100 text-yellow-800',
+      Pendente: 'bg-yellow-100 text-yellow-800',
+      accepted: 'bg-blue-100 text-blue-800',
+      Aceito: 'bg-blue-100 text-blue-800',
+      preparing: 'bg-indigo-100 text-indigo-800',
       'Em Preparo': 'bg-indigo-100 text-indigo-800',
-      'Preparando': 'bg-indigo-100 text-indigo-800',
-      'ready': 'bg-purple-100 text-purple-800',
-      'Pronto': 'bg-purple-100 text-purple-800',
+      Preparando: 'bg-indigo-100 text-indigo-800',
+      ready: 'bg-purple-100 text-purple-800',
+      Pronto: 'bg-purple-100 text-purple-800',
       'Pronto para Entrega': 'bg-purple-100 text-purple-800',
-      'accepted_by_delivery': 'bg-pink-100 text-pink-800',
+      accepted_by_delivery: 'bg-pink-100 text-pink-800',
       'Aguardando Retirada': 'bg-pink-100 text-pink-800',
-      'delivering': 'bg-orange-100 text-orange-800',
+      delivering: 'bg-orange-100 text-orange-800',
       'Saiu para Entrega': 'bg-orange-100 text-orange-800',
-      'delivered': 'bg-green-100 text-green-800',
-      'Entregue': 'bg-green-100 text-green-800',
-      'Concluído': 'bg-green-100 text-green-800',
-      'cancelled': 'bg-red-100 text-red-800',
-      'Cancelado': 'bg-red-100 text-red-800',
+      delivered: 'bg-green-100 text-green-800',
+      Entregue: 'bg-green-100 text-green-800',
+      Concluído: 'bg-green-100 text-green-800',
+      cancelled: 'bg-red-100 text-red-800',
+      Cancelado: 'bg-red-100 text-red-800',
     };
-    return statusMap[status] || 'bg-gray-100 text-gray-800';
+    return map[status] || 'bg-gray-100 text-gray-800';
   };
 
   const translateStatus = (status) => {
-    const translations = {
-      'pending': 'Pendente',
-      'accepted': 'Aceito',
-      'preparing': 'Em Preparo',
-      'ready': 'Pronto para Entrega',
-      'accepted_by_delivery': 'Entregador a Caminho',
-      'delivering': 'Saiu para Entrega',
-      'delivered': 'Entregue',
-      'cancelled': 'Cancelado',
-      'archived': 'Arquivado'
+    const t = {
+      pending: 'Pendente',
+      accepted: 'Aceito',
+      preparing: 'Em Preparo',
+      ready: 'Pronto para Entrega',
+      accepted_by_delivery: 'Entregador a Caminho',
+      delivering: 'Saiu para Entrega',
+      delivered: 'Entregue',
+      cancelled: 'Cancelado',
+      archived: 'Arquivado',
     };
-    return translations[status] || status;
+    return t[status] || status;
   };
 
   const renderContent = () => {
-    if (loading) {
-      return <p className="text-center text-gray-500 py-10">A carregar os seus pedidos...</p>;
-    }
-    if (error) {
-      return <p className="text-center text-red-500 py-10">Erro: {error}</p>;
-    }
-    if (orders.length === 0) {
-      return <p className="text-center text-gray-500 py-10">Você ainda não fez nenhum pedido.</p>;
-    }
+    if (loading) return <p className="text-center text-gray-500 py-10">Carregando seus pedidos...</p>;
+    if (error) return <p className="text-center text-red-500 py-10">Erro: {error}</p>;
+    if (orders.length === 0) return <p className="text-center text-gray-500 py-10">Você ainda não fez nenhum pedido.</p>;
+
     return orders.map((order) => (
       <div key={order.id} className="bg-white p-6 rounded-lg shadow-md border border-gray-200 mb-6">
         <div className="flex justify-between items-start">
@@ -129,11 +119,15 @@ const MyOrdersPage = () => {
             <span className={`px-3 py-1 text-sm font-bold rounded-full ${getStatusClasses(order.status)}`}>
               {translateStatus(order.status)}
             </span>
-            {(order.status === 'delivered' || order.status === 'Concluído' || order.status === 'Cancelado' || order.status === 'cancelled') && (
+
+            {(order.status === 'delivered' ||
+              order.status === 'Concluído' ||
+              order.status === 'cancelled' ||
+              order.status === 'Cancelado') && (
               <button
                 onClick={() => handleDeleteOrder(order.id)}
                 className="text-gray-400 hover:text-red-600 transition-colors"
-                title="Excluir pedido antigo"
+                title="Excluir pedido"
               >
                 <Trash2 size={20} />
               </button>
@@ -146,7 +140,8 @@ const MyOrdersPage = () => {
             <strong>Valor Total:</strong> R$ {parseFloat(order.total_amount).toFixed(2)}
           </p>
           <p className="text-gray-700">
-            <strong>Data:</strong> {new Date(order.created_at).toLocaleString('pt-BR')}
+            <strong>Data:</strong>{' '}
+            {order.created_at ? new Date(order.created_at).toLocaleString('pt-BR') : '--'}
           </p>
         </div>
 
