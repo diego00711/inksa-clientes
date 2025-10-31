@@ -1,5 +1,15 @@
-// inksa-clientes/src/services/orderService.js - VERSÃO COMPLETA
+// inksa-clientes/src/services/orderService.js — VERSÃO ROBUSTA (com 204-safe)
 import { CLIENT_API_URL, processResponse, createAuthHeaders } from './api';
+
+/**
+ * Helper: processa resposta que pode ser 204 (sem corpo) sem quebrar.
+ */
+const processMaybeNoContent = async (response) => {
+  if (response.status === 204) {
+    return { status: 'success' };
+  }
+  return processResponse(response);
+};
 
 /** Calcula a taxa de entrega. */
 export const calculateDeliveryFee = async (deliveryData) => {
@@ -20,10 +30,20 @@ export const calculateDeliveryFee = async (deliveryData) => {
     } else if (typeof data?.delivery_fee === 'number') {
       deliveryFee = data.delivery_fee;
     }
-    return { status: 'success', data: { delivery_fee: Number(deliveryFee) || 5.0, message: data?.data?.message || data?.message || 'Frete calculado com sucesso' } };
+
+    return {
+      status: 'success',
+      data: {
+        delivery_fee: Number(deliveryFee) || 5.0,
+        message: data?.data?.message || data?.message || 'Frete calculado com sucesso',
+      },
+    };
   } catch (err) {
     console.error('❌ Erro ao calcular frete:', err);
-    return { status: 'success', data: { delivery_fee: 5.0, message: 'Taxa padrão aplicada (erro na conexão)' } };
+    return {
+      status: 'success',
+      data: { delivery_fee: 5.0, message: 'Taxa padrão aplicada (erro na conexão)' },
+    };
   }
 };
 
@@ -52,7 +72,11 @@ export const createPaymentPreference = async (preferenceData) => {
 /** ✅ Pedidos pendentes de avaliação do CLIENTE */
 export const getOrdersPendingClientReview = async (signal) => {
   const url = `${CLIENT_API_URL}/api/reviews/orders/pending-reviews`;
-  const response = await fetch(url, { method: 'GET', headers: createAuthHeaders(), signal });
+  const response = await fetch(url, {
+    method: 'GET',
+    headers: createAuthHeaders(),
+    signal,
+  });
   const data = await processResponse(response);
   return data?.pending_reviews ?? [];
 };
@@ -71,23 +95,51 @@ export const createUnifiedReview = async (orderId, reviewData) => {
 /** ✅ Verifica status de avaliação de um pedido */
 export const getReviewStatus = async (orderId) => {
   const url = `${CLIENT_API_URL}/api/reviews/orders/${orderId}/review-status`;
-  const response = await fetch(url, { method: 'GET', headers: createAuthHeaders() });
+  const response = await fetch(url, {
+    method: 'GET',
+    headers: createAuthHeaders(),
+  });
   return processResponse(response);
 };
 
 /** ✅ NOVO: busca códigos do pedido (compatível com /api/orders/:id/codes) */
 export const getOrderCodes = async (orderId) => {
   const url = `${CLIENT_API_URL}/api/orders/${orderId}/codes`;
-  const response = await fetch(url, { method: 'GET', headers: createAuthHeaders() });
-  return processResponse(response);
+  const response = await fetch(url, {
+    method: 'GET',
+    headers: createAuthHeaders(),
+  });
+  const data = await processResponse(response);
+
+  // Normalização leve pra evitar undefined no consumo
+  return {
+    order_id: data?.order_id ?? orderId,
+    status: data?.status ?? null,
+    pickup_code: data?.pickup_code ?? null,
+    delivery_code: data?.delivery_code ?? null,
+  };
 };
 
-/** ✅ NOVO: excluir/arquivar pedido do cliente */
+/** ✅ NOVO: excluir/arquivar pedido do cliente (204-safe) */
 export const deleteOrder = async (orderId) => {
   const url = `${CLIENT_API_URL}/api/orders/${orderId}`;
   const response = await fetch(url, {
     method: 'DELETE',
     headers: { ...createAuthHeaders() },
   });
-  return processResponse(response);
+  return processMaybeNoContent(response);
 };
+
+/* (Opcional) export default para facilitar import agrupado */
+const OrderService = {
+  calculateDeliveryFee,
+  createOrder,
+  createPaymentPreference,
+  getOrdersPendingClientReview,
+  createUnifiedReview,
+  getReviewStatus,
+  getOrderCodes,
+  deleteOrder,
+};
+
+export default OrderService;
