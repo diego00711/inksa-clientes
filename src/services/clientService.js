@@ -1,9 +1,9 @@
 // src/services/ClientService.js - VERSÃO CORRIGIDA
 
 import AuthService from './authService';
+import { CLIENT_API_URL } from './api';
 
-const API_BASE = import.meta.env.VITE_API_URL || 'https://inksa-auth-flask-dev.onrender.com';
-const API_URL = `${API_BASE}/api`;
+const API_URL = `${CLIENT_API_URL}/api`;
 
 const processResponse = async (response ) => {
   if (!response.ok) {

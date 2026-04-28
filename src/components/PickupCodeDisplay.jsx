@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { Shield, Package, Truck, CheckCircle, Clock } from 'lucide-react';
 import AuthService from '../services/authService';
+import { CLIENT_API_URL } from '../services/api';
 
-const API_BASE = import.meta.env.VITE_API_URL || 'https://inksa-auth-flask-dev.onrender.com';
-const API_URL = `${API_BASE}/api`;
+const API_URL = `${CLIENT_API_URL}/api`;
 
 export const PickupCodeDisplay = ({ orderId, orderStatus }) => {
   const [codes, setCodes] = useState(null);

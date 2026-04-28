@@ -6,9 +6,9 @@ import AuthService from '../services/authService';
 import { useToast } from '../context/ToastContext.jsx';
 import { PickupCodeDisplay } from '../components/PickupCodeDisplay.jsx';
 import { deleteOrder as deleteOrderApi } from '../services/orderService'; // ✅ novo
+import { CLIENT_API_URL } from '../services/api';
 
-const API_BASE = import.meta.env.VITE_API_URL || 'https://inksa-auth-flask-dev.onrender.com';
-const API_URL = `${API_BASE}/api`;
+const API_URL = `${CLIENT_API_URL}/api`;
 
 const MyOrdersPage = () => {
   const [orders, setOrders] = useState([]);

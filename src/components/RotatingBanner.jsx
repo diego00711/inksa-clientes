@@ -1,6 +1,7 @@
 // RotatingBanner.jsx - VERSÃO COM OVERLAY CONDICIONAL
 
 import React, { useState, useEffect, useCallback } from 'react';
+import { CLIENT_API_URL as API_BASE_URL } from '../services/api';
 
 const RotatingBanner = () => {
   const [banners, setBanners] = useState([]);
@@ -8,8 +9,6 @@ const RotatingBanner = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [imageDimensions, setImageDimensions] = useState({ height: 300, width: 1200 });
-
-  const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'https://inksa-auth-flask-dev.onrender.com';
 
   const loadImage = (imageUrl ) => {
     return new Promise((resolve, reject) => {

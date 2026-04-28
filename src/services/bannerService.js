@@ -1,5 +1,5 @@
 // bannerService.js - Atualizado para usar o backend Flask
-const API_URL = import.meta.env.VITE_API_URL || 'https://inksa-auth-flask-dev.onrender.com';
+import { CLIENT_API_URL as API_URL } from './api';
 
 class BannerService {
   constructor() {

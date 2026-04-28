@@ -1,6 +1,6 @@
 // src/services/authService.js - VERSÃO CORRIGIDA COM getCurrentAuthUser
 
-const API_BASE_URL = 'https://inksa-auth-flask-dev.onrender.com';
+import { CLIENT_API_URL as API_BASE_URL } from './api';
 const AUTH_TOKEN_KEY = 'clientAuthToken';
 const CLIENT_USER_DATA_KEY = 'clientUser';
 
