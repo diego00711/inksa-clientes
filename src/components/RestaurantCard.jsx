@@ -1,11 +1,20 @@
 // Local: src/components/RestaurantCard.jsx
 
+import { useState } from "react";
 import { Link } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
-import { Star, MapPin, Clock, Heart, Info } from "lucide-react"; 
+import { Star, MapPin, Clock, Heart, Info } from "lucide-react";
+
+const FAVORITES_KEY = 'inksa.favorites';
+
+function getFavorites() {
+  try { return new Set(JSON.parse(localStorage.getItem(FAVORITES_KEY) || '[]')); }
+  catch { return new Set(); }
+}
 
 export function RestaurantCard({ restaurant }) {
+  const [isFavorited, setIsFavorited] = useState(() => getFavorites().has(restaurant.id));
   // --- LÓGICA DE DADOS ---
   const deliveryFee = restaurant.delivery_fee ?? 0;
   const isFreeDelivery = deliveryFee === 0;
@@ -107,16 +116,23 @@ export function RestaurantCard({ restaurant }) {
             {category}
           </Badge>
 
-          {/* Botão de Favorito (placeholder) */}
-          <button 
+          {/* Botão de Favorito */}
+          <button
             className="absolute bottom-3 right-3 bg-white/90 backdrop-blur-sm p-2 rounded-full shadow-lg hover:bg-white transition-all duration-200 hover:scale-110"
             onClick={(e) => {
               e.preventDefault();
               e.stopPropagation();
-              // Lógica para adicionar/remover favoritos aqui
+              const favorites = getFavorites();
+              if (isFavorited) {
+                favorites.delete(restaurant.id);
+              } else {
+                favorites.add(restaurant.id);
+              }
+              localStorage.setItem(FAVORITES_KEY, JSON.stringify([...favorites]));
+              setIsFavorited(prev => !prev);
             }}
           >
-            <Heart className="w-4 h-4 text-gray-600 hover:text-red-500 transition-colors" />
+            <Heart className={`w-4 h-4 transition-colors ${isFavorited ? 'fill-red-500 text-red-500' : 'text-gray-600 hover:text-red-500'}`} />
           </button>
         </div>
 

@@ -17,30 +17,16 @@ export function RestaurantDetailsPage() {
   const [error, setError] = useState(null);
   const [quantities, setQuantities] = useState({});
 
-  // DEBUG: Logs para investigar o problema
-  console.log('🔍 RestaurantDetailsPage - ID:', id);
-
   useEffect(() => {
     const fetchDetails = async () => {
       setIsLoading(true);
       setError(null);
       try {
-        console.log('🔄 Buscando detalhes do restaurante:', id);
         const data = await RestaurantService.getRestaurantDetails(id);
-        
-        console.log('📊 Dados recebidos:', data);
-        console.log('🍕 Menu items:', data.menu_items);
-        console.log('📝 Estrutura completa:', JSON.stringify(data, null, 2));
-        
         setRestaurant(data);
-        
-        // Tenta diferentes estruturas possíveis do cardápio
         const items = data.menu_items || data.menuItems || data.items || [];
-        console.log('✅ Items processados:', items);
         setMenuItems(items);
-        
       } catch (err) {
-        console.error('❌ Erro ao buscar restaurante:', err);
         setError(err.message);
       } finally {
         setIsLoading(false);
@@ -206,14 +192,6 @@ export function RestaurantDetailsPage() {
             </span>
           </h2>
           
-          {/* DEBUG: Informações para debug */}
-          <div className="mb-4 p-3 bg-blue-50 rounded-lg text-xs text-blue-800">
-            <strong>Debug Info:</strong> 
-            Menu items encontrados: {menuItems.length} | 
-            Estrutura: {restaurant.menu_items ? '✅ menu_items' : '❌ menu_items'} | 
-            ID do restaurante: {restaurant.id}
-          </div>
-
           {menuItems.length > 0 ? (
             <div className="grid grid-cols-1 gap-4">
               {menuItems.map(item => {

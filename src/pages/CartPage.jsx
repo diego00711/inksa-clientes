@@ -8,6 +8,7 @@ import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
 import { createPaymentPreference, calculateDeliveryFee } from '../services/orderService';
 import { useToast } from '../context/ToastContext.jsx';
+import ClientService from '../services/clientService';
 
 export function CartPage() {
   const { cartItems, addItemToCart, removeItemFromCart, clearCart, subTotal } = useCart();
@@ -20,6 +21,11 @@ export function CartPage() {
   const [isCalculatingFee, setIsCalculatingFee] = useState(false);
   const [feeError, setFeeError] = useState(null);
   const [deliveryDistance, setDeliveryDistance] = useState(null);
+  const [clientProfile, setClientProfile] = useState(null);
+
+  useEffect(() => {
+    ClientService.getProfile().then(setClientProfile).catch(() => {});
+  }, []);
 
   useEffect(() => {
     const fetchDeliveryFee = async () => {
@@ -33,11 +39,11 @@ export function CartPage() {
       
       try {
         const locationData = {
-          client_latitude: -27.8153, 
-          client_longitude: -50.3258, 
+          client_latitude: clientProfile?.latitude || clientProfile?.lat || 0,
+          client_longitude: clientProfile?.longitude || clientProfile?.lng || 0,
         };
 
-        const restaurantId = cartItems[0]?.restaurant_id; 
+        const restaurantId = cartItems[0]?.restaurant_id;
 
         if (!restaurantId) {
           setFeeError("ID do restaurante não encontrado no carrinho.");
@@ -45,18 +51,14 @@ export function CartPage() {
           return;
         }
 
-        console.log('🚚 Calculando frete para:', { restaurant_id: restaurantId, ...locationData });
-
         const feeData = await calculateDeliveryFee({
           restaurant_id: restaurantId,
           ...locationData,
         });
 
-        console.log('📦 Resposta completa do frete:', feeData);
-
         let finalFee = 0;
         let distance = 0;
-        
+
         if (feeData && feeData.status === 'success' && feeData.data) {
           finalFee = feeData.data.delivery_fee;
           distance = feeData.data.distance_km || 0;
@@ -69,14 +71,11 @@ export function CartPage() {
 
         finalFee = Number(finalFee) || 0;
         distance = Number(distance) || 0;
-        
-        console.log('✅ Taxa de entrega definida:', finalFee);
-        console.log('✅ Distância:', distance, 'km');
+
         setDeliveryFee(finalFee);
         setDeliveryDistance(distance);
 
       } catch (error) {
-        console.error("❌ Erro ao calcular frete:", error);
         addToast('error', "Não foi possível calcular o frete.");
         setFeeError("Não foi possível calcular o frete.");
         setDeliveryFee(5.00);
@@ -86,7 +85,7 @@ export function CartPage() {
     };
 
     fetchDeliveryFee();
-  }, [cartItems, addToast]);
+  }, [cartItems, addToast, clientProfile]);
 
   const handleFinalizarPedido = async () => {
     // ✅ VALIDAÇÕES
@@ -112,12 +111,6 @@ export function CartPage() {
       return;
     }
 
-    // ✅ VERIFICAR EMAIL
-    console.log('👤 === DEBUG USUÁRIO ===');
-    console.log('User completo:', user);
-    console.log('User email:', user?.email);
-    console.log('User id:', user?.id);
-    
     if (!user || !user.email) {
       addToast('error', 'Erro: Email do usuário não encontrado. Por favor, faça login novamente.');
       return;
@@ -162,9 +155,9 @@ export function CartPage() {
         total_amount: subTotal + (deliveryFee || 0),
         
         // 📍 ENDEREÇO E LOCALIZAÇÃO
-        delivery_address: "Rua Exemplo Fixo, 123, Lages SC", // TODO: Pegar do perfil do usuário
-        client_latitude: -27.8153,
-        client_longitude: -50.3258,
+        delivery_address: clientProfile?.address || clientProfile?.full_address || '',
+        client_latitude: clientProfile?.latitude || clientProfile?.lat || 0,
+        client_longitude: clientProfile?.longitude || clientProfile?.lng || 0,
         delivery_distance_km: deliveryDistance || 0,
         
         // 📝 OBSERVAÇÕES (opcional)
@@ -181,20 +174,8 @@ export function CartPage() {
         }
       };
 
-      console.log('💳 === CRIANDO PEDIDO + PREFERÊNCIA ===');
-      console.log('Payload completo:', JSON.stringify(preferencePayload, null, 2));
-      console.log('Email:', preferencePayload.cliente_email);
-      console.log('Client ID:', preferencePayload.client_id);
-      console.log('Restaurant ID:', preferencePayload.restaurant_id);
-      console.log('Total de itens:', preferencePayload.itens.length);
-      console.log('Valor total:', preferencePayload.total_amount);
-
       // 🚀 ÚNICA CHAMADA: Backend cria pedido + preferência
       const paymentResponse = await createPaymentPreference(preferencePayload);
-      
-      console.log('✅ Resposta do backend:', paymentResponse);
-      console.log('✅ Pedido ID:', paymentResponse.pedido_id);
-      console.log('✅ Checkout link:', paymentResponse.checkout_link);
       
       if (paymentResponse.checkout_link) {
         // ✅ Salvar o ID do pedido no localStorage (para tracking)
@@ -206,25 +187,13 @@ export function CartPage() {
         clearCart();
         
         // ✅ Redirecionar para o Mercado Pago
-        console.log('🔄 Redirecionando para:', paymentResponse.checkout_link);
         window.location.href = paymentResponse.checkout_link;
       } else { 
         throw new Error("Link de checkout não foi gerado pelo servidor."); 
       }
 
     } catch (error) {
-      console.error('❌ Erro completo ao finalizar pedido:', error);
-      
-      // Mensagem de erro mais detalhada
-      let errorMessage = 'Erro ao finalizar pedido.';
-      
-      if (error.response?.data?.erro) {
-        errorMessage = error.response.data.erro;
-      } else if (error.message) {
-        errorMessage = error.message;
-      }
-      
-      console.error('❌ Mensagem de erro:', errorMessage);
+      const errorMessage = error.response?.data?.erro || error.message || 'Erro ao finalizar pedido.';
       addToast('error', errorMessage);
       
     } finally {

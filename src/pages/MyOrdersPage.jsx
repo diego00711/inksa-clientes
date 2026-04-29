@@ -223,7 +223,7 @@ const MyOrdersPage = () => {
   const [error, setError] = useState(null);
   const [reviewingOrder, setReviewingOrder] = useState(null);
   const [reviewedIds, setReviewedIds] = useState(getReviewedOrders);
-  const addToast = useToast();
+  const { addToast } = useToast();
 
   const fetchOrders = useCallback(async () => {
     try {
@@ -239,7 +239,7 @@ const MyOrdersPage = () => {
       setOrders(Array.isArray(result) ? result : (result.data || []));
     } catch (err) {
       setError(err.message);
-      addToast(err.message || 'Erro ao carregar os pedidos.', 'error');
+      addToast('error', err.message || 'Erro ao carregar os pedidos.');
     } finally {
       setLoading(false);
     }
@@ -263,7 +263,7 @@ const MyOrdersPage = () => {
           const existing = prev.find(o => o.id === updated.id);
           if (!existing || existing.status === updated.status) return prev;
           const msg = STATUS_TOAST[updated.status];
-          if (msg) addToast(msg, updated.status === 'cancelled' ? 'error' : 'success');
+          if (msg) addToast(updated.status === 'cancelled' ? 'error' : 'success', msg);
           return prev.map(o => o.id === updated.id ? { ...o, status: updated.status } : o);
         });
       })
@@ -276,16 +276,16 @@ const MyOrdersPage = () => {
     try {
       await deleteOrderApi(orderId);
       setOrders(prev => prev.filter(o => o.id !== orderId));
-      addToast('Pedido excluído com sucesso!', 'success');
+      addToast('success', 'Pedido excluído com sucesso!');
     } catch (err) {
-      addToast(err.message || 'Falha ao excluir o pedido.', 'error');
+      addToast('error', err.message || 'Falha ao excluir o pedido.');
     }
   };
 
   const handleReviewDone = () => {
     setReviewedIds(getReviewedOrders());
     setReviewingOrder(null);
-    addToast('Obrigado pela sua avaliação!', 'success');
+    addToast('success', 'Obrigado pela sua avaliação!');
   };
 
   const renderContent = () => {

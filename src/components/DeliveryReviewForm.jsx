@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { Star, Send, CheckCircle, MessageSquare, Truck, Clock, Phone, MapPin } from "lucide-react";
+import { postDeliveryReview } from '../services/reviewService';
 
 // Componente para rating com estrelas interativas
 const QuickStarRating = ({ rating, onRatingChange, size = "w-6 h-6" }) => {
@@ -114,6 +115,7 @@ export default function DeliveryReviewForm({ deliverymanId, orderId, onSuccess }
   const [comment, setComment] = useState("");
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [submitError, setSubmitError] = useState(null);
 
   const handleTagToggle = (tagId) => {
     setSelectedTags(prev => 
@@ -140,12 +142,10 @@ export default function DeliveryReviewForm({ deliverymanId, orderId, onSuccess }
     if (e) e.preventDefault();
     
     setLoading(true);
-    
+    setSubmitError(null);
+
     try {
-      // Simulating API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      console.log({
+      await postDeliveryReview({
         deliverymanId,
         orderId,
         rating: quickRating || rating,
@@ -153,15 +153,15 @@ export default function DeliveryReviewForm({ deliverymanId, orderId, onSuccess }
         categories,
         comment: comment.trim(),
       });
-      
+
       setSuccess(true);
-      
+
       setTimeout(() => {
         onSuccess?.();
       }, 1500);
-      
+
     } catch (error) {
-      console.error("Erro ao enviar avaliação:", error);
+      setSubmitError(error.message || 'Erro ao enviar avaliação. Tente novamente.');
     } finally {
       setLoading(false);
     }
@@ -256,6 +256,10 @@ export default function DeliveryReviewForm({ deliverymanId, orderId, onSuccess }
               </span>
             </div>
           </div>
+
+          {submitError && (
+            <p className="text-red-500 text-sm">{submitError}</p>
+          )}
 
           {/* Submit Button */}
           <button
