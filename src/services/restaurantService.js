@@ -21,84 +21,67 @@ const processResponse = async (response) => {
 };
 
 const RestaurantService = {
-  // Lista restaurantes
+  // Lista restaurantes — GET /api/restaurants/ (pública, sem auth)
   getAllRestaurants: async (location) => {
-    let url = `${API_URL}/restaurant`;
-
+    const params = new URLSearchParams();
     if (location?.latitude && location?.longitude) {
-      const params = new URLSearchParams();
       params.append('user_lat', location.latitude);
       params.append('user_lon', location.longitude);
-      url += `?${params.toString()}`;
     }
+    const qs = params.toString();
+    const url = `${API_URL}/restaurants${qs ? `?${qs}` : ''}`;
 
     const response = await fetch(url);
     const data = await processResponse(response);
     return data.data || data;
   },
 
-  // ✅ VERSÃO FINAL: API já retorna o cardápio
+  // Busca restaurante + cardápio em paralelo — GET /api/restaurants/{id} + /menu (públicas)
+  // Retorna objeto com menu_items flat para manter compatibilidade com RestaurantDetailsPage.
   getRestaurantDetails: async (restaurantId) => {
-    console.log('🔗 Buscando restaurante:', restaurantId);
-    
-    try {
-      // Adicionar timestamp para evitar cache
-      const timestamp = new Date().getTime();
-      const url = `${API_URL}/restaurant/${restaurantId}?_t=${timestamp}`;
-      
-      const response = await fetch(url, {
-        headers: {
-          'Cache-Control': 'no-cache',
-          'Pragma': 'no-cache'
-        }
-      });
-      
-      console.log('📡 Status da resposta:', response.status);
-      
-      const data = await processResponse(response);
-      const restaurant = data.data || data;
-      
-      console.log('🍕 Menu items recebidos:', restaurant.menu_items);
-      console.log('📊 Total de itens:', restaurant.menu_items?.length || 0);
-      
-      return restaurant;
-      
-    } catch (error) {
-      console.error('❌ Erro ao buscar restaurante:', error);
-      throw error;
+    const [restaurantRes, menuRes] = await Promise.all([
+      fetch(`${API_URL}/restaurants/${restaurantId}`),
+      fetch(`${API_URL}/restaurants/${restaurantId}/menu`),
+    ]);
+
+    const restaurantData = await processResponse(restaurantRes);
+    const restaurant = restaurantData.data || restaurantData;
+
+    let menu_items = [];
+    if (menuRes.ok) {
+      const menuData = await menuRes.json();
+      const categories = menuData.categories || [];
+      menu_items = categories.flatMap((cat) =>
+        (cat.items || []).map((item) => ({ ...item, category: cat.name }))
+      );
     }
+
+    return { ...restaurant, menu_items };
   },
 
-  // Função específica para buscar apenas o cardápio via Supabase (backup)
+  // Busca apenas o cardápio agrupado — GET /api/restaurants/{id}/menu (pública)
+  // Retorna array flat (mesmo formato anterior) para compatibilidade.
   getMenuItems: async (restaurantId) => {
-    const { data: menuItems, error } = await supabase
-      .from('menu_items')
-      .select('*')
-      .eq('restaurant_id', restaurantId)
-      .eq('is_available', true)
-      .order('created_at', { ascending: true });
-
-    if (error) {
-      throw new Error(`Erro ao buscar cardápio: ${error.message}`);
-    }
-
-    return menuItems || [];
+    const response = await fetch(`${API_URL}/restaurants/${restaurantId}/menu`);
+    if (!response.ok) throw new Error(`Erro ao buscar cardápio: HTTP ${response.status}`);
+    const data = await response.json();
+    const categories = data.categories || [];
+    return categories.flatMap((cat) =>
+      (cat.items || []).map((item) => ({ ...item, category: cat.name }))
+    );
   },
 
-  // Função para verificar se restaurante tem cardápio
+  // Verifica se restaurante tem itens disponíveis — GET /api/restaurants/{id}/menu (pública)
   hasMenuItems: async (restaurantId) => {
-    const { count, error } = await supabase
-      .from('menu_items')
-      .select('id', { count: 'exact' })
-      .eq('restaurant_id', restaurantId)
-      .eq('is_available', true);
-
-    if (error) {
+    try {
+      const response = await fetch(`${API_URL}/restaurants/${restaurantId}/menu`);
+      if (!response.ok) return false;
+      const data = await response.json();
+      return (data.categories || []).some((cat) => cat.items?.length > 0);
+    } catch {
       return false;
     }
-
-    return count > 0;
-  }
+  },
 };
 
 export default RestaurantService;
