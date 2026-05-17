@@ -9,15 +9,19 @@ export default function ForgotPasswordPage() {
   const [email, setEmail] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState(''); // Para feedback ao usuário
+  const [isSuccess, setIsSuccess] = useState(false); // FIX: track success vs error state
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsLoading(true);
     setMessage('');
+    setIsSuccess(false);
     try {
       const response = await AuthService.forgotPassword(email);
-      setMessage(response.message); // Mostra a mensagem de sucesso da API
+      setIsSuccess(true);
+      setMessage(response?.message || 'Link de recuperação enviado! Verifique seu e-mail.');
     } catch (error) {
+      setIsSuccess(false);
       setMessage(error.message || 'Ocorreu um erro ao enviar o e-mail.');
     } finally {
       setIsLoading(false);
@@ -54,8 +58,12 @@ export default function ForgotPasswordPage() {
             />
           </div>
 
-          {/* Mensagem de feedback (sucesso ou erro) */}
-          {message && <p className="text-sm text-center text-gray-600">{message}</p>}
+          {/* Mensagem de feedback (sucesso ou erro) — FIX: color differs by state */}
+          {message && (
+            <p className={`text-sm text-center font-medium ${isSuccess ? 'text-green-600' : 'text-red-500'}`}>
+              {message}
+            </p>
+          )}
 
           <div>
             <button

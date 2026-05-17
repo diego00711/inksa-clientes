@@ -108,9 +108,11 @@ export function ProfilePage() {
   };
 
   if (isLoading) {
+    // FIX: branded, centred loading state with descriptive text
     return (
-      <div className="text-center py-10">
-        <Loader2 className="animate-spin h-8 w-8 mx-auto" />
+      <div className="flex flex-col items-center justify-center min-h-[60vh] gap-3">
+        <Loader2 className="animate-spin h-10 w-10 text-orange-500" />
+        <p className="text-gray-500 text-sm">Carregando seu perfil...</p>
       </div>
     );
   }

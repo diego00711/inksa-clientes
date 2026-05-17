@@ -23,40 +23,48 @@ const processResponse = async (response) => {
 const RestaurantService = {
   // Lista restaurantes — GET /api/restaurants/ (pública, sem auth)
   getAllRestaurants: async (location) => {
-    const params = new URLSearchParams();
-    if (location?.latitude && location?.longitude) {
-      params.append('user_lat', location.latitude);
-      params.append('user_lon', location.longitude);
+    try {
+      const params = new URLSearchParams();
+      if (location?.latitude && location?.longitude) {
+        params.append('user_lat', location.latitude);
+        params.append('user_lon', location.longitude);
+      }
+      const qs = params.toString();
+      const url = `${API_URL}/restaurants${qs ? `?${qs}` : ''}`;
+      const response = await fetch(url);
+      const data = await processResponse(response);
+      return data.data || data;
+    } catch (err) {
+      console.error('❌ Erro ao listar restaurantes:', err);
+      throw err;
     }
-    const qs = params.toString();
-    const url = `${API_URL}/restaurants${qs ? `?${qs}` : ''}`;
-
-    const response = await fetch(url);
-    const data = await processResponse(response);
-    return data.data || data;
   },
 
   // Busca restaurante + cardápio em paralelo — GET /api/restaurants/{id} + /menu (públicas)
-  // Retorna objeto com menu_items flat para manter compatibilidade com RestaurantDetailsPage.
   getRestaurantDetails: async (restaurantId) => {
-    const [restaurantRes, menuRes] = await Promise.all([
-      fetch(`${API_URL}/restaurants/${restaurantId}`),
-      fetch(`${API_URL}/restaurants/${restaurantId}/menu`),
-    ]);
+    try {
+      const [restaurantRes, menuRes] = await Promise.all([
+        fetch(`${API_URL}/restaurants/${restaurantId}`),
+        fetch(`${API_URL}/restaurants/${restaurantId}/menu`),
+      ]);
 
-    const restaurantData = await processResponse(restaurantRes);
-    const restaurant = restaurantData.data || restaurantData;
+      const restaurantData = await processResponse(restaurantRes);
+      const restaurant = restaurantData.data || restaurantData;
 
-    let menu_items = [];
-    if (menuRes.ok) {
-      const menuData = await menuRes.json();
-      const categories = menuData.categories || [];
-      menu_items = categories.flatMap((cat) =>
-        (cat.items || []).map((item) => ({ ...item, category: cat.name }))
-      );
+      let menu_items = [];
+      if (menuRes.ok) {
+        const menuData = await menuRes.json();
+        const categories = menuData.categories || [];
+        menu_items = categories.flatMap((cat) =>
+          (cat.items || []).map((item) => ({ ...item, category: cat.name }))
+        );
+      }
+
+      return { ...restaurant, menu_items };
+    } catch (err) {
+      console.error('❌ Erro ao buscar detalhes do restaurante:', err);
+      throw err;
     }
-
-    return { ...restaurant, menu_items };
   },
 
   // Busca apenas o cardápio agrupado — GET /api/restaurants/{id}/menu (pública)

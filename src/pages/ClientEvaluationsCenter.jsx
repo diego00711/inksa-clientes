@@ -7,6 +7,7 @@ import DeliveryReviewForm from "../components/DeliveryReviewForm";
 import useDeliveredOrders from "../hooks/useDeliveredOrders";
 import { useProfile } from "../context/ProfileContext";
 import { getClientReviewsReceived } from "../services/reviewService";
+import { useToast } from "../context/ToastContext"; // FIX: use toast instead of alert()
 
 // Componente para renderizar uma única avaliação recebida
 const ReceivedReviewCard = ({ review }) => {
@@ -38,10 +39,11 @@ const ReceivedReviewCard = ({ review }) => {
 
 export default function ClientEvaluationsCenter() {
   const { profile, loading: loadingProfile } = useProfile();
-  
+  const { addToast } = useToast(); // FIX: use toast for feedback
+
   // ✅ CORREÇÃO: Adiciona refetch ao hook
   const { orders, loading: loadingOrders, refetch } = useDeliveredOrders(profile?.id);
-  
+
   const [highlightOrderId, setHighlightOrderId] = useState(null);
 
   // Estados para as avaliações recebidas
@@ -263,7 +265,7 @@ export default function ClientEvaluationsCenter() {
                                   restaurantId={order.restaurant_id}
                                   orderId={order.id}
                                   onSuccess={() => {
-                                    alert("Avaliação do restaurante enviada!");
+                                    addToast('success', 'Avaliação do restaurante enviada! Obrigado pelo feedback.');
                                     setHighlightOrderId(null);
                                     refetch(); // ✅ ATUALIZA A LISTA
                                   }}
@@ -288,7 +290,7 @@ export default function ClientEvaluationsCenter() {
                                   deliverymanId={order.deliveryman_id}
                                   orderId={order.id}
                                   onSuccess={() => {
-                                    alert("Avaliação do entregador enviada!");
+                                    addToast('success', 'Avaliação do entregador enviada! Obrigado pelo feedback.');
                                     setHighlightOrderId(null);
                                     refetch(); // ✅ ATUALIZA A LISTA
                                   }}

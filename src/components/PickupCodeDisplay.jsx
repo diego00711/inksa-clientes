@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Shield, Package, Truck, CheckCircle, Clock } from 'lucide-react';
+import { Shield, Package, Truck, CheckCircle, Clock, Loader2 } from 'lucide-react'; // FIX: import Loader2 for spinner
 import AuthService from '../services/authService';
 import { CLIENT_API_URL } from '../services/api';
 
@@ -57,10 +57,11 @@ export const PickupCodeDisplay = ({ orderId, orderStatus }) => {
   }
 
   if (loading) {
+    // FIX: use Loader2 (circular spinner) instead of Clock for loading state
     return (
       <div className="mt-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
         <div className="flex items-center gap-2 text-blue-700">
-          <Clock className="animate-spin" size={20} />
+          <Loader2 className="animate-spin" size={20} />
           <span className="text-sm font-medium">Carregando códigos...</span>
         </div>
       </div>

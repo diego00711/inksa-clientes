@@ -289,9 +289,35 @@ const MyOrdersPage = () => {
   };
 
   const renderContent = () => {
-    if (loading) return <p className="text-center text-gray-500 py-10">Carregando seus pedidos...</p>;
-    if (error) return <p className="text-center text-red-500 py-10">Erro: {error}</p>;
-    if (orders.length === 0) return <p className="text-center text-gray-500 py-10">Você ainda não fez nenhum pedido.</p>;
+    if (loading) return (
+      // FIX: replace plain text with spinner for better UX
+      <div className="flex flex-col items-center justify-center py-16 gap-3">
+        <div className="animate-spin rounded-full h-10 w-10 border-4 border-orange-500 border-t-transparent" />
+        <p className="text-gray-500 text-sm">Carregando seus pedidos...</p>
+      </div>
+    );
+    if (error) return (
+      // FIX: styled error state with retry button
+      <div className="text-center py-12 bg-white rounded-lg shadow-md border border-red-100 p-8">
+        <div className="text-5xl mb-4">😕</div>
+        <p className="text-red-600 font-semibold mb-2">Não foi possível carregar os pedidos</p>
+        <p className="text-red-500 text-sm mb-4">{error}</p>
+        <button
+          onClick={fetchOrders}
+          className="px-5 py-2 bg-orange-500 text-white text-sm font-semibold rounded-full hover:bg-orange-600 transition-colors"
+        >
+          Tentar novamente
+        </button>
+      </div>
+    );
+    if (orders.length === 0) return (
+      // FIX: styled empty state
+      <div className="text-center py-16 bg-white rounded-lg shadow-md border border-gray-100 p-8">
+        <div className="text-5xl mb-4">🛍️</div>
+        <p className="text-gray-700 font-semibold text-lg">Nenhum pedido ainda</p>
+        <p className="text-gray-400 text-sm mt-1">Faça seu primeiro pedido e ele aparecerá aqui.</p>
+      </div>
+    );
 
     return orders.map(order => {
       const isDelivered = order.status === 'delivered';
@@ -318,7 +344,8 @@ const MyOrdersPage = () => {
           </div>
 
           <div className="mt-4 border-t border-gray-100 pt-4 space-y-1">
-            <p className="text-gray-700 text-sm"><strong>Total:</strong> R$ {parseFloat(order.total_amount).toFixed(2)}</p>
+            {/* FIX: guard against NaN when total_amount is undefined */}
+            <p className="text-gray-700 text-sm"><strong>Total:</strong> R$ {(parseFloat(order.total_amount) || 0).toFixed(2)}</p>
             <p className="text-gray-700 text-sm">
               <strong>Data:</strong>{' '}
               {order.created_at ? new Date(order.created_at).toLocaleString('pt-BR') : '--'}

@@ -8,7 +8,8 @@ class BannerService {
 
   // Obter token de autenticação
   getAuthToken() {
-    return localStorage.getItem('token');
+    // FIX: use the correct key consistent with authService.js
+    return localStorage.getItem('clientAuthToken');
   }
 
   // Headers com autenticação

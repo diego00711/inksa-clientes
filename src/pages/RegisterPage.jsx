@@ -11,6 +11,7 @@ export default function RegisterPage() {
   });
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+  const [successMessage, setSuccessMessage] = useState(''); // FIX: replace alert() with inline message
   const navigate = useNavigate();
 
   const handleChange = (e) => {
@@ -32,10 +33,11 @@ export default function RegisterPage() {
       };
 
       // Envia os dados corretos para o serviço de autenticação
-      await AuthService.register(dataToSend); 
-      
-      alert('Registo feito com sucesso! Por favor, faça o login.');
-      navigate('/login');
+      await AuthService.register(dataToSend);
+
+      // FIX: show inline success message, then redirect after short delay
+      setSuccessMessage('Registo feito com sucesso! Redirecionando para o login...');
+      setTimeout(() => navigate('/login'), 2000);
 
     } catch (err) {
       // Captura a mensagem de erro específica vinda do backend
@@ -73,14 +75,18 @@ export default function RegisterPage() {
           <div>
             <label htmlFor="password" className="block text-sm font-medium text-gray-700">Senha</label>
             <input id="password" name="password" type="password" required minLength="6" value={formData.password} onChange={handleChange} className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+            {/* FIX: surface password requirement to the user */}
+            <p className="mt-1 text-xs text-gray-400">Mínimo de 6 caracteres</p>
           </div>
 
+          {/* FIX: show success or error feedback inline */}
+          {successMessage && <p className="text-sm text-center text-green-600 font-medium">{successMessage}</p>}
           {error && <p className="text-sm text-center text-red-500">{error}</p>}
 
           <div className="pt-2">
             <button
               type="submit"
-              disabled={isLoading}
+              disabled={isLoading || !!successMessage} // FIX: disable after successful registration
               className="w-full flex justify-center py-2.5 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:bg-indigo-400"
             >
               {isLoading ? 'A Registar...' : 'Criar Conta'}

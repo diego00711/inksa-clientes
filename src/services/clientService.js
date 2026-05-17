@@ -24,44 +24,51 @@ const createAuthHeaders = () => {
 
 const ClientService = {
   getProfile: async () => {
-    // ✅ CORREÇÃO: A URL agora aponta para a rota específica do cliente.
-    const response = await fetch(`${API_URL}/client/profile`, {
-      headers: createAuthHeaders(),
-      credentials: 'include',
-    });
-    const data = await processResponse(response);
-    // Retorna os dados do perfil, que estão dentro da chave 'data'
-    return data.data || data;
+    try {
+      const response = await fetch(`${API_URL}/client/profile`, {
+        headers: createAuthHeaders(),
+        credentials: 'include',
+      });
+      const data = await processResponse(response);
+      return data.data || data;
+    } catch (err) {
+      console.error('❌ Erro ao buscar perfil:', err);
+      throw err;
+    }
   },
 
   updateProfile: async (profileData) => {
-    // ✅ CORREÇÃO: A URL agora aponta para a rota específica do cliente.
-    const response = await fetch(`${API_URL}/client/profile`, {
-      method: 'PUT',
-      headers: {
-        ...createAuthHeaders(),
-        'Content-Type': 'application/json',
-      },
-      credentials: 'include',
-      body: JSON.stringify(profileData),
-    });
-    const data = await processResponse(response);
-    return data.data || data;
+    try {
+      const response = await fetch(`${API_URL}/client/profile`, {
+        method: 'PUT',
+        headers: { ...createAuthHeaders(), 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify(profileData),
+      });
+      const data = await processResponse(response);
+      return data.data || data;
+    } catch (err) {
+      console.error('❌ Erro ao atualizar perfil:', err);
+      throw err;
+    }
   },
 
   uploadAvatar: async (file) => {
-    const formData = new FormData();
-    formData.append('file', file);
-
-    // ✅ CORREÇÃO: A URL agora aponta para a rota específica do cliente.
-    const response = await fetch(`${API_URL}/client/profile/upload-avatar`, {
-      method: 'POST',
-      headers: createAuthHeaders(),
-      credentials: 'include',
-      body: formData,
-    });
-    const data = await processResponse(response);
-    return data.avatar_url || data.url || data;
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      const response = await fetch(`${API_URL}/client/profile/upload-avatar`, {
+        method: 'POST',
+        headers: createAuthHeaders(),
+        credentials: 'include',
+        body: formData,
+      });
+      const data = await processResponse(response);
+      return data.avatar_url || data.url || data;
+    } catch (err) {
+      console.error('❌ Erro ao fazer upload do avatar:', err);
+      throw err;
+    }
   },
 };
 

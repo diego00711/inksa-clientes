@@ -1,5 +1,5 @@
 import { useAuth } from "./AuthContext";
 export function useProfile() {
-  const { user } = useAuth();
-  return { profile: user, loading: false };
+  const { user, isLoading } = useAuth(); // FIX: expose real loading state from AuthContext
+  return { profile: user, loading: isLoading };
 }

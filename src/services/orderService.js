@@ -49,13 +49,18 @@ export const calculateDeliveryFee = async (deliveryData) => {
 
 /** Cria um novo pedido. */
 export const createOrder = async (orderData) => {
-  const url = `${CLIENT_API_URL}/api/orders`;
-  const response = await fetch(url, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...createAuthHeaders() },
-    body: JSON.stringify(orderData),
-  });
-  return processResponse(response);
+  try {
+    const url = `${CLIENT_API_URL}/api/orders`;
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...createAuthHeaders() },
+      body: JSON.stringify(orderData),
+    });
+    return processResponse(response);
+  } catch (err) {
+    console.error('❌ Erro ao criar pedido:', err);
+    throw err;
+  }
 };
 
 /** Cria a preferência de pagamento no Mercado Pago. */
