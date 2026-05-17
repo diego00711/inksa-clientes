@@ -1,5 +1,6 @@
 // inksa-clientes/src/services/orderService.js — VERSÃO ROBUSTA (com 204-safe)
 import { CLIENT_API_URL, processResponse, createAuthHeaders } from './api';
+import { apiFetch } from './apiClient.js';
 
 /**
  * Helper: processa resposta que pode ser 204 (sem corpo) sem quebrar.
@@ -16,7 +17,7 @@ export const calculateDeliveryFee = async (deliveryData) => {
   console.log('🚚 Iniciando cálculo de frete:', deliveryData);
   try {
     const url = `${CLIENT_API_URL}/api/delivery/calculate_fee`;
-    const response = await fetch(url, {
+    const response = await apiFetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(deliveryData),
@@ -51,7 +52,7 @@ export const calculateDeliveryFee = async (deliveryData) => {
 export const createOrder = async (orderData) => {
   try {
     const url = `${CLIENT_API_URL}/api/orders`;
-    const response = await fetch(url, {
+    const response = await apiFetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', ...createAuthHeaders() },
       body: JSON.stringify(orderData),
@@ -66,7 +67,7 @@ export const createOrder = async (orderData) => {
 /** Cria a preferência de pagamento no Mercado Pago. */
 export const createPaymentPreference = async (preferenceData) => {
   const url = `${CLIENT_API_URL}/api/pagamentos/criar_preferencia`;
-  const response = await fetch(url, {
+  const response = await apiFetch(url, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(preferenceData),
@@ -77,7 +78,7 @@ export const createPaymentPreference = async (preferenceData) => {
 /** ✅ Pedidos pendentes de avaliação do CLIENTE */
 export const getOrdersPendingClientReview = async (signal) => {
   const url = `${CLIENT_API_URL}/api/reviews/orders/pending-reviews`;
-  const response = await fetch(url, {
+  const response = await apiFetch(url, {
     method: 'GET',
     headers: createAuthHeaders(),
     signal,
@@ -89,7 +90,7 @@ export const getOrdersPendingClientReview = async (signal) => {
 /** ✅ Cria avaliação unificada (restaurante + entregador) */
 export const createUnifiedReview = async (orderId, reviewData) => {
   const url = `${CLIENT_API_URL}/api/reviews/orders/${orderId}/review`;
-  const response = await fetch(url, {
+  const response = await apiFetch(url, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', ...createAuthHeaders() },
     body: JSON.stringify(reviewData),
@@ -100,7 +101,7 @@ export const createUnifiedReview = async (orderId, reviewData) => {
 /** ✅ Verifica status de avaliação de um pedido */
 export const getReviewStatus = async (orderId) => {
   const url = `${CLIENT_API_URL}/api/reviews/orders/${orderId}/review-status`;
-  const response = await fetch(url, {
+  const response = await apiFetch(url, {
     method: 'GET',
     headers: createAuthHeaders(),
   });
@@ -110,7 +111,7 @@ export const getReviewStatus = async (orderId) => {
 /** ✅ NOVO: busca códigos do pedido (compatível com /api/orders/:id/codes) */
 export const getOrderCodes = async (orderId) => {
   const url = `${CLIENT_API_URL}/api/orders/${orderId}/codes`;
-  const response = await fetch(url, {
+  const response = await apiFetch(url, {
     method: 'GET',
     headers: createAuthHeaders(),
   });
@@ -128,7 +129,7 @@ export const getOrderCodes = async (orderId) => {
 /** ✅ NOVO: excluir/arquivar pedido do cliente (204-safe) */
 export const deleteOrder = async (orderId) => {
   const url = `${CLIENT_API_URL}/api/orders/${orderId}`;
-  const response = await fetch(url, {
+  const response = await apiFetch(url, {
     method: 'DELETE',
     headers: { ...createAuthHeaders() },
   });

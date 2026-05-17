@@ -1,5 +1,6 @@
 // bannerService.js - Atualizado para usar o backend Flask
 import { CLIENT_API_URL as API_URL } from './api';
+import { apiFetch } from './apiClient.js';
 
 class BannerService {
   constructor() {
@@ -33,7 +34,7 @@ class BannerService {
   // Listar banners (público para clientes, completo para admin)
   async getBanners() {
     try {
-      const response = await fetch(this.baseURL, {
+      const response = await apiFetch(this.baseURL, {
         method: 'GET',
         headers: this.getHeaders(false), // Não exige auth para clientes
       });
@@ -54,7 +55,7 @@ class BannerService {
   // Obter um banner específico
   async getBanner(id) {
     try {
-      const response = await fetch(`${this.baseURL}/${id}`, {
+      const response = await apiFetch(`${this.baseURL}/${id}`, {
         method: 'GET',
         headers: this.getHeaders(false),
       });
@@ -76,7 +77,7 @@ class BannerService {
   // Criar novo banner (apenas admin)
   async createBanner(bannerData) {
     try {
-      const response = await fetch(this.baseURL, {
+      const response = await apiFetch(this.baseURL, {
         method: 'POST',
         headers: this.getHeaders(true),
         body: JSON.stringify(bannerData),
@@ -98,7 +99,7 @@ class BannerService {
   // Atualizar banner (apenas admin)
   async updateBanner(id, bannerData) {
     try {
-      const response = await fetch(`${this.baseURL}/${id}`, {
+      const response = await apiFetch(`${this.baseURL}/${id}`, {
         method: 'PUT',
         headers: this.getHeaders(true),
         body: JSON.stringify(bannerData),
@@ -120,7 +121,7 @@ class BannerService {
   // Deletar banner (apenas admin)
   async deleteBanner(id) {
     try {
-      const response = await fetch(`${this.baseURL}/${id}`, {
+      const response = await apiFetch(`${this.baseURL}/${id}`, {
         method: 'DELETE',
         headers: this.getHeaders(true),
       });
@@ -140,7 +141,7 @@ class BannerService {
   // Ativar/Desativar banner (apenas admin)
   async toggleBannerStatus(id) {
     try {
-      const response = await fetch(`${this.baseURL}/${id}/toggle-status`, {
+      const response = await apiFetch(`${this.baseURL}/${id}/toggle-status`, {
         method: 'PUT',
         headers: this.getHeaders(true),
       });
@@ -161,7 +162,7 @@ class BannerService {
   // Reordenar banners (apenas admin)
   async reorderBanners(bannerOrders) {
     try {
-      const response = await fetch(`${this.baseURL}/reorder`, {
+      const response = await apiFetch(`${this.baseURL}/reorder`, {
         method: 'PUT',
         headers: this.getHeaders(true),
         body: JSON.stringify({ banner_orders: bannerOrders }),
@@ -182,7 +183,7 @@ class BannerService {
   // Obter estatísticas dos banners (apenas admin)
   async getBannerStats() {
     try {
-      const response = await fetch(`${this.baseURL}/stats`, {
+      const response = await apiFetch(`${this.baseURL}/stats`, {
         method: 'GET',
         headers: this.getHeaders(true),
       });
@@ -208,7 +209,7 @@ class BannerService {
       const formData = new FormData();
       formData.append('image', file);
 
-      const response = await fetch(`${API_URL}/api/upload/banner-image`, {
+      const response = await apiFetch(`${API_URL}/api/upload/banner-image`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${this.getAuthToken()}`,

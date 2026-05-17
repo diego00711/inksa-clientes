@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 import { CLIENT_API_URL } from './api';
+import { apiFetch } from './apiClient.js';
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
@@ -31,7 +32,7 @@ const RestaurantService = {
       }
       const qs = params.toString();
       const url = `${API_URL}/restaurants${qs ? `?${qs}` : ''}`;
-      const response = await fetch(url);
+      const response = await apiFetch(url);
       const data = await processResponse(response);
       return data.data || data;
     } catch (err) {
@@ -44,8 +45,8 @@ const RestaurantService = {
   getRestaurantDetails: async (restaurantId) => {
     try {
       const [restaurantRes, menuRes] = await Promise.all([
-        fetch(`${API_URL}/restaurants/${restaurantId}`),
-        fetch(`${API_URL}/restaurants/${restaurantId}/menu`),
+        apiFetch(`${API_URL}/restaurants/${restaurantId}`),
+        apiFetch(`${API_URL}/restaurants/${restaurantId}/menu`),
       ]);
 
       const restaurantData = await processResponse(restaurantRes);
@@ -70,7 +71,7 @@ const RestaurantService = {
   // Busca apenas o cardápio agrupado — GET /api/restaurants/{id}/menu (pública)
   // Retorna array flat (mesmo formato anterior) para compatibilidade.
   getMenuItems: async (restaurantId) => {
-    const response = await fetch(`${API_URL}/restaurants/${restaurantId}/menu`);
+    const response = await apiFetch(`${API_URL}/restaurants/${restaurantId}/menu`);
     if (!response.ok) throw new Error(`Erro ao buscar cardápio: HTTP ${response.status}`);
     const data = await response.json();
     const categories = data.categories || [];
@@ -82,7 +83,7 @@ const RestaurantService = {
   // Verifica se restaurante tem itens disponíveis — GET /api/restaurants/{id}/menu (pública)
   hasMenuItems: async (restaurantId) => {
     try {
-      const response = await fetch(`${API_URL}/restaurants/${restaurantId}/menu`);
+      const response = await apiFetch(`${API_URL}/restaurants/${restaurantId}/menu`);
       if (!response.ok) return false;
       const data = await response.json();
       return (data.categories || []).some((cat) => cat.items?.length > 0);

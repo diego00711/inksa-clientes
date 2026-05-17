@@ -2,6 +2,7 @@
 
 // Importa as funções auxiliares de 'api.js'
 import { CLIENT_API_URL, createAuthHeaders, processResponse } from './api';
+import { apiFetch } from './apiClient.js';
 
 /**
  * Busca as avaliações que o cliente logado recebeu.
@@ -9,7 +10,7 @@ import { CLIENT_API_URL, createAuthHeaders, processResponse } from './api';
  */
 export async function getClientReviewsReceived() {
   try {
-    const response = await fetch(
+    const response = await apiFetch(
       `${CLIENT_API_URL}/api/review/clients/my-reviews`,
       { headers: createAuthHeaders() }
     );
@@ -27,7 +28,7 @@ export async function getClientReviewsReceived() {
  */
 export async function postRestaurantReview(reviewData) {
   try {
-    const response = await fetch(
+    const response = await apiFetch(
       `${CLIENT_API_URL}/api/review/restaurants/${reviewData.restaurantId}/reviews`,
       {
         method: 'POST',
@@ -49,7 +50,7 @@ export async function postRestaurantReview(reviewData) {
  */
 export async function postDeliveryReview(reviewData) {
   try {
-    const response = await fetch(
+    const response = await apiFetch(
       `${CLIENT_API_URL}/api/review/delivery/${reviewData.deliverymanId}/reviews`,
       {
         method: 'POST',

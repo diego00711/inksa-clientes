@@ -1,4 +1,5 @@
-import { Routes, Route, Navigate } from "react-router-dom";
+import { Routes, Route, Navigate, useNavigate } from "react-router-dom";
+import { useEffect } from "react";
 import { HomePage } from "./pages/HomePage";
 import { RestaurantDetailsPage } from "./pages/RestaurantDetailsPage";
 import { LoginPage } from "./pages/LoginPage";
@@ -12,10 +13,31 @@ import { ProfilePage } from "./pages/ProfilePage";
 import { CartProvider } from "./context/CartContext";
 import MyOrdersPage from "./pages/MyOrdersPage";
 import { LocationProvider } from "./context/LocationContext";
-import { ToastProvider } from "./context/ToastContext";
-import ClientEvaluationsCenter from "./pages/ClientEvaluationsCenter"; 
+import { ToastProvider, useToast } from "./context/ToastContext";
+import ClientEvaluationsCenter from "./pages/ClientEvaluationsCenter";
 import ClientGamificationDevPage from "./pages/ClientGamificationDevPage";
 import { OrderTrackingPage } from "./pages/OrderTrackingPage";
+
+// Componente interno: precisa estar dentro de ToastProvider para acessar useToast,
+// e dentro de BrowserRouter (via main.jsx) para acessar useNavigate.
+function AuthUnauthorizedHandler() {
+  const { addToast } = useToast();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const handleUnauthorized = () => {
+      addToast('error', 'Sessão expirada, faça login novamente');
+      navigate('/login');
+    };
+
+    window.addEventListener('auth:unauthorized', handleUnauthorized);
+    return () => {
+      window.removeEventListener('auth:unauthorized', handleUnauthorized);
+    };
+  }, [addToast, navigate]);
+
+  return null;
+}
 
 function App() {
   return (
@@ -23,6 +45,7 @@ function App() {
       <CartProvider>
         <LocationProvider>
           <ToastProvider>
+            <AuthUnauthorizedHandler />
             <Routes>
               {/* Rotas públicas que NÃO usam o Layout com cabeçalho */}
               <Route path="/login" element={<LoginPage />} />

@@ -2,6 +2,7 @@
 
 import AuthService from './authService';
 import { CLIENT_API_URL } from './api';
+import { apiFetch } from './apiClient.js';
 
 const API_URL = `${CLIENT_API_URL}/api`;
 
@@ -25,7 +26,7 @@ const createAuthHeaders = () => {
 const ClientService = {
   getProfile: async () => {
     try {
-      const response = await fetch(`${API_URL}/client/profile`, {
+      const response = await apiFetch(`${API_URL}/client/profile`, {
         headers: createAuthHeaders(),
         credentials: 'include',
       });
@@ -39,7 +40,7 @@ const ClientService = {
 
   updateProfile: async (profileData) => {
     try {
-      const response = await fetch(`${API_URL}/client/profile`, {
+      const response = await apiFetch(`${API_URL}/client/profile`, {
         method: 'PUT',
         headers: { ...createAuthHeaders(), 'Content-Type': 'application/json' },
         credentials: 'include',
@@ -57,7 +58,7 @@ const ClientService = {
     try {
       const formData = new FormData();
       formData.append('file', file);
-      const response = await fetch(`${API_URL}/client/profile/upload-avatar`, {
+      const response = await apiFetch(`${API_URL}/client/profile/upload-avatar`, {
         method: 'POST',
         headers: createAuthHeaders(),
         credentials: 'include',

@@ -1,6 +1,7 @@
 // src/services/authService.js - VERSÃO CORRIGIDA COM getCurrentAuthUser
 
 import { CLIENT_API_URL as API_BASE_URL } from './api';
+import { apiFetch } from './apiClient.js';
 const AUTH_TOKEN_KEY = 'clientAuthToken';
 const CLIENT_USER_DATA_KEY = 'clientUser';
 
@@ -21,7 +22,7 @@ const processResponse = async (response) => {
 const authService = {
   async login(email, password) {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/auth/login`, {
+      const response = await apiFetch(`${API_BASE_URL}/api/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password, user_type: 'cliente' }),
@@ -42,7 +43,7 @@ const authService = {
 
   async register(userData) {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/auth/register`, {
+      const response = await apiFetch(`${API_BASE_URL}/api/auth/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ ...userData, user_type: 'cliente' }),
@@ -62,7 +63,7 @@ const authService = {
 
   async forgotPassword(email) {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/auth/forgot-password`, {
+      const response = await apiFetch(`${API_BASE_URL}/api/auth/forgot-password`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email }),
@@ -76,7 +77,7 @@ const authService = {
 
   async resetPassword(token, newPassword) {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/auth/reset-password`, {
+      const response = await apiFetch(`${API_BASE_URL}/api/auth/reset-password`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ token, new_password: newPassword }),
@@ -96,7 +97,7 @@ const authService = {
     }
 
     try {
-      const response = await fetch(`${API_BASE_URL}/api/auth/me`, {
+      const response = await apiFetch(`${API_BASE_URL}/api/auth/me`, {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${token}`,
