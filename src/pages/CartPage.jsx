@@ -30,6 +30,11 @@ export function CartPage() {
   const [needsChange, setNeedsChange] = useState(false);
   const [changeFor, setChangeFor] = useState('');
 
+  // Coupon state
+  const [couponCode, setCouponCode] = useState('');
+  const [couponData, setCouponData] = useState(null); // {valid, discount_amount, message}
+  const [couponLoading, setCouponLoading] = useState(false);
+
   // Cash order confirmation state
   const [cashOrderConfirmed, setCashOrderConfirmed] = useState(false);
   const [confirmedTotal, setConfirmedTotal] = useState(0);
@@ -86,13 +91,34 @@ export function CartPage() {
   }, [cartItems, addToast, clientProfile]);
 
   const safeFee = Number(deliveryFee) || 0;
-  const finalTotal = subTotal + safeFee;
+  const couponDiscount = (couponData?.valid && Number(couponData?.discount_amount) > 0)
+    ? Number(couponData.discount_amount)
+    : 0;
+  const finalTotal = Math.max(0, subTotal + safeFee - couponDiscount);
   const acceptsCash = restaurantInfo?.accepts_cash ?? true;
 
   const handlePaymentMethodChange = (method) => {
     setPaymentMethod(method);
     setNeedsChange(false);
     setChangeFor('');
+  };
+
+  const applyCoupon = async () => {
+    if (!couponCode.trim()) return;
+    setCouponLoading(true);
+    try {
+      const res = await fetch(`${CLIENT_API_URL}/api/coupons/validate`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code: couponCode.trim(), order_total: subTotal }),
+      });
+      const data = await res.json();
+      setCouponData(data);
+    } catch (e) {
+      setCouponData({ valid: false, message: 'Erro ao validar cupom' });
+    } finally {
+      setCouponLoading(false);
+    }
   };
 
   const handleFinalizarPedido = async () => {
@@ -142,6 +168,7 @@ export function CartPage() {
         delivery_distance_km: deliveryDistance || 0,
         notes: '',
         cliente_email: user.email,
+        ...(couponData?.valid && couponCode.trim() ? { coupon_code: couponCode.trim() } : {}),
       };
 
       if (paymentMethod === 'cash') {
@@ -294,6 +321,41 @@ export function CartPage() {
                 <span>{deliveryDistance.toFixed(1)} km</span>
               </div>
             )}
+
+            {/* Cupom de desconto */}
+            <div className="border-t pt-3 mt-3">
+              <p className="text-sm font-medium text-gray-700 mb-2">Cupom de desconto</p>
+              <div className="flex gap-2">
+                <input
+                  value={couponCode}
+                  onChange={e => setCouponCode(e.target.value.toUpperCase())}
+                  placeholder="Digite o código"
+                  className="flex-1 border rounded-lg px-3 py-2 text-base text-sm uppercase"
+                />
+                <button
+                  onClick={applyCoupon}
+                  disabled={couponLoading}
+                  className="bg-[#FF6F00] text-white px-4 rounded-lg min-h-[44px] text-sm font-medium disabled:opacity-50"
+                >
+                  {couponLoading ? '...' : 'Aplicar'}
+                </button>
+              </div>
+              {couponData && (
+                <p className={`text-sm mt-1 ${couponData.valid ? 'text-green-600' : 'text-red-500'}`}>
+                  {couponData.valid
+                    ? `✓ Desconto de R$ ${Number(couponData.discount_amount).toFixed(2)} aplicado!`
+                    : couponData.message}
+                </p>
+              )}
+            </div>
+
+            {couponDiscount > 0 && (
+              <div className="flex justify-between items-center text-green-600 text-sm">
+                <span>Desconto do cupom</span>
+                <span>- R$ {couponDiscount.toFixed(2)}</span>
+              </div>
+            )}
+
             <div className="flex justify-between items-center text-lg font-bold mt-2">
               <span>Total</span>
               <span>R$ {finalTotal.toFixed(2)}</span>

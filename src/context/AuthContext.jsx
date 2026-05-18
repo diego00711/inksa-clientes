@@ -3,6 +3,8 @@
 import { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import authService from '../services/authService';
 import clientService from '../services/clientService';
+import { requestNotificationPermission, saveFcmToken } from '../services/notificationService';
+import { CLIENT_API_URL, createAuthHeaders } from '../services/api';
 
 export const AuthContext = createContext(null);
 
@@ -49,9 +51,17 @@ export const AuthProvider = ({ children }) => {
     try {
       const loginResponse = await authService.login(email, password);
       console.log('✅ [AuthContext] Login bem-sucedido:', loginResponse);
-      
+
       // Atualiza o contexto após login
       await fetchAndSetUser();
+
+      // FCM: solicita permissão e salva token — falha nunca quebra o login
+      try {
+        const fcmToken = await requestNotificationPermission();
+        if (fcmToken) await saveFcmToken(fcmToken, CLIENT_API_URL, createAuthHeaders());
+      } catch (fcmErr) {
+        console.warn('FCM pós-login error (ignorado):', fcmErr);
+      }
     } catch (error) {
       console.error("❌ [AuthContext] Erro no login:", error);
       throw error;

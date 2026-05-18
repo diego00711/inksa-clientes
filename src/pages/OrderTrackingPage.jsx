@@ -1,10 +1,11 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import {
-  ArrowLeft, Phone, Star, Clock, CheckCircle, ChefHat, Bike, MapPin, Package,
+  ArrowLeft, Phone, Star, Clock, CheckCircle, ChefHat, Bike, MapPin, Package, MessageCircle,
 } from "lucide-react";
 import { supabase } from "../services/restaurantService";
 import { CLIENT_API_URL, createAuthHeaders } from "../services/api";
+import ChatModal from "../components/ChatModal";
 
 // ─── Stage definitions ───────────────────────────────────────────────────────
 const STAGES = [
@@ -193,6 +194,8 @@ export function OrderTrackingPage() {
   const [currentStage, setCurrentStage] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [delivererLocation, setDelivererLocation] = useState(null);
+  const [chatOpen, setChatOpen] = useState(false);
 
   const applyStatus = useCallback((status) => {
     setCurrentStage(STATUS_TO_STAGE[status] ?? 0);
@@ -265,6 +268,27 @@ export function OrderTrackingPage() {
       .subscribe();
     return () => { supabase.removeChannel(ch); };
   }, [order?.delivery_id]);
+
+  // Polling de localização via REST (complementa o realtime do Supabase)
+  useEffect(() => {
+    if (!['picked_up', 'on_the_way', 'delivering'].includes(order?.status)) return;
+    const poll = async () => {
+      try {
+        const res = await fetch(`${CLIENT_API_URL}/api/deliveries/${orderId}/location`, {
+          headers: createAuthHeaders(),
+        });
+        if (res.ok) {
+          const data = await res.json();
+          setDelivererLocation(data);
+        }
+      } catch (e) {
+        // falha silenciosa — polling tentará novamente no próximo ciclo
+      }
+    };
+    poll();
+    const interval = setInterval(poll, 10000);
+    return () => clearInterval(interval);
+  }, [order?.status, orderId]);
 
   if (loading) {
     return (
@@ -345,6 +369,36 @@ export function OrderTrackingPage() {
 
         {/* Driver card */}
         <DriverCard driver={driver} />
+
+        {/* Localização do entregador — card informativo quando em rota */}
+        {delivererLocation?.latitude && delivererLocation?.longitude && (
+          <div className="bg-orange-50 border border-orange-200 rounded-2xl p-4 mb-5 flex items-center gap-3">
+            <span className="text-2xl">📍</span>
+            <div>
+              <p className="font-semibold text-orange-700 text-sm">Entregador localizado</p>
+              <p className="text-xs text-orange-600 mt-0.5">Atualizando posição a cada 10 segundos...</p>
+            </div>
+          </div>
+        )}
+
+        {/* Botão de chat com entregador */}
+        {['picked_up', 'on_the_way', 'delivering'].includes(order?.status) && (
+          <button
+            onClick={() => setChatOpen(true)}
+            className="w-full flex items-center justify-center gap-2 bg-white border-2 border-[#FF6F00] text-[#FF6F00] font-bold py-3 min-h-[44px] rounded-2xl mb-5 hover:bg-orange-50 transition-colors shadow-sm"
+          >
+            <MessageCircle className="w-5 h-5" />
+            Falar com entregador
+          </button>
+        )}
+
+        {/* Chat modal */}
+        <ChatModal
+          orderId={orderId}
+          isOpen={chatOpen}
+          onClose={() => setChatOpen(false)}
+          senderType="client"
+        />
 
         {/* Timeline */}
         <div className="bg-white rounded-2xl shadow-md p-5 mb-5 border border-gray-100">
