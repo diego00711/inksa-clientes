@@ -124,15 +124,15 @@ export function RestaurantDetailsPage() {
       <div className="max-w-4xl mx-auto px-4 py-6 space-y-6">
         {/* Banner do Restaurante */}
         <div className="bg-white rounded-2xl overflow-hidden shadow-sm">
-          <div className="relative h-64">
-            <img 
-              src={restaurant.logo_url || 'https://via.placeholder.com/800x300?text=Inksa+Delivery'} 
-              alt={restaurant.restaurant_name} 
+          <div className="relative h-44 sm:h-64">
+            <img
+              src={restaurant.logo_url || 'https://via.placeholder.com/800x300?text=Inksa+Delivery'}
+              alt={restaurant.restaurant_name}
               className="w-full h-full object-cover"
             />
             <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
-            <div className="absolute bottom-4 left-4 text-white">
-              <h2 className="text-2xl font-bold mb-2">{restaurant.restaurant_name}</h2>
+            <div className="absolute bottom-3 left-4 right-4 text-white">
+              <h2 className="text-lg sm:text-2xl font-bold mb-1 truncate">{restaurant.restaurant_name}</h2>
               <div className="flex items-center gap-4 text-sm">
                 {restaurant.category && (
                   <span className="bg-white/20 backdrop-blur-sm px-3 py-1 rounded-full">
@@ -148,8 +148,8 @@ export function RestaurantDetailsPage() {
           </div>
 
           {/* Informações do Restaurante */}
-          <div className="p-6 space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="p-4 sm:p-6 space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
               <div className="flex items-center gap-2 text-gray-600">
                 <MapPin className="w-5 h-5 text-orange-500" />
                 <span className="text-sm">
@@ -184,8 +184,8 @@ export function RestaurantDetailsPage() {
         </div>
 
         {/* Cardápio */}
-        <div className="bg-white rounded-2xl shadow-sm p-6">
-          <h2 className="text-2xl font-bold mb-6 text-gray-800 flex items-center gap-2">
+        <div className="bg-white rounded-2xl shadow-sm p-4 sm:p-6">
+          <h2 className="text-xl sm:text-2xl font-bold mb-4 sm:mb-6 text-gray-800 flex items-center gap-2">
             🍽️ Cardápio
             <span className="text-sm font-normal text-gray-500">
               ({menuItems.length} {menuItems.length === 1 ? 'item' : 'itens'})
@@ -197,51 +197,51 @@ export function RestaurantDetailsPage() {
               {menuItems.map(item => {
                 const quantity = quantities[item.id] || 0;
                 return (
-                  <div key={item.id} className="border border-gray-200 rounded-xl p-4 hover:shadow-sm transition-shadow">
-                    <div className="flex gap-4">
-                      <img 
-                        src={item.image_url || 'https://via.placeholder.com/100x100?text=Item'} 
-                        alt={item.name} 
-                        className="w-24 h-24 object-cover rounded-lg flex-shrink-0"
+                  <div key={item.id} className="border border-gray-200 rounded-xl p-3 sm:p-4 hover:shadow-sm transition-shadow">
+                    <div className="flex gap-3">
+                      <img
+                        src={item.image_url || 'https://via.placeholder.com/100x100?text=Item'}
+                        alt={item.name}
+                        className="w-20 h-20 sm:w-24 sm:h-24 object-cover rounded-lg flex-shrink-0"
                       />
-                      
-                      <div className="flex-grow">
-                        <h3 className="text-lg font-semibold text-gray-800 mb-1">{item.name}</h3>
+
+                      <div className="flex-grow min-w-0">
+                        <h3 className="text-base sm:text-lg font-semibold text-gray-800 mb-1 leading-tight">{item.name}</h3>
                         {item.description && (
-                          <p className="text-sm text-gray-600 mb-3 leading-relaxed">{item.description}</p>
+                          <p className="text-xs sm:text-sm text-gray-600 mb-2 leading-relaxed line-clamp-2">{item.description}</p>
                         )}
-                        <p className="text-xl font-bold text-orange-600 mb-3">
+                        <p className="text-lg sm:text-xl font-bold text-orange-600 mb-2">
                           R$ {parseFloat(item.price ?? 0).toFixed(2)}
                         </p>
-                        
-                        <div className="flex items-center gap-3">
-                          <div className="flex items-center gap-2 bg-gray-100 rounded-lg">
-                            <Button 
-                              size="sm" 
+
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <div className="flex items-center gap-1 bg-gray-100 rounded-lg">
+                            <Button
+                              size="sm"
                               variant="ghost"
                               onClick={() => handleQuantityChange(item.id, -1)}
                               disabled={quantity === 0}
-                              className="h-8 w-8 p-0 hover:bg-gray-200"
+                              className="h-9 w-9 min-h-[36px] p-0 hover:bg-gray-200"
                             >
                               <Minus className="h-4 w-4" />
                             </Button>
-                            <span className="w-8 text-center font-medium">{quantity}</span>
-                            <Button 
-                              size="sm" 
+                            <span className="w-7 text-center font-medium text-sm">{quantity}</span>
+                            <Button
+                              size="sm"
                               variant="ghost"
                               onClick={() => handleQuantityChange(item.id, 1)}
-                              className="h-8 w-8 p-0 hover:bg-gray-200"
+                              className="h-9 w-9 min-h-[36px] p-0 hover:bg-gray-200"
                             >
                               <Plus className="h-4 w-4" />
                             </Button>
                           </div>
-                          
-                          <Button 
+
+                          <Button
                             onClick={() => handleAddToCart(item)}
-                            className="bg-orange-500 hover:bg-orange-600 text-white"
+                            className="bg-orange-500 hover:bg-orange-600 text-white min-h-[36px] text-sm px-3"
                             disabled={quantity === 0}
                           >
-                            {quantity === 0 ? 'Adicionar' : `Adicionar ${quantity}`}
+                            {quantity === 0 ? 'Adicionar' : `+ ${quantity}`}
                           </Button>
                         </div>
                       </div>

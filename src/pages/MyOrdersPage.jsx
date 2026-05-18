@@ -73,7 +73,7 @@ function StarPicker({ value, onChange }) {
           onMouseLeave={() => setHover(0)}
           className="focus:outline-none"
         >
-          <Star className={`w-8 h-8 transition-colors ${s <= (hover || value) ? 'text-yellow-400 fill-yellow-400' : 'text-gray-300'}`} />
+          <Star className={`w-7 h-7 sm:w-8 sm:h-8 transition-colors ${s <= (hover || value) ? 'text-yellow-400 fill-yellow-400' : 'text-gray-300'}`} />
         </button>
       ))}
     </div>
@@ -145,7 +145,7 @@ function ReviewModal({ order, onClose, onDone }) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md relative">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md relative max-h-[90vh] overflow-y-auto">
         <button onClick={onClose} className="absolute top-3 right-3 text-gray-400 hover:text-gray-700">
           <X className="w-5 h-5" />
         </button>
@@ -163,7 +163,7 @@ function ReviewModal({ order, onClose, onDone }) {
               value={restaurantComment}
               onChange={e => setRestaurantComment(e.target.value)}
               placeholder="Deixe um comentário (opcional)..."
-              className="w-full border border-gray-200 rounded-lg p-3 text-sm resize-none h-20 focus:outline-none focus:ring-2 focus:ring-orange-300"
+              className="w-full border border-gray-200 rounded-lg p-3 text-base resize-none h-20 focus:outline-none focus:ring-2 focus:ring-orange-300"
             />
 
             {errorMsg && <p className="text-red-500 text-sm mt-2">{errorMsg}</p>}
@@ -192,7 +192,7 @@ function ReviewModal({ order, onClose, onDone }) {
               value={deliveryComment}
               onChange={e => setDeliveryComment(e.target.value)}
               placeholder="Deixe um comentário (opcional)..."
-              className="w-full border border-gray-200 rounded-lg p-3 text-sm resize-none h-20 focus:outline-none focus:ring-2 focus:ring-orange-300"
+              className="w-full border border-gray-200 rounded-lg p-3 text-base resize-none h-20 focus:outline-none focus:ring-2 focus:ring-orange-300"
             />
 
             {errorMsg && <p className="text-red-500 text-sm mt-2">{errorMsg}</p>}
@@ -325,13 +325,13 @@ const MyOrdersPage = () => {
       const canDelete = ['delivered', 'cancelled'].includes(order.status);
 
       return (
-        <div key={order.id} className="bg-white p-6 rounded-lg shadow-md border border-gray-200 mb-6">
-          <div className="flex justify-between items-start">
-            <div>
-              <h2 className="text-xl font-bold text-gray-800">Pedido em {order.restaurant_name}</h2>
-              <p className="text-xs text-gray-400 font-mono mt-0.5">{order.id}</p>
+        <div key={order.id} className="bg-white p-4 sm:p-6 rounded-lg shadow-md border border-gray-200 mb-4 sm:mb-6">
+          <div className="flex justify-between items-start gap-2">
+            <div className="min-w-0 flex-1">
+              <h2 className="text-base sm:text-xl font-bold text-gray-800 break-words">Pedido em {order.restaurant_name}</h2>
+              <p className="text-xs text-gray-400 font-mono mt-0.5 truncate">{order.id}</p>
             </div>
-            <div className="flex items-center gap-2 flex-wrap justify-end">
+            <div className="flex items-center gap-2 flex-wrap justify-end shrink-0">
               <span className={`px-3 py-1 text-sm font-bold rounded-full ${STATUS_COLORS[order.status] || 'bg-gray-100 text-gray-800'}`}>
                 {STATUS_MAP[order.status] || order.status}
               </span>
@@ -378,7 +378,7 @@ const MyOrdersPage = () => {
           <ArrowLeft size={18} />
           Voltar para a página inicial
         </Link>
-        <h1 className="text-3xl font-bold text-center text-gray-800 mb-8">Meus Pedidos</h1>
+        <h1 className="text-2xl sm:text-3xl font-bold text-center text-gray-800 mb-6 sm:mb-8">Meus Pedidos</h1>
         <div>{renderContent()}</div>
       </div>
 

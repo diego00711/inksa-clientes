@@ -47,12 +47,12 @@ function CountdownTimer({ estimatedMinutes = 30, startedAt }) {
         {arrived ? "Chegou!" : "Chega em aproximadamente"}
       </p>
       {arrived ? (
-        <p className="text-4xl font-black">🎉 Aqui está!</p>
+        <p className="text-3xl sm:text-4xl font-black">🎉 Aqui está!</p>
       ) : (
         <div className="flex items-end justify-center gap-1">
-          <span className="text-6xl font-black leading-none">{mins}</span>
-          <span className="text-2xl mb-1">min</span>
-          <span className="text-2xl mb-1 ml-2 opacity-70">{String(secs).padStart(2, "0")}s</span>
+          <span className="text-5xl sm:text-6xl font-black leading-none">{mins}</span>
+          <span className="text-xl sm:text-2xl mb-1">min</span>
+          <span className="text-xl sm:text-2xl mb-1 ml-2 opacity-70">{String(secs).padStart(2, "0")}s</span>
         </div>
       )}
     </div>
@@ -303,7 +303,7 @@ export function OrderTrackingPage() {
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
       <div className="sticky top-0 z-10 bg-white shadow-sm px-4 py-4 flex items-center gap-3">
-        <button onClick={() => navigate(-1)} className="p-2 rounded-full hover:bg-gray-100 transition-colors">
+        <button onClick={() => navigate(-1)} className="p-2 rounded-full hover:bg-gray-100 transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center">
           <ArrowLeft className="w-5 h-5 text-gray-700" />
         </button>
         <div>
@@ -333,7 +333,7 @@ export function OrderTrackingPage() {
         {isDelivered && (
           <div className="bg-gradient-to-r from-green-500 to-emerald-600 rounded-2xl p-6 text-white text-center mb-5 shadow-lg">
             <div className="text-5xl mb-2">🎉</div>
-            <p className="text-2xl font-black">Pedido Entregue!</p>
+            <p className="text-xl sm:text-2xl font-black">Pedido Entregue!</p>
             <p className="text-sm opacity-90 mt-1">Aproveite sua refeição!</p>
           </div>
         )}
@@ -375,7 +375,7 @@ export function OrderTrackingPage() {
         {isDelivered && (
           <Link
             to="/avaliacoes"
-            className="block w-full text-center bg-gradient-to-r from-orange-500 to-red-500 text-white font-bold py-4 rounded-2xl shadow-lg shadow-orange-200 hover:shadow-xl transition-all duration-300 text-lg"
+            className="block w-full text-center bg-gradient-to-r from-orange-500 to-red-500 text-white font-bold py-4 min-h-[44px] rounded-2xl shadow-lg shadow-orange-200 hover:shadow-xl transition-all duration-300 text-base sm:text-lg"
           >
             ⭐ Avaliar Pedido
           </Link>

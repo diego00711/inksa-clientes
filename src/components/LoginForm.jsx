@@ -41,7 +41,7 @@ export function LoginForm() {
   };
 
   return (
-    <Card className="w-full max-w-sm shadow-lg">
+    <Card className="w-full max-w-sm shadow-lg mx-4">
       <CardHeader className="items-center text-center">
         <div className="flex justify-center w-full mb-2">
           <img src="/inka-logo.png" alt="Inksa Delivery Logo" className="w-24 h-auto" />

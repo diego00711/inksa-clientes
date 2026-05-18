@@ -247,7 +247,7 @@ export default function DeliveryReviewForm({ deliverymanId, orderId, onSuccess }
               onChange={(e) => setComment(e.target.value)}
               placeholder="Ex: O entregador foi muito educado e chegou rapidinho! Cuidou bem do meu pedido..."
               rows={3}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors resize-none text-sm"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors resize-none text-base"
               maxLength={300}
             />
             <div className="text-right">

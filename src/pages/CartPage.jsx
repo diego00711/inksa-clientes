@@ -195,10 +195,10 @@ export function CartPage() {
     return (
       <div className="container mx-auto px-4 py-16 max-w-md text-center">
         <div className="text-7xl mb-6">✅</div>
-        <h2 className="text-2xl font-bold text-gray-800 mb-3">Pedido Confirmado!</h2>
-        <div className="bg-yellow-50 border border-yellow-200 rounded-2xl p-6 mb-6">
+        <h2 className="text-xl sm:text-2xl font-bold text-gray-800 mb-3">Pedido Confirmado!</h2>
+        <div className="bg-yellow-50 border border-yellow-200 rounded-2xl p-4 sm:p-6 mb-6">
           <p className="text-gray-700 mb-2">
-            Pague <span className="font-black text-2xl text-yellow-700">R$ {confirmedTotal.toFixed(2)}</span>
+            Pague <span className="font-black text-xl sm:text-2xl text-yellow-700">R$ {confirmedTotal.toFixed(2)}</span>
           </p>
           <p className="text-gray-600 text-sm">em dinheiro ao entregador na entrega</p>
           {needsChange && changeFor && (
@@ -230,7 +230,7 @@ export function CartPage() {
         <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
           <ChevronLeft className="h-6 w-6" />
         </Button>
-        <h1 className="text-3xl font-bold ml-4">Meu Carrinho</h1>
+        <h1 className="text-xl sm:text-3xl font-bold ml-4">Meu Carrinho</h1>
       </div>
 
       {cartItems.length === 0 ? (
@@ -245,29 +245,31 @@ export function CartPage() {
           {/* Cart items */}
           <div className="space-y-6 mb-8">
             {cartItems.map(item => (
-              <div key={item.id} className="flex items-center gap-4">
+              <div key={item.id} className="flex items-start gap-3">
                 <img src={item.image_url || '/inka-logo.png'} alt={item.name}
-                  className="w-20 h-20 rounded-md object-cover" />
-                <div className="flex-grow">
-                  <h3 className="font-semibold">{item.name}</h3>
+                  className="w-16 h-16 sm:w-20 sm:h-20 rounded-md object-cover shrink-0" />
+                <div className="flex-grow min-w-0">
+                  <h3 className="font-semibold text-sm sm:text-base truncate">{item.name}</h3>
                   <p className="text-sm text-gray-600">R$ {parseFloat(item.price ?? 0).toFixed(2)}</p>
+                  <div className="flex items-center gap-1 mt-1">
+                    <Button variant="ghost" size="icon" className="h-8 w-8 min-h-[32px]" onClick={() => removeItemFromCart(item.id)}>
+                      <MinusCircle className="h-4 w-4" />
+                    </Button>
+                    <span className="font-bold w-6 text-center text-sm">{item.quantity}</span>
+                    <Button variant="ghost" size="icon" className="h-8 w-8 min-h-[32px]" onClick={() => addItemToCart(item)}>
+                      <PlusCircle className="h-4 w-4" />
+                    </Button>
+                  </div>
                 </div>
-                <div className="flex items-center gap-2">
-                  <Button variant="ghost" size="icon" onClick={() => removeItemFromCart(item.id)}>
-                    <MinusCircle className="h-5 w-5" />
+                <div className="flex flex-col items-end gap-1 shrink-0">
+                  <span className="font-bold text-sm">
+                    R$ {(parseFloat(item.price ?? 0) * item.quantity).toFixed(2)}
+                  </span>
+                  <Button variant="ghost" size="icon" className="h-8 w-8 min-h-[32px]"
+                    onClick={() => handleRemoveItem(item.id)}>
+                    <Trash2 className="h-4 w-4 text-gray-400 hover:text-red-500" />
                   </Button>
-                  <span className="font-bold w-8 text-center">{item.quantity}</span>
-                  <Button variant="ghost" size="icon" onClick={() => addItemToCart(item)}>
-                    <PlusCircle className="h-5 w-5" />
-                  </Button>
                 </div>
-                <div className="font-bold w-24 text-right">
-                  R$ {(parseFloat(item.price ?? 0) * item.quantity).toFixed(2)}
-                </div>
-                <Button variant="ghost" size="icon"
-                  className="text-gray-400 hover:text-red-500" onClick={() => handleRemoveItem(item.id)}>
-                  <Trash2 className="h-5 w-5" />
-                </Button>
               </div>
             ))}
           </div>

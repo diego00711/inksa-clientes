@@ -90,7 +90,7 @@ export const PickupCodeDisplay = ({ orderId, orderStatus }) => {
         <h3 className="text-lg font-bold text-gray-800">Códigos de Verificação</h3>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         {showPickupCode && (
           <div className="bg-gradient-to-br from-blue-50 to-blue-100 p-4 rounded-lg border-2 border-blue-300 shadow-md">
             <div className="flex items-center gap-2 mb-2">

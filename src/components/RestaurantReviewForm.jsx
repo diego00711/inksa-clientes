@@ -306,7 +306,7 @@ export default function RestaurantReviewForm({ restaurantId, orderId, onSuccess 
               onChange={(e) => setComment(e.target.value)} 
               placeholder="Ex: A pizza estava deliciosa e chegou quentinha! Embalagem caprichada..." 
               rows={3} 
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-colors resize-none text-sm" 
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-colors resize-none text-base" 
               maxLength={300} 
             />
             <div className="text-right mt-1">

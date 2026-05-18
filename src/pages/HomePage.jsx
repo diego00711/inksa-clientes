@@ -106,7 +106,7 @@ function BannerCarousel({ banners }) {
   return (
     <div
       className="relative w-full rounded-2xl overflow-hidden shadow-lg select-none"
-      style={{ aspectRatio: "16/6" }}
+      style={{ aspectRatio: "16/7" }}
       onTouchStart={(e) => { touchStartX.current = e.touches[0].clientX; }}
       onTouchEnd={(e) => {
         if (touchStartX.current === null) return;
@@ -125,7 +125,7 @@ function BannerCarousel({ banners }) {
           {b.image_url ? (
             <img src={b.image_url} alt={b.title || ""} className="w-full h-full object-cover" />
           ) : (
-            <div className={`w-full h-full bg-gradient-to-br ${b.gradient || "from-orange-500 to-red-500"} flex items-center px-8 sm:px-12`}>
+            <div className={`w-full h-full bg-gradient-to-br ${b.gradient || "from-orange-500 to-red-500"} flex items-center px-5 sm:px-12`}>
               <div className="flex-1">
                 <p className="text-white/80 text-sm font-medium mb-1 tracking-wide uppercase">Inksa Delivery</p>
                 <h2 className="text-white text-2xl sm:text-3xl font-extrabold leading-tight mb-2 drop-shadow-sm">
@@ -149,7 +149,7 @@ function BannerCarousel({ banners }) {
           )}
           {/* Dark gradient overlay on images */}
           {hasImage && (
-            <div className="absolute inset-0 bg-gradient-to-r from-black/50 via-black/20 to-transparent flex items-center px-8">
+            <div className="absolute inset-0 bg-gradient-to-r from-black/50 via-black/20 to-transparent flex items-center px-5 sm:px-8">
               <div>
                 {b.title && <h2 className="text-white text-2xl sm:text-3xl font-extrabold drop-shadow-md mb-1">{b.title}</h2>}
                 {b.subtitle && <p className="text-white/90 text-sm sm:text-base drop-shadow">{b.subtitle}</p>}
@@ -417,7 +417,7 @@ export function HomePage() {
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 placeholder="Buscar restaurantes ou pratos..."
-                className="w-full pl-9 pr-4 py-2.5 text-sm bg-gray-100 hover:bg-gray-50 focus:bg-white border border-transparent focus:border-orange-300 focus:ring-2 focus:ring-orange-100 rounded-xl outline-none transition-all placeholder-gray-400"
+                className="w-full pl-9 pr-4 py-2.5 text-base bg-gray-100 hover:bg-gray-50 focus:bg-white border border-transparent focus:border-orange-300 focus:ring-2 focus:ring-orange-100 rounded-xl outline-none transition-all placeholder-gray-400"
               />
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
             </div>
@@ -491,7 +491,7 @@ export function HomePage() {
               {searchTerm && (
                 <button
                   onClick={() => { setSearchTerm(""); setSelectedCategory("Todos"); }}
-                  className="mt-4 px-5 py-2 bg-orange-500 text-white text-sm font-semibold rounded-full hover:bg-orange-600 transition-colors"
+                  className="mt-4 px-5 py-2 min-h-[44px] bg-orange-500 text-white text-sm font-semibold rounded-full hover:bg-orange-600 transition-colors"
                 >
                   Limpar filtros
                 </button>

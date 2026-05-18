@@ -131,9 +131,9 @@ export default function ClientEvaluationsCenter() {
                 </div>
               </div>
               {receivedReviewsData && (
-                <div className="text-right">
-                  <p className="text-white font-bold text-xl">{receivedReviewsData.average_rating.toFixed(1)} ⭐</p>
-                  <p className="text-indigo-200 text-xs">Média de {receivedReviewsData.total_reviews} avaliações</p>
+                <div className="text-right shrink-0">
+                  <p className="text-white font-bold text-base sm:text-xl">{receivedReviewsData.average_rating.toFixed(1)} ⭐</p>
+                  <p className="text-indigo-200 text-xs">Média de {receivedReviewsData.total_reviews} aval.</p>
                 </div>
               )}
             </div>
@@ -211,30 +211,30 @@ export default function ClientEvaluationsCenter() {
                           : "border-gray-200 bg-white hover:border-blue-200 hover:shadow-md"
                       }`}
                     >
-                      <div className="p-4">
-                        <div className="flex items-center justify-between mb-3">
-                          <div className="flex items-center gap-3">
-                            <div className="bg-gradient-to-r from-blue-500 to-indigo-500 p-2 rounded-lg">
-                              <span className="text-white font-bold text-sm">#{order.id.slice(0, 8)}</span>
+                      <div className="p-3 sm:p-4">
+                        <div className="flex items-center justify-between gap-2 mb-3">
+                          <div className="flex items-center gap-2 min-w-0 flex-1">
+                            <div className="bg-gradient-to-r from-blue-500 to-indigo-500 p-1.5 rounded-lg shrink-0">
+                              <span className="text-white font-bold text-xs">#{order.id.slice(0, 6)}</span>
                             </div>
-                            <div className="flex-1">
-                              <h3 className="font-bold text-gray-800 text-sm md:text-base">
+                            <div className="min-w-0 flex-1">
+                              <h3 className="font-bold text-gray-800 text-sm truncate">
                                 {order.restaurant_name}
                               </h3>
-                              <div className="flex items-center gap-2 text-gray-500">
-                                <Clock className="h-3 w-3" />
+                              <div className="flex items-center gap-1 text-gray-500">
+                                <Clock className="h-3 w-3 shrink-0" />
                                 <span className="text-xs">
                                   {new Date(order.completed_at).toLocaleDateString('pt-BR')}
                                 </span>
                               </div>
                             </div>
                           </div>
-                          
+
                           <button
                             onClick={() => setHighlightOrderId(
                               highlightOrderId === order.id ? null : order.id
                             )}
-                            className={`px-4 py-2 rounded-lg font-semibold text-sm transition-all duration-200 ${
+                            className={`px-3 py-2 min-h-[44px] rounded-lg font-semibold text-sm transition-all duration-200 shrink-0 ${
                               highlightOrderId === order.id
                                 ? "bg-red-500 hover:bg-red-600 text-white"
                                 : "bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600 text-white shadow-md hover:shadow-lg"
@@ -246,7 +246,7 @@ export default function ClientEvaluationsCenter() {
 
                         {highlightOrderId === order.id && (
                           <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg p-4 mt-4 space-y-4">
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="grid grid-cols-1 gap-4">
                               <div className="bg-white rounded-lg p-4 shadow-sm border border-blue-100">
                                 <div className="flex items-center gap-2 mb-3">
                                   <div className="bg-orange-100 p-2 rounded-lg">

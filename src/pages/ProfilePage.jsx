@@ -118,22 +118,22 @@ export function ProfilePage() {
   }
 
   return (
-    <div className="container mx-auto px-4 py-8 max-w-4xl">
-      <h1 className="text-3xl font-bold mb-8 text-gray-800">Meu Perfil</h1>
+    <div className="container mx-auto px-4 py-6 max-w-4xl">
+      <h1 className="text-2xl sm:text-3xl font-bold mb-6 sm:mb-8 text-gray-800">Meu Perfil</h1>
 
-      <form onSubmit={handleSubmit} className="bg-white p-8 rounded-lg shadow-md space-y-8">
+      <form onSubmit={handleSubmit} className="bg-white p-4 sm:p-8 rounded-lg shadow-md space-y-8">
         {/* --- SECÇÃO DE FOTO E DADOS PESSOAIS --- */}
-        <div className="flex flex-col md:flex-row items-start gap-8">
-          <div className="flex flex-col items-center flex-shrink-0">
+        <div className="flex flex-col md:flex-row items-start gap-6">
+          <div className="flex flex-col items-center flex-shrink-0 w-full md:w-auto">
             <label htmlFor="avatar-upload" className="cursor-pointer group relative">
-              <Avatar className="h-40 w-40 border-4 border-white shadow-lg">
+              <Avatar className="h-24 w-24 sm:h-32 sm:w-32 md:h-40 md:w-40 border-4 border-white shadow-lg">
                 <AvatarImage src={preview || ''} alt="User Avatar" />
                 <AvatarFallback className="bg-gray-200">
                   <User className="h-20 w-20 text-gray-400" />
                 </AvatarFallback>
               </Avatar>
               <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-40 flex items-center justify-center rounded-full transition-all">
-                <Camera className="h-10 w-10 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
+                <Camera className="h-8 w-8 sm:h-10 sm:w-10 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
               </div>
             </label>
             <input
@@ -276,7 +276,7 @@ export function ProfilePage() {
         </div>
 
         <div className="mt-8 pt-6 border-t flex justify-end">
-          <Button type="submit" disabled={isSaving}>
+          <Button type="submit" disabled={isSaving} className="min-h-[44px] w-full sm:w-auto">
             {isSaving ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" /> A guardar...
