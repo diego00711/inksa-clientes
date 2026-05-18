@@ -1,5 +1,5 @@
 import { Routes, Route, Navigate, useNavigate } from "react-router-dom";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { HomePage } from "./pages/HomePage";
 import { RestaurantDetailsPage } from "./pages/RestaurantDetailsPage";
 import { LoginPage } from "./pages/LoginPage";
@@ -7,6 +7,7 @@ import RegisterPage from "./pages/RegisterPage";
 import ForgotPasswordPage from "./pages/ForgotPasswordPage";
 import { Layout } from "./components/Layout";
 import { AuthProvider } from "./context/AuthContext";
+import { useAuth } from "./context/AuthContext";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import { CartPage } from "./pages/CartPage";
 import { ProfilePage } from "./pages/ProfilePage";
@@ -17,6 +18,9 @@ import { ToastProvider, useToast } from "./context/ToastContext";
 import ClientEvaluationsCenter from "./pages/ClientEvaluationsCenter";
 import ClientGamificationDevPage from "./pages/ClientGamificationDevPage";
 import { OrderTrackingPage } from "./pages/OrderTrackingPage";
+import OnboardingSlides from "./components/onboarding/OnboardingSlides";
+import GuidedTour from "./components/onboarding/GuidedTour";
+import FirstOrderCelebration from "./components/onboarding/FirstOrderCelebration";
 
 // Componente interno: precisa estar dentro de ToastProvider para acessar useToast,
 // e dentro de BrowserRouter (via main.jsx) para acessar useNavigate.
@@ -39,6 +43,69 @@ function AuthUnauthorizedHandler() {
   return null;
 }
 
+// Componente interno que gerencia todos os overlays de onboarding.
+// Fica dentro de AuthProvider/ToastProvider para acessar useAuth,
+// e renderiza sobreposto às rotas sem alterar a estrutura delas.
+function OnboardingManager() {
+  const { isAuthenticated } = useAuth();
+
+  const [showOnboarding, setShowOnboarding] = useState(
+    localStorage.getItem('inksa_onboarding_done') !== 'true'
+  );
+  const [showTour, setShowTour] = useState(false);
+  const [showCelebration, setShowCelebration] = useState(false);
+
+  // Exibe o tour guiado quando o usuário fizer login,
+  // mas só se o onboarding já tiver sido concluído e o tour ainda não.
+  useEffect(() => {
+    if (
+      isAuthenticated &&
+      localStorage.getItem('inksa_onboarding_done') === 'true' &&
+      localStorage.getItem('inksa_tour_done') !== 'true'
+    ) {
+      setShowTour(true);
+    }
+  }, [isAuthenticated]);
+
+  // Exibe a celebração do primeiro pedido via evento customizado.
+  useEffect(() => {
+    const handleFirstOrder = () => {
+      if (localStorage.getItem('inksa_first_order_done') !== 'true') {
+        setShowCelebration(true);
+      }
+    };
+    window.addEventListener('order:first_confirmed', handleFirstOrder);
+    return () => {
+      window.removeEventListener('order:first_confirmed', handleFirstOrder);
+    };
+  }, []);
+
+  return (
+    <>
+      {showOnboarding && (
+        <OnboardingSlides
+          onComplete={() => {
+            setShowOnboarding(false);
+            // Após o onboarding, se já autenticado, inicia o tour
+            if (
+              isAuthenticated &&
+              localStorage.getItem('inksa_tour_done') !== 'true'
+            ) {
+              setShowTour(true);
+            }
+          }}
+        />
+      )}
+      {showTour && (
+        <GuidedTour onComplete={() => setShowTour(false)} />
+      )}
+      {showCelebration && (
+        <FirstOrderCelebration onComplete={() => setShowCelebration(false)} />
+      )}
+    </>
+  );
+}
+
 function App() {
   return (
     <AuthProvider>
@@ -46,6 +113,7 @@ function App() {
         <LocationProvider>
           <ToastProvider>
             <AuthUnauthorizedHandler />
+            <OnboardingManager />
             <Routes>
               {/* Rotas públicas que NÃO usam o Layout com cabeçalho */}
               <Route path="/login" element={<LoginPage />} />
