@@ -17,6 +17,7 @@ import { LocationProvider } from "./context/LocationContext";
 import { ToastProvider, useToast } from "./context/ToastContext";
 import ClientEvaluationsCenter from "./pages/ClientEvaluationsCenter";
 import ClientGamificationDevPage from "./pages/ClientGamificationDevPage";
+import GamificationPage from "./pages/GamificationPage";
 import { OrderTrackingPage } from "./pages/OrderTrackingPage";
 import OnboardingSlides from "./components/onboarding/OnboardingSlides";
 import GuidedTour from "./components/onboarding/GuidedTour";
@@ -128,7 +129,8 @@ function App() {
                 <Route path="perfil" element={<ProfilePage />} />
                 <Route path="meus-pedidos" element={<MyOrdersPage />} />
                 <Route path="avaliacoes" element={<ClientEvaluationsCenter />} />
-                <Route path="gamificacao" element={<ClientGamificationDevPage />} />
+                <Route path="gamificacao" element={<GamificationPage />} />
+                <Route path="gamificacao-dev" element={<ClientGamificationDevPage />} />
                 <Route path="pedido/:orderId/acompanhar" element={<OrderTrackingPage />} />
               </Route>
             </Routes>
