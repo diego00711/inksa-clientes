@@ -1,5 +1,5 @@
 // src/pages/HomePage.jsx — Redesign iFood/Rappi style
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { Link } from "react-router-dom";
 import {
   MapPin, Search, ChevronRight, History,
@@ -67,9 +67,41 @@ const CATEGORY_OPTIONS = [
 
 const FAVORITES_KEY = "inksa.favorites";
 
+const QUICK_FILTERS = [
+  { key: 'top_rated',    label: 'Mais avaliados', emoji: '🏆' },
+  { key: 'fast',         label: 'Entrega rápida', emoji: '⚡' },
+  { key: 'promo',        label: 'Promoção',        emoji: '🔥' },
+  { key: 'nearest',      label: 'Mais próximos',   emoji: '📍' },
+  { key: 'new',          label: 'Novidades',        emoji: '⭐' },
+];
+
 function getFavoriteIds() {
   try { return new Set(JSON.parse(localStorage.getItem(FAVORITES_KEY) || "[]")); }
   catch { return new Set(); }
+}
+
+function QuickFiltersBar({ selected, onToggle }) {
+  return (
+    <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide -mx-4 px-4">
+      {QUICK_FILTERS.map((f) => {
+        const active = selected.includes(f.key);
+        return (
+          <button
+            key={f.key}
+            onClick={() => onToggle(f.key)}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap shrink-0 transition-all duration-200 border ${
+              active
+                ? 'bg-orange-500 text-white border-orange-500 shadow-sm'
+                : 'bg-white text-gray-600 border-gray-200 hover:border-orange-300 hover:text-orange-600'
+            }`}
+          >
+            <span>{f.emoji}</span>
+            {f.label}
+          </button>
+        );
+      })}
+    </div>
+  );
 }
 
 // ─── Sub-components ─────────────────────────────────────────────────────────
@@ -327,6 +359,7 @@ export function HomePage() {
   const [selectedCategory, setSelectedCategory] = useState("Todos");
   const [apiCategories, setApiCategories] = useState([]);
   const [mounted, setMounted] = useState(false);
+  const [quickFilters, setQuickFilters] = useState([]);
 
   const { location, loading: locationLoading, error: locationError } = useLocation();
   const { user } = useAuth();
@@ -339,6 +372,12 @@ export function HomePage() {
     BannerService.getBanners()
       .then((data) => setBanners(Array.isArray(data) && data.length ? data : FALLBACK_BANNERS))
       .catch(() => setBanners(FALLBACK_BANNERS));
+  }, []);
+
+  const toggleQuickFilter = useCallback((key) => {
+    setQuickFilters(prev =>
+      prev.includes(key) ? prev.filter(k => k !== key) : [...prev, key]
+    );
   }, []);
 
   // Fetch restaurants
@@ -376,13 +415,40 @@ export function HomePage() {
     return () => supabase.removeChannel(channel);
   }, []);
 
-  // Filters
-  const filteredRestaurants = allRestaurants.filter((r) => {
-    const name = (r.restaurant_name || r.name || "").toLowerCase();
-    const matchSearch = name.includes(searchTerm.toLowerCase());
-    const matchCat = selectedCategory === "Todos" || r.category === selectedCategory;
-    return matchSearch && matchCat;
-  });
+  // Filters + Quick filters
+  const filteredRestaurants = useMemo(() => {
+    const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+    let list = allRestaurants.filter((r) => {
+      const name = (r.restaurant_name || r.name || '').toLowerCase();
+      const matchSearch = name.includes(searchTerm.toLowerCase());
+      const matchCat = selectedCategory === 'Todos' || r.category === selectedCategory;
+      if (!matchSearch || !matchCat) return false;
+
+      if (quickFilters.includes('fast')) {
+        const t = r.estimated_delivery_time ?? r.delivery_time_min;
+        if (t !== undefined && t !== null && Number(t) > 30) return false;
+      }
+      if (quickFilters.includes('promo')) {
+        if (!r.has_promotion && !(r.discount > 0)) return false;
+      }
+      if (quickFilters.includes('new')) {
+        const created = r.created_at ? new Date(r.created_at) : null;
+        if (!created || created < thirtyDaysAgo) return false;
+      }
+      return true;
+    });
+
+    // Sort
+    list = list.slice().sort((a, b) => (b.is_open ? 1 : 0) - (a.is_open ? 1 : 0));
+
+    if (quickFilters.includes('nearest') && !quickFilters.includes('top_rated')) {
+      list.sort((a, b) => (a.distance ?? 999) - (b.distance ?? 999));
+    } else if (quickFilters.includes('top_rated')) {
+      list.sort((a, b) => (parseFloat(b.rating) || 0) - (parseFloat(a.rating) || 0));
+    }
+
+    return list;
+  }, [allRestaurants, searchTerm, selectedCategory, quickFilters]);
 
   // Favorites
   const favoriteIds = getFavoriteIds();
@@ -466,6 +532,15 @@ export function HomePage() {
           />
         </div>
 
+        {/* ── 3b. Quick Filters ───────────────────────────────────────────── */}
+        <div
+          className={`mt-4 transition-all duration-700 delay-175 ${
+            mounted ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
+          }`}
+        >
+          <QuickFiltersBar selected={quickFilters} onToggle={toggleQuickFilter} />
+        </div>
+
         {/* ── 4. Restaurantes Próximos ────────────────────────────────── */}
         <div
           className={`mt-8 transition-all duration-700 delay-200 ${
@@ -506,8 +581,6 @@ export function HomePage() {
               {/* Open restaurants first */}
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
                 {filteredRestaurants
-                  .slice()
-                  .sort((a, b) => (b.is_open ? 1 : 0) - (a.is_open ? 1 : 0))
                   .map((restaurant, i) => (
                     <div
                       key={restaurant.id}

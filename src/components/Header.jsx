@@ -1,5 +1,5 @@
 import { Link, useNavigate } from "react-router-dom";
-import { ShoppingCart, LogOut, Receipt, Star, Trophy } from "lucide-react";
+import { ShoppingCart, LogOut, Receipt, Star, Trophy, Medal } from "lucide-react";
 import { Button } from "./ui/button";
 import { useAuth } from "../context/AuthContext";
 import { useCart } from "../context/CartContext";
@@ -69,6 +69,13 @@ export function Header() {
               <Link to="/gamificacao" className="relative hidden sm:flex min-h-[44px] min-w-[44px] items-center justify-center">
                 <Button variant="ghost" size="icon" aria-label="Minha Pontuação">
                   <Trophy className="h-5 w-5 text-amber-500" />
+                </Button>
+              </Link>
+
+              {/* Clube Inksa */}
+              <Link to="/clube" className="relative hidden sm:flex min-h-[44px] min-w-[44px] items-center justify-center">
+                <Button variant="ghost" size="icon" aria-label="Clube Inksa">
+                  <Medal className="h-5 w-5 text-orange-400" />
                 </Button>
               </Link>
 

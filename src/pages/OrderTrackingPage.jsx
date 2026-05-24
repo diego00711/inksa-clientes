@@ -196,6 +196,7 @@ export function OrderTrackingPage() {
   const [error, setError] = useState("");
   const [delivererLocation, setDelivererLocation] = useState(null);
   const [chatOpen, setChatOpen] = useState(false);
+  const [chatUnread, setChatUnread] = useState(0);
 
   const applyStatus = useCallback((status) => {
     setCurrentStage(STATUS_TO_STAGE[status] ?? 0);
@@ -382,11 +383,16 @@ export function OrderTrackingPage() {
         {/* Botão de chat com entregador */}
         {['picked_up', 'on_the_way', 'delivering'].includes(order?.status) && (
           <button
-            onClick={() => setChatOpen(true)}
-            className="w-full flex items-center justify-center gap-2 bg-white border-2 border-[#FF6F00] text-[#FF6F00] font-bold py-3 min-h-[44px] rounded-2xl mb-5 hover:bg-orange-50 transition-colors shadow-sm"
+            onClick={() => { setChatOpen(true); setChatUnread(0); }}
+            className="w-full flex items-center justify-center gap-2 bg-white border-2 border-[#FF6F00] text-[#FF6F00] font-bold py-3 min-h-[44px] rounded-2xl mb-5 hover:bg-orange-50 transition-colors shadow-sm relative"
           >
             <MessageCircle className="w-5 h-5" />
             Falar com entregador
+            {chatUnread > 0 && (
+              <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold rounded-full min-w-[20px] h-5 flex items-center justify-center px-1">
+                {chatUnread > 9 ? '9+' : chatUnread}
+              </span>
+            )}
           </button>
         )}
 
@@ -396,6 +402,7 @@ export function OrderTrackingPage() {
           isOpen={chatOpen}
           onClose={() => setChatOpen(false)}
           senderType="client"
+          onUnreadChange={(n) => { if (!chatOpen) setChatUnread(n); }}
         />
 
         {/* Timeline */}

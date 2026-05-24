@@ -27,6 +27,7 @@ import GlobalError from "./components/GlobalError";
 import PaymentSuccessPage from "./pages/PaymentSuccessPage";
 import PaymentFailurePage from "./pages/PaymentFailurePage";
 import PaymentPendingPage from "./pages/PaymentPendingPage";
+import ClubePage from "./pages/ClubePage";
 
 // Componente interno: precisa estar dentro de ToastProvider para acessar useToast,
 // e dentro de BrowserRouter (via main.jsx) para acessar useNavigate.
@@ -156,6 +157,7 @@ function App() {
                 <Route path="avaliacoes" element={<ClientEvaluationsCenter />} />
                 <Route path="gamificacao" element={<GamificationPage />} />
                 <Route path="gamificacao-dev" element={<ClientGamificationDevPage />} />
+                <Route path="clube" element={<ClubePage />} />
                 <Route path="pedido/:orderId/acompanhar" element={<OrderTrackingPage />} />
               </Route>
             </Routes>

@@ -7,11 +7,28 @@ import { CLIENT_API_URL } from '../services/api';
 import { supabase } from '../services/restaurantService';
 import { X, Send } from 'lucide-react';
 
-export default function ChatModal({ orderId, isOpen, onClose, senderType = 'client' }) {
+function playBeep() {
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.frequency.value = 880;
+    osc.type = 'sine';
+    gain.gain.setValueAtTime(0.2, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.2);
+    osc.start(ctx.currentTime);
+    osc.stop(ctx.currentTime + 0.2);
+  } catch { /* sem erro silencioso */ }
+}
+
+export default function ChatModal({ orderId, isOpen, onClose, senderType = 'client', onUnreadChange }) {
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState('');
   const [sending, setSending] = useState(false);
   const bottomRef = useRef(null);
+  const lastCountRef = useRef(0);
 
   const fetchMessages = async () => {
     try {
@@ -28,6 +45,10 @@ export default function ChatModal({ orderId, isOpen, onClose, senderType = 'clie
   useEffect(() => {
     if (!isOpen || !orderId) return;
 
+    // Reset unread count when opened
+    lastCountRef.current = 0;
+    onUnreadChange?.(0);
+
     fetchMessages();
 
     if (!supabase) return;
@@ -39,7 +60,18 @@ export default function ChatModal({ orderId, isOpen, onClose, senderType = 'clie
         table: 'chat_messages',
         filter: `order_id=eq.${orderId}`,
       }, (payload) => {
-        setMessages(prev => [...prev, payload.new]);
+        setMessages(prev => {
+          const updated = [...prev, payload.new];
+          // Only beep if message is from the other party
+          if (payload.new?.sender_type !== senderType) {
+            playBeep();
+            if (!isOpen) {
+              lastCountRef.current += 1;
+              onUnreadChange?.(lastCountRef.current);
+            }
+          }
+          return updated;
+        });
       })
       .subscribe();
 
