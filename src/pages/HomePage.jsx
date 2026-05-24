@@ -11,6 +11,8 @@ import { RestaurantCard } from "../components/RestaurantCard";
 import { useLocation } from "../context/LocationContext";
 import { useAuth } from "../context/AuthContext";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { usePullToRefresh } from "../hooks/usePullToRefresh";
+import { RestaurantSkeleton as RestaurantSkeletonGrid } from "../components/skeletons/RestaurantSkeleton";
 
 // ─── Constants ─────────────────────────────────────────────────────────────
 
@@ -340,26 +342,27 @@ export function HomePage() {
   }, []);
 
   // Fetch restaurants
-  useEffect(() => {
+  const loadRestaurants = useCallback(async () => {
     if (!location && !locationError) return;
-
-    const fetch = async () => {
-      setIsLoading(true);
-      try {
-        const data = await RestaurantService.getAllRestaurants(location);
-        const list = Array.isArray(data) ? data : data?.data || [];
-        setAllRestaurants(list);
-        const cats = [...new Set(list.map((r) => r.category).filter(Boolean))];
-        setApiCategories(cats);
-      } catch {
-        /* keep empty */
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetch();
+    setIsLoading(true);
+    try {
+      const data = await RestaurantService.getAllRestaurants(location);
+      const list = Array.isArray(data) ? data : data?.data || [];
+      setAllRestaurants(list);
+      const cats = [...new Set(list.map((r) => r.category).filter(Boolean))];
+      setApiCategories(cats);
+    } catch {
+      /* keep empty */
+    } finally {
+      setIsLoading(false);
+    }
   }, [location, locationError]);
+
+  useEffect(() => {
+    loadRestaurants();
+  }, [loadRestaurants]);
+
+  const { pulling, refreshing } = usePullToRefresh(loadRestaurants);
 
   // Supabase realtime
   useEffect(() => {
@@ -397,6 +400,11 @@ export function HomePage() {
         mounted ? "opacity-100" : "opacity-0"
       }`}
     >
+      {(pulling || refreshing) && (
+        <div className="flex justify-center py-3">
+          <div className="w-6 h-6 border-2 border-[#FF6F00] border-t-transparent rounded-full animate-spin" />
+        </div>
+      )}
       {/* ── 1. Sticky Location + Search Bar ─────────────────────────── */}
       <div className="bg-white sticky top-[73px] z-40 border-b border-gray-100 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 py-3">
@@ -476,11 +484,7 @@ export function HomePage() {
           />
 
           {isLoading || locationLoading ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {Array.from({ length: 6 }).map((_, i) => (
-                <RestaurantSkeleton key={i} />
-              ))}
-            </div>
+            <RestaurantSkeletonGrid count={6} />
           ) : filteredRestaurants.length === 0 ? (
             <div className="text-center py-16 bg-white rounded-2xl border border-gray-100 shadow-sm">
               <div className="text-5xl mb-4">🍽️</div>

@@ -269,26 +269,24 @@ export function OrderTrackingPage() {
     return () => { supabase.removeChannel(ch); };
   }, [order?.delivery_id]);
 
-  // Polling de localização via REST (complementa o realtime do Supabase)
+  // Realtime: localização do entregador via delivery_tracking
   useEffect(() => {
-    if (!['picked_up', 'on_the_way', 'delivering'].includes(order?.status)) return;
-    const poll = async () => {
-      try {
-        const res = await fetch(`${CLIENT_API_URL}/api/deliveries/${orderId}/location`, {
-          headers: createAuthHeaders(),
-        });
-        if (res.ok) {
-          const data = await res.json();
-          setDelivererLocation(data);
+    if (!orderId || !supabase) return;
+    const channel = supabase
+      .channel(`delivery-tracking-${orderId}`)
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'delivery_tracking',
+        filter: `order_id=eq.${orderId}`,
+      }, (payload) => {
+        if (payload.new?.latitude && payload.new?.longitude) {
+          setDelivererLocation({ latitude: payload.new.latitude, longitude: payload.new.longitude });
         }
-      } catch (e) {
-        // falha silenciosa — polling tentará novamente no próximo ciclo
-      }
-    };
-    poll();
-    const interval = setInterval(poll, 10000);
-    return () => clearInterval(interval);
-  }, [order?.status, orderId]);
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [orderId]);
 
   if (loading) {
     return (

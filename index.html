@@ -11,6 +11,15 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="Inksa Cliente">
 <link rel="apple-touch-icon" href="/icons/icon-192x192.png">
+  <!-- Sentry Error Monitoring (CDN — sem npm) -->
+  <script src="https://browser.sentry-cdn.com/7.99.0/bundle.min.js" crossorigin="anonymous"></script>
+  <script>
+    // Substitua SUA_DSN_AQUI pela DSN real em https://sentry.io → Projeto → Settings → Client Keys
+    var SENTRY_DSN = "SUA_DSN_AQUI";
+    if (window.Sentry && SENTRY_DSN !== "SUA_DSN_AQUI") {
+      window.Sentry.init({ dsn: SENTRY_DSN, tracesSampleRate: 0.1 });
+    }
+  </script>
   </head>
   <body>
     <div id="root"></div>

@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
+import { usePullToRefresh } from '../hooks/usePullToRefresh';
 import { ArrowLeft, Trash2, Star, X, Loader2 } from 'lucide-react';
 
 import AuthService from '../services/authService';
@@ -245,6 +246,8 @@ const MyOrdersPage = () => {
     }
   }, [addToast]);
 
+  const { pulling, refreshing } = usePullToRefresh(fetchOrders);
+
   // Polling
   useEffect(() => {
     fetchOrders();
@@ -373,6 +376,11 @@ const MyOrdersPage = () => {
 
   return (
     <div className="bg-amber-50 min-h-screen py-8 px-4">
+      {(pulling || refreshing) && (
+        <div className="flex justify-center py-3">
+          <div className="w-6 h-6 border-2 border-[#FF6F00] border-t-transparent rounded-full animate-spin" />
+        </div>
+      )}
       <div className="max-w-4xl mx-auto">
         <Link to="/" className="inline-flex items-center gap-2 text-gray-600 hover:text-gray-900 mb-6 font-semibold">
           <ArrowLeft size={18} />

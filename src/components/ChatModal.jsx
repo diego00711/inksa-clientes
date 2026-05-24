@@ -4,6 +4,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { CLIENT_API_URL } from '../services/api';
+import { supabase } from '../services/restaurantService';
 import { X, Send } from 'lucide-react';
 
 export default function ChatModal({ orderId, isOpen, onClose, senderType = 'client' }) {
@@ -25,10 +26,24 @@ export default function ChatModal({ orderId, isOpen, onClose, senderType = 'clie
   };
 
   useEffect(() => {
-    if (!isOpen) return;
+    if (!isOpen || !orderId) return;
+
     fetchMessages();
-    const interval = setInterval(fetchMessages, 5000);
-    return () => clearInterval(interval);
+
+    if (!supabase) return;
+    const channel = supabase
+      .channel(`chat-${orderId}`)
+      .on('postgres_changes', {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'chat_messages',
+        filter: `order_id=eq.${orderId}`,
+      }, (payload) => {
+        setMessages(prev => [...prev, payload.new]);
+      })
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen, orderId]);
 

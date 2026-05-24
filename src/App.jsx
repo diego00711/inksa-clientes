@@ -1,5 +1,6 @@
 import { Routes, Route, Navigate, useNavigate } from "react-router-dom";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
+import { useOnlineStatus } from "./hooks/useOnlineStatus";
 import { HomePage } from "./pages/HomePage";
 import { RestaurantDetailsPage } from "./pages/RestaurantDetailsPage";
 import { LoginPage } from "./pages/LoginPage";
@@ -22,6 +23,7 @@ import { OrderTrackingPage } from "./pages/OrderTrackingPage";
 import OnboardingSlides from "./components/onboarding/OnboardingSlides";
 import GuidedTour from "./components/onboarding/GuidedTour";
 import FirstOrderCelebration from "./components/onboarding/FirstOrderCelebration";
+import GlobalError from "./components/GlobalError";
 
 // Componente interno: precisa estar dentro de ToastProvider para acessar useToast,
 // e dentro de BrowserRouter (via main.jsx) para acessar useNavigate.
@@ -40,6 +42,21 @@ function AuthUnauthorizedHandler() {
       window.removeEventListener('auth:unauthorized', handleUnauthorized);
     };
   }, [addToast, navigate]);
+
+  return null;
+}
+
+function OnlineStatusHandler() {
+  const { addToast } = useToast();
+  const isOnline = useOnlineStatus();
+  const prevRef = useRef(null);
+
+  useEffect(() => {
+    if (prevRef.current === null) { prevRef.current = isOnline; return; }
+    if (isOnline && !prevRef.current) addToast('success', 'Conexão restaurada');
+    if (!isOnline && prevRef.current) addToast('error', 'Você está offline');
+    prevRef.current = isOnline;
+  }, [isOnline, addToast]);
 
   return null;
 }
@@ -114,6 +131,8 @@ function App() {
         <LocationProvider>
           <ToastProvider>
             <AuthUnauthorizedHandler />
+            <OnlineStatusHandler />
+            <GlobalError />
             <OnboardingManager />
             <Routes>
               {/* Rotas públicas que NÃO usam o Layout com cabeçalho */}
