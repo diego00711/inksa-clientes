@@ -25,7 +25,7 @@ const authService = {
       const response = await apiFetch(`${API_BASE_URL}/api/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password, user_type: 'cliente' }),
+        body: JSON.stringify({ email, password }),
       });
       const data = await processResponse(response);
       
@@ -46,7 +46,7 @@ const authService = {
       const response = await apiFetch(`${API_BASE_URL}/api/auth/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...userData, user_type: 'cliente' }),
+        body: JSON.stringify({ ...userData, user_type: 'client' }),
       });
       return await processResponse(response);
     } catch (error) {
