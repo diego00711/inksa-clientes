@@ -3,17 +3,16 @@
 // IMPORTANTE: Diego precisa preencher FIREBASE_CONFIG com as credenciais do projeto Firebase.
 // Acesse console.firebase.google.com → seu projeto → Configurações → Adicionar app web
 const FIREBASE_CONFIG = {
-  // apiKey: "",
-  // authDomain: "",
-  // projectId: "",
-  // storageBucket: "",
-  // messagingSenderId: "",
-  // appId: ""
+  apiKey: "AIzaSyA_DLxPwOxbhCSeQFs21GaK2sU51gaxJQ0",
+  authDomain: "inksa-delivery.firebaseapp.com",
+  projectId: "inksa-delivery",
+  storageBucket: "inksa-delivery.firebasestorage.app",
+  messagingSenderId: "2366391589",
+  appId: "1:2366391589:web:7011af9ee2d7a3b355c6cc",
+  measurementId: "G-5E4ND4JN1H"
 };
 
-// Diego: preencha com a chave VAPID do Firebase
-// (console.firebase.google.com → Configurações do Projeto → Cloud Messaging → Certificados Web Push)
-const FCM_VAPID_KEY = "";
+const FCM_VAPID_KEY = "BOUov-X15lwK9B-Hd7er7rhnPZCzYxunkqEeeTo71A8gOxuCCQIEh_MQWNEOu7rxmIT4iaN9zim4FKurj2dwPAPc";
 
 /**
  * Solicita permissão de notificação e obtém o FCM token.
