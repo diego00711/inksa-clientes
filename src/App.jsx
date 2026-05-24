@@ -24,6 +24,9 @@ import OnboardingSlides from "./components/onboarding/OnboardingSlides";
 import GuidedTour from "./components/onboarding/GuidedTour";
 import FirstOrderCelebration from "./components/onboarding/FirstOrderCelebration";
 import GlobalError from "./components/GlobalError";
+import PaymentSuccessPage from "./pages/PaymentSuccessPage";
+import PaymentFailurePage from "./pages/PaymentFailurePage";
+import PaymentPendingPage from "./pages/PaymentPendingPage";
 
 // Componente interno: precisa estar dentro de ToastProvider para acessar useToast,
 // e dentro de BrowserRouter (via main.jsx) para acessar useNavigate.
@@ -139,6 +142,9 @@ function App() {
               <Route path="/login" element={<LoginPage />} />
               <Route path="/register" element={<RegisterPage />} />
               <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+              <Route path="/pagamento/sucesso" element={<PaymentSuccessPage />} />
+              <Route path="/pagamento/falha" element={<PaymentFailurePage />} />
+              <Route path="/pagamento/pendente" element={<PaymentPendingPage />} />
 
               {/* Rota "mãe" que aplica o Layout protegido a todas as rotas "filhas" */}
               <Route element={<ProtectedRoute><Layout /></ProtectedRoute>}>
