@@ -269,7 +269,9 @@ function RewardsSection({ rewards, userPoints, onRedeem, redeeming }) {
             {/* Icon + badges row */}
             <div className="flex items-start justify-between gap-2">
               <div className="flex items-center gap-3">
-                {reward.icon ? (
+                {reward.image_url ? (
+                  <img src={reward.image_url} alt="" className="w-12 h-12 rounded-lg object-cover" />
+                ) : reward.icon ? (
                   isEmoji ? (
                     <span className="text-4xl leading-none">{reward.icon}</span>
                   ) : (
