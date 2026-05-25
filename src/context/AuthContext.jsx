@@ -18,24 +18,30 @@ export const AuthProvider = ({ children }) => {
       try {
         // 1️⃣ Pega dados salvos no localStorage (do login - TEM O EMAIL!)
         const storedAuthData = authService.getCurrentUser();
-        
-        // 2️⃣ Busca o perfil completo
-        const profileData = await clientService.getProfile();
-        
+
+        // 2️⃣ Busca o perfil completo — não faz logout se não encontrado (conta recém-criada)
+        let profileData = {};
+        try {
+          profileData = await clientService.getProfile();
+        } catch (profileErr) {
+          console.warn("[AuthContext] Perfil não encontrado (conta recém-criada ou erro temporário):", profileErr);
+          // Não faz logout — usa dados básicos do login para permitir acesso
+        }
+
         // 3️⃣ COMBINA: perfil + email do localStorage
         const combinedUser = {
           ...profileData,
           email: storedAuthData?.email || null,  // EMAIL VEM DO LOGIN!
-          user_type: storedAuthData?.user_type || 'cliente',
-          id: profileData.id
+          user_type: storedAuthData?.user_type || 'client',
+          id: profileData.id || storedAuthData?.id
         };
-        
+
         console.log('✅ [AuthContext] Usuário montado:', combinedUser);
         console.log('✅ [AuthContext] Email do usuário:', combinedUser.email);
-        
+
         setUser(combinedUser);
       } catch (error) {
-        console.error("❌ [AuthContext] Erro ao buscar perfil:", error);
+        console.error("❌ [AuthContext] Erro crítico ao montar usuário:", error);
         authService.logout();
         setUser(null);
       }
