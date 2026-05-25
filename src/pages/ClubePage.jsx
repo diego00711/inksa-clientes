@@ -30,7 +30,7 @@ export default function ClubePage() {
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    const token = localStorage.getItem('inksa_token') || sessionStorage.getItem('inksa_token') || '';
+    const token = localStorage.getItem('clientAuthToken') || '';
     Promise.all([
       fetch(`${CLIENT_API_URL}/api/club/status`, {
         headers: { Authorization: `Bearer ${token}` },

@@ -13,6 +13,7 @@ import GuidedTour from "./components/onboarding/GuidedTour";
 import FirstOrderCelebration from "./components/onboarding/FirstOrderCelebration";
 import GlobalError from "./components/GlobalError";
 import WakingUpScreen from "./components/WakingUpScreen";
+import SupportButton from "./components/SupportButton";
 
 // --- Lazy-loaded pages ---
 const HomePage = lazy(() => import("./pages/HomePage").then(m => ({ default: m.HomePage })));
@@ -128,6 +129,7 @@ function AppContent() {
           <OnlineStatusHandler />
           <GlobalError />
           <OnboardingManager />
+          <SupportButton />
           <Suspense fallback={<PageLoader />}>
             <Routes>
               <Route path="/login" element={<LoginPage />} />
