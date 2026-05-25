@@ -65,7 +65,8 @@ const ClientService = {
         body: formData,
       });
       const data = await processResponse(response);
-      return data.avatar_url || data.url || data;
+      // Backend returns { status: "success", data: { avatar_url: "..." } }
+      return data?.data?.avatar_url || null;
     } catch (err) {
       console.error('❌ Erro ao fazer upload do avatar:', err);
       throw err;

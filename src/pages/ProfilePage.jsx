@@ -83,21 +83,23 @@ export function ProfilePage() {
       const dataToUpdate = { ...formData };
 
       if (selectedFile) {
-        // CORREÇÃO: upload via ClientService
-        const uploadResponse = await ClientService.uploadAvatar(selectedFile);
-        const uploadedUrl = uploadResponse?.avatar_url || uploadResponse?.url || uploadResponse;
-        if (uploadedUrl) {
-          dataToUpdate.avatar_url = uploadedUrl;
-          setPreview(uploadedUrl);
+        const avatarUrl = await ClientService.uploadAvatar(selectedFile);
+        if (avatarUrl) {
+          dataToUpdate.avatar_url = avatarUrl;
+          setPreview(avatarUrl);
         }
       }
 
-      await ClientService.updateProfile(dataToUpdate);
-
-      // Notifica o app para atualizar o usuário no contexto
-      if (typeof refreshUser === 'function') {
-        refreshUser();
+      const updatedProfile = await ClientService.updateProfile(dataToUpdate);
+      if (updatedProfile) {
+        setFormData(prev => ({ ...prev, ...updatedProfile }));
+        if (updatedProfile.avatar_url) setPreview(updatedProfile.avatar_url);
       }
+
+      setSelectedFile(null);
+
+      // Atualiza o usuário no contexto global
+      if (typeof refreshUser === 'function') refreshUser();
 
       addToast('success', 'Perfil atualizado com sucesso!');
     } catch (error) {
