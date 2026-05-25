@@ -1,36 +1,43 @@
+import { lazy, Suspense, useState, useEffect, useRef } from "react";
 import { Routes, Route, Navigate, useNavigate } from "react-router-dom";
-import { useEffect, useState, useRef } from "react";
 import { useOnlineStatus } from "./hooks/useOnlineStatus";
-import { HomePage } from "./pages/HomePage";
-import { RestaurantDetailsPage } from "./pages/RestaurantDetailsPage";
-import { LoginPage } from "./pages/LoginPage";
-import RegisterPage from "./pages/RegisterPage";
-import ForgotPasswordPage from "./pages/ForgotPasswordPage";
 import { Layout } from "./components/Layout";
 import { AuthProvider } from "./context/AuthContext";
 import { useAuth } from "./context/AuthContext";
 import { ProtectedRoute } from "./components/ProtectedRoute";
-import { CartPage } from "./pages/CartPage";
-import { ProfilePage } from "./pages/ProfilePage";
 import { CartProvider } from "./context/CartContext";
-import MyOrdersPage from "./pages/MyOrdersPage";
 import { LocationProvider } from "./context/LocationContext";
 import { ToastProvider, useToast } from "./context/ToastContext";
-import ClientEvaluationsCenter from "./pages/ClientEvaluationsCenter";
-import ClientGamificationDevPage from "./pages/ClientGamificationDevPage";
-import GamificationPage from "./pages/GamificationPage";
-import { OrderTrackingPage } from "./pages/OrderTrackingPage";
 import OnboardingSlides from "./components/onboarding/OnboardingSlides";
 import GuidedTour from "./components/onboarding/GuidedTour";
 import FirstOrderCelebration from "./components/onboarding/FirstOrderCelebration";
 import GlobalError from "./components/GlobalError";
-import PaymentSuccessPage from "./pages/PaymentSuccessPage";
-import PaymentFailurePage from "./pages/PaymentFailurePage";
-import PaymentPendingPage from "./pages/PaymentPendingPage";
-import ClubePage from "./pages/ClubePage";
+import WakingUpScreen from "./components/WakingUpScreen";
 
-// Componente interno: precisa estar dentro de ToastProvider para acessar useToast,
-// e dentro de BrowserRouter (via main.jsx) para acessar useNavigate.
+// --- Lazy-loaded pages ---
+const HomePage = lazy(() => import("./pages/HomePage").then(m => ({ default: m.HomePage })));
+const RestaurantDetailsPage = lazy(() => import("./pages/RestaurantDetailsPage").then(m => ({ default: m.RestaurantDetailsPage })));
+const LoginPage = lazy(() => import("./pages/LoginPage").then(m => ({ default: m.LoginPage })));
+const RegisterPage = lazy(() => import("./pages/RegisterPage"));
+const ForgotPasswordPage = lazy(() => import("./pages/ForgotPasswordPage"));
+const CartPage = lazy(() => import("./pages/CartPage").then(m => ({ default: m.CartPage })));
+const ProfilePage = lazy(() => import("./pages/ProfilePage").then(m => ({ default: m.ProfilePage })));
+const MyOrdersPage = lazy(() => import("./pages/MyOrdersPage"));
+const ClientEvaluationsCenter = lazy(() => import("./pages/ClientEvaluationsCenter"));
+const ClientGamificationDevPage = lazy(() => import("./pages/ClientGamificationDevPage"));
+const GamificationPage = lazy(() => import("./pages/GamificationPage"));
+const OrderTrackingPage = lazy(() => import("./pages/OrderTrackingPage").then(m => ({ default: m.OrderTrackingPage })));
+const PaymentSuccessPage = lazy(() => import("./pages/PaymentSuccessPage"));
+const PaymentFailurePage = lazy(() => import("./pages/PaymentFailurePage"));
+const PaymentPendingPage = lazy(() => import("./pages/PaymentPendingPage"));
+const ClubePage = lazy(() => import("./pages/ClubePage"));
+
+const PageLoader = () => (
+  <div className="flex h-screen items-center justify-center">
+    <div className="w-8 h-8 border-4 border-orange-200 border-t-orange-500 rounded-full animate-spin" />
+  </div>
+);
+
 function AuthUnauthorizedHandler() {
   const { addToast } = useToast();
   const navigate = useNavigate();
@@ -40,11 +47,8 @@ function AuthUnauthorizedHandler() {
       addToast('error', 'Sessão expirada, faça login novamente');
       navigate('/login');
     };
-
     window.addEventListener('auth:unauthorized', handleUnauthorized);
-    return () => {
-      window.removeEventListener('auth:unauthorized', handleUnauthorized);
-    };
+    return () => window.removeEventListener('auth:unauthorized', handleUnauthorized);
   }, [addToast, navigate]);
 
   return null;
@@ -65,9 +69,6 @@ function OnlineStatusHandler() {
   return null;
 }
 
-// Componente interno que gerencia todos os overlays de onboarding.
-// Fica dentro de AuthProvider/ToastProvider para acessar useAuth,
-// e renderiza sobreposto às rotas sem alterar a estrutura delas.
 function OnboardingManager() {
   const { isAuthenticated } = useAuth();
 
@@ -77,8 +78,6 @@ function OnboardingManager() {
   const [showTour, setShowTour] = useState(false);
   const [showCelebration, setShowCelebration] = useState(false);
 
-  // Exibe o tour guiado quando o usuário fizer login,
-  // mas só se o onboarding já tiver sido concluído e o tour ainda não.
   useEffect(() => {
     if (
       isAuthenticated &&
@@ -89,7 +88,6 @@ function OnboardingManager() {
     }
   }, [isAuthenticated]);
 
-  // Exibe a celebração do primeiro pedido via evento customizado.
   useEffect(() => {
     const handleFirstOrder = () => {
       if (localStorage.getItem('inksa_first_order_done') !== 'true') {
@@ -97,9 +95,7 @@ function OnboardingManager() {
       }
     };
     window.addEventListener('order:first_confirmed', handleFirstOrder);
-    return () => {
-      window.removeEventListener('order:first_confirmed', handleFirstOrder);
-    };
+    return () => window.removeEventListener('order:first_confirmed', handleFirstOrder);
   }, []);
 
   return (
@@ -108,38 +104,32 @@ function OnboardingManager() {
         <OnboardingSlides
           onComplete={() => {
             setShowOnboarding(false);
-            // Após o onboarding, se já autenticado, inicia o tour
-            if (
-              isAuthenticated &&
-              localStorage.getItem('inksa_tour_done') !== 'true'
-            ) {
+            if (isAuthenticated && localStorage.getItem('inksa_tour_done') !== 'true') {
               setShowTour(true);
             }
           }}
         />
       )}
-      {showTour && (
-        <GuidedTour onComplete={() => setShowTour(false)} />
-      )}
-      {showCelebration && (
-        <FirstOrderCelebration onComplete={() => setShowCelebration(false)} />
-      )}
+      {showTour && <GuidedTour onComplete={() => setShowTour(false)} />}
+      {showCelebration && <FirstOrderCelebration onComplete={() => setShowCelebration(false)} />}
     </>
   );
 }
 
-function App() {
+function AppContent() {
+  const [serverReady, setServerReady] = useState(false);
+
   return (
-    <AuthProvider>
-      <CartProvider>
-        <LocationProvider>
-          <ToastProvider>
-            <AuthUnauthorizedHandler />
-            <OnlineStatusHandler />
-            <GlobalError />
-            <OnboardingManager />
+    <>
+      <WakingUpScreen onReady={() => setServerReady(true)} />
+      {serverReady && (
+        <>
+          <AuthUnauthorizedHandler />
+          <OnlineStatusHandler />
+          <GlobalError />
+          <OnboardingManager />
+          <Suspense fallback={<PageLoader />}>
             <Routes>
-              {/* Rotas públicas que NÃO usam o Layout com cabeçalho */}
               <Route path="/login" element={<LoginPage />} />
               <Route path="/register" element={<RegisterPage />} />
               <Route path="/forgot-password" element={<ForgotPasswordPage />} />
@@ -147,7 +137,6 @@ function App() {
               <Route path="/pagamento/falha" element={<PaymentFailurePage />} />
               <Route path="/pagamento/pendente" element={<PaymentPendingPage />} />
 
-              {/* Rota "mãe" que aplica o Layout protegido a todas as rotas "filhas" */}
               <Route element={<ProtectedRoute><Layout /></ProtectedRoute>}>
                 <Route path="/" element={<HomePage />} />
                 <Route path="restaurantes/:id" element={<RestaurantDetailsPage />} />
@@ -161,6 +150,20 @@ function App() {
                 <Route path="pedido/:orderId/acompanhar" element={<OrderTrackingPage />} />
               </Route>
             </Routes>
+          </Suspense>
+        </>
+      )}
+    </>
+  );
+}
+
+function App() {
+  return (
+    <AuthProvider>
+      <CartProvider>
+        <LocationProvider>
+          <ToastProvider>
+            <AppContent />
           </ToastProvider>
         </LocationProvider>
       </CartProvider>
