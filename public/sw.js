@@ -56,3 +56,9 @@ self.addEventListener('push', (event) => {
 self.addEventListener('message', (event) => {
   if (event.data?.type === 'SKIP_WAITING') self.skipWaiting();
 });
+
+// Keep-alive: pinga o backend a cada 10 min para evitar cold start no Render
+const BACKEND_HEALTH = 'https://inksa-auth-flask-dev.onrender.com/api/health';
+setInterval(() => {
+  fetch(BACKEND_HEALTH, { cache: 'no-store' }).catch(() => {});
+}, 10 * 60 * 1000);
