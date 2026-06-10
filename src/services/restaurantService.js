@@ -22,19 +22,23 @@ const processResponse = async (response) => {
 };
 
 const RestaurantService = {
-  // Lista restaurantes — GET /api/restaurants/ (pública, sem auth)
-  getAllRestaurants: async (location) => {
+  // Lista restaurantes paginados — GET /api/restaurants/ (pública, sem auth)
+  // Retorna { items, hasMore }.
+  getAllRestaurants: async (location, { limit = 20, offset = 0 } = {}) => {
     try {
       const params = new URLSearchParams();
       if (location?.latitude && location?.longitude) {
         params.append('user_lat', location.latitude);
         params.append('user_lon', location.longitude);
       }
-      const qs = params.toString();
-      const url = `${API_URL}/restaurants${qs ? `?${qs}` : ''}`;
+      params.append('limit', limit);
+      params.append('offset', offset);
+      const url = `${API_URL}/restaurants?${params.toString()}`;
       const response = await apiFetch(url);
       const data = await processResponse(response);
-      return data.data || data;
+      const items = Array.isArray(data) ? data : (data.data || []);
+      const hasMore = typeof data?.has_more === 'boolean' ? data.has_more : false;
+      return { items, hasMore };
     } catch (err) {
       console.error('❌ Erro ao listar restaurantes:', err);
       throw err;

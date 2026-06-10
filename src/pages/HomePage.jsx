@@ -380,26 +380,61 @@ export function HomePage() {
     );
   }, []);
 
-  // Fetch restaurants
-  const loadRestaurants = useCallback(async () => {
+  // Fetch restaurants (paginado, com scroll infinito)
+  const PAGE_SIZE = 20;
+  const [hasMore, setHasMore] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const offsetRef = useRef(0);
+  const loadingRef = useRef(false);
+  const sentinelRef = useRef(null);
+
+  const loadPage = useCallback(async (reset) => {
     if (!location && !locationError) return;
-    setIsLoading(true);
+    if (loadingRef.current) return;
+    loadingRef.current = true;
+    const offset = reset ? 0 : offsetRef.current;
+    if (reset) setIsLoading(true); else setLoadingMore(true);
     try {
-      const data = await RestaurantService.getAllRestaurants(location);
-      const list = Array.isArray(data) ? data : data?.data || [];
-      setAllRestaurants(list);
-      const cats = [...new Set(list.map((r) => r.category).filter(Boolean))];
-      setApiCategories(cats);
+      const { items, hasMore: more } = await RestaurantService.getAllRestaurants(
+        location, { limit: PAGE_SIZE, offset }
+      );
+      setAllRestaurants((prev) => {
+        const base = reset ? [] : prev;
+        const seen = new Set(base.map((r) => r.id));
+        const merged = [...base, ...items.filter((r) => !seen.has(r.id))];
+        const cats = [...new Set(merged.map((r) => r.category).filter(Boolean))];
+        setApiCategories(cats);
+        return merged;
+      });
+      offsetRef.current = offset + items.length;
+      setHasMore(more);
     } catch {
-      /* keep empty */
+      /* keep current */
     } finally {
+      loadingRef.current = false;
       setIsLoading(false);
+      setLoadingMore(false);
     }
   }, [location, locationError]);
+
+  const loadRestaurants = useCallback(() => loadPage(true), [loadPage]);
 
   useEffect(() => {
     loadRestaurants();
   }, [loadRestaurants]);
+
+  // Scroll infinito: carrega a próxima página ao chegar perto do fim
+  useEffect(() => {
+    const el = sentinelRef.current;
+    if (!el) return;
+    const io = new IntersectionObserver((entries) => {
+      if (entries[0].isIntersecting && hasMore && !loadingRef.current) {
+        loadPage(false);
+      }
+    }, { rootMargin: '300px' });
+    io.observe(el);
+    return () => io.disconnect();
+  }, [hasMore, loadPage]);
 
   const { pulling, refreshing } = usePullToRefresh(loadRestaurants);
 
@@ -594,6 +629,14 @@ export function HomePage() {
               <p className="text-center text-xs text-gray-400 mt-6">
                 {filteredRestaurants.length} restaurante{filteredRestaurants.length !== 1 ? "s" : ""} encontrado{filteredRestaurants.length !== 1 ? "s" : ""}
               </p>
+              {/* Sentinela do scroll infinito */}
+              {hasMore && (
+                <div ref={sentinelRef} className="py-6 flex justify-center">
+                  {loadingMore && (
+                    <div className="w-6 h-6 border-2 border-orange-200 border-t-orange-500 rounded-full animate-spin" />
+                  )}
+                </div>
+              )}
             </>
           )}
         </div>
