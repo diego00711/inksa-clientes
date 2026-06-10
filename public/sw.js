@@ -1,4 +1,4 @@
-const CACHE_NAME = 'inksa-cliente-v2';
+const CACHE_NAME = 'inksa-cliente-v3';
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
