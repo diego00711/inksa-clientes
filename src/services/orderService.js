@@ -75,6 +75,17 @@ export const createPaymentPreference = async (preferenceData) => {
   return processResponse(response);
 };
 
+/** Processa pagamento com cartão (transparente, sem redirecionar) via token do MP Bricks. */
+export const processCardPayment = async (payload) => {
+  const url = `${CLIENT_API_URL}/api/pagamentos/processar_cartao`;
+  const response = await apiFetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+  return processResponse(response);
+};
+
 /** ✅ Pedidos pendentes de avaliação do CLIENTE */
 export const getOrdersPendingClientReview = async (signal) => {
   const url = `${CLIENT_API_URL}/api/reviews/orders/pending-reviews`;

@@ -10,7 +10,10 @@ import { useToast } from '../context/ToastContext.jsx';
 import ClientService from '../services/clientService';
 import AddressService, { formatAddress } from '../services/addressService';
 import { PaymentMethodSelector } from '../components/PaymentMethodSelector';
+import CardPaymentModal from '../components/CardPaymentModal';
 import { CLIENT_API_URL } from '../services/api';
+
+const MP_PUBLIC_KEY = import.meta.env.VITE_MERCADOPAGO_PUBLIC_KEY;
 
 export function CartPage() {
   const { cartItems, addItemToCart, removeItemFromCart, clearCart, subTotal } = useCart();
@@ -45,6 +48,10 @@ export function CartPage() {
   const [cashOrderConfirmed, setCashOrderConfirmed] = useState(false);
   const [confirmedTotal, setConfirmedTotal] = useState(0);
   const [confirmedOrderId, setConfirmedOrderId] = useState(null);
+
+  // Card-in-app (MP Bricks) state
+  const [cardModalOpen, setCardModalOpen] = useState(false);
+  const [cardPayload, setCardPayload] = useState(null);
 
   useEffect(() => {
     ClientService.getProfile().then(setClientProfile).catch(() => {});
@@ -193,6 +200,14 @@ export function CartPage() {
         cliente_email: user.email,
         ...(couponData?.valid && couponCode.trim() ? { coupon_code: couponCode.trim() } : {}),
       };
+
+      // Cartão DENTRO do app (sem redirecionar) quando a chave pública do MP existe
+      if (['credit', 'debit'].includes(paymentMethod) && MP_PUBLIC_KEY) {
+        setCardPayload(basePayload);
+        setCardModalOpen(true);
+        setIsProcessingOrder(false);
+        return;
+      }
 
       if (paymentMethod === 'cash') {
         const response = await createPaymentPreference({
@@ -466,6 +481,29 @@ export function CartPage() {
           </div>
         </div>
       )}
+
+      <CardPaymentModal
+        isOpen={cardModalOpen}
+        amount={finalTotal}
+        orderPayload={cardPayload || {}}
+        onApproved={(orderId, state) => {
+          setCardModalOpen(false);
+          clearCart();
+          if (state === 'pending') {
+            addToast('info', 'Pagamento em análise. Avisaremos quando aprovado.');
+          } else {
+            addToast('success', '✅ Pagamento aprovado!');
+          }
+          if (orderId) {
+            localStorage.setItem('last_order_id', orderId);
+            navigate(`/pedido/${orderId}/acompanhar`);
+          } else {
+            navigate('/');
+          }
+        }}
+        onError={(m) => addToast('error', m || 'Pagamento não concluído.')}
+        onClose={() => setCardModalOpen(false)}
+      />
     </div>
   );
 }
