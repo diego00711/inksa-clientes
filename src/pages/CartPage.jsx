@@ -2,12 +2,13 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
-import { ChevronLeft, ShoppingCart, PlusCircle, MinusCircle, Trash2, Loader2 } from "lucide-react";
+import { ChevronLeft, ShoppingCart, PlusCircle, MinusCircle, Trash2, Loader2, MapPin, ChevronDown } from "lucide-react";
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
 import { createPaymentPreference, calculateDeliveryFee } from '../services/orderService';
 import { useToast } from '../context/ToastContext.jsx';
 import ClientService from '../services/clientService';
+import AddressService, { formatAddress } from '../services/addressService';
 import { PaymentMethodSelector } from '../components/PaymentMethodSelector';
 import { CLIENT_API_URL } from '../services/api';
 
@@ -24,6 +25,11 @@ export function CartPage() {
   const [deliveryDistance, setDeliveryDistance] = useState(null);
   const [clientProfile, setClientProfile] = useState(null);
   const [restaurantInfo, setRestaurantInfo] = useState(null);
+
+  // Endereços salvos
+  const [addresses, setAddresses] = useState([]);
+  const [selectedAddressId, setSelectedAddressId] = useState(null);
+  const [showAddressList, setShowAddressList] = useState(false);
 
   // Payment method state
   const [paymentMethod, setPaymentMethod] = useState('pix');
@@ -42,7 +48,24 @@ export function CartPage() {
 
   useEffect(() => {
     ClientService.getProfile().then(setClientProfile).catch(() => {});
+    AddressService.list()
+      .then((list) => {
+        setAddresses(list);
+        const def = list.find((a) => a.is_default) || list[0];
+        if (def) setSelectedAddressId(def.id);
+      })
+      .catch(() => {});
   }, []);
+
+  const selectedAddress = addresses.find((a) => a.id === selectedAddressId) || null;
+
+  // Coordenadas e endereço de entrega: prioriza endereço salvo selecionado,
+  // com fallback para o endereço principal do perfil.
+  const deliveryLat = selectedAddress?.latitude ?? clientProfile?.latitude ?? clientProfile?.lat ?? 0;
+  const deliveryLng = selectedAddress?.longitude ?? clientProfile?.longitude ?? clientProfile?.lng ?? 0;
+  const deliveryAddressStr = selectedAddress
+    ? formatAddress(selectedAddress)
+    : (clientProfile?.address || clientProfile?.full_address || '');
 
   // Fetch restaurant info to check accepts_cash
   useEffect(() => {
@@ -64,8 +87,8 @@ export function CartPage() {
         if (!restaurantId) { setFeeError("ID do restaurante não encontrado."); setDeliveryFee(null); return; }
         const feeData = await calculateDeliveryFee({
           restaurant_id: restaurantId,
-          client_latitude: clientProfile?.latitude || clientProfile?.lat || 0,
-          client_longitude: clientProfile?.longitude || clientProfile?.lng || 0,
+          client_latitude: deliveryLat,
+          client_longitude: deliveryLng,
         });
         let finalFee = 0, distance = 0;
         if (feeData?.status === 'success' && feeData?.data) {
@@ -88,7 +111,7 @@ export function CartPage() {
       }
     };
     fetchDeliveryFee();
-  }, [cartItems, addToast, clientProfile]);
+  }, [cartItems, addToast, deliveryLat, deliveryLng]);
 
   const safeFee = Number(deliveryFee) || 0;
   const couponDiscount = (couponData?.valid && Number(couponData?.discount_amount) > 0)
@@ -162,9 +185,9 @@ export function CartPage() {
         total_amount_items: subTotal,
         delivery_fee: safeFee,
         total_amount: finalTotal,
-        delivery_address: clientProfile?.address || clientProfile?.full_address || '',
-        client_latitude: clientProfile?.latitude || clientProfile?.lat || 0,
-        client_longitude: clientProfile?.longitude || clientProfile?.lng || 0,
+        delivery_address: deliveryAddressStr,
+        client_latitude: deliveryLat,
+        client_longitude: deliveryLng,
         delivery_distance_km: deliveryDistance || 0,
         notes: '',
         cliente_email: user.email,
@@ -360,6 +383,52 @@ export function CartPage() {
               <span>Total</span>
               <span>R$ {finalTotal.toFixed(2)}</span>
             </div>
+          </div>
+
+          {/* Endereço de entrega */}
+          <div className="border-t pt-5 mt-5">
+            <p className="text-sm font-semibold text-gray-700 mb-2 flex items-center gap-1.5">
+              <MapPin className="w-4 h-4 text-orange-500" /> Endereço de entrega
+            </p>
+            {addresses.length === 0 ? (
+              <button
+                onClick={() => navigate('/perfil')}
+                className="w-full text-left border border-dashed border-orange-300 rounded-xl p-3 text-sm text-orange-600 hover:bg-orange-50"
+              >
+                + Cadastrar endereço de entrega
+              </button>
+            ) : (
+              <div className="border rounded-xl">
+                <button
+                  onClick={() => setShowAddressList((v) => !v)}
+                  className="w-full flex items-center justify-between p-3 text-left"
+                >
+                  <span className="min-w-0">
+                    <span className="font-semibold text-sm text-gray-800">{selectedAddress?.label || 'Selecione'}</span>
+                    <span className="block text-xs text-gray-500 truncate">{deliveryAddressStr || 'Toque para escolher'}</span>
+                  </span>
+                  <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform ${showAddressList ? 'rotate-180' : ''}`} />
+                </button>
+                {showAddressList && (
+                  <div className="border-t divide-y">
+                    {addresses.map((a) => (
+                      <button
+                        key={a.id}
+                        onClick={() => { setSelectedAddressId(a.id); setShowAddressList(false); }}
+                        className={`w-full text-left p-3 text-sm hover:bg-gray-50 ${a.id === selectedAddressId ? 'bg-orange-50' : ''}`}
+                      >
+                        <span className="font-semibold text-gray-800">{a.label}</span>
+                        {a.is_default && <span className="ml-2 text-[10px] font-bold text-green-700">PADRÃO</span>}
+                        <span className="block text-xs text-gray-500 truncate">{formatAddress(a)}</span>
+                      </button>
+                    ))}
+                    <button onClick={() => navigate('/perfil')} className="w-full text-left p-3 text-sm text-orange-600 hover:bg-orange-50">
+                      + Gerenciar endereços
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
           {/* Payment method selector */}

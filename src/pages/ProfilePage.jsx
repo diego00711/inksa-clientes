@@ -10,6 +10,7 @@ import { User, Camera, Loader2 } from "lucide-react";
 import ClientService from '../services/clientService';
 import { useToast } from "../context/ToastContext";
 import { useAuth } from '../context/AuthContext';
+import AddressBook from '../components/AddressBook';
 
 export function ProfilePage() {
   const { addToast } = useToast();
@@ -201,7 +202,7 @@ export function ProfilePage() {
           </div>
         </div>
 
-        {/* --- SECÇÃO DE ENDEREÇO --- */}
+        {/* --- SECÇÃO DE ENDEREÇO PRINCIPAL (legado, mantido p/ compatibilidade) --- */}
         <div className="border-t pt-8">
           <h2 className="text-xl font-semibold mb-6 text-gray-700">Meu Endereço Principal</h2>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
@@ -289,6 +290,9 @@ export function ProfilePage() {
           </Button>
         </div>
       </form>
+
+      {/* --- ENDEREÇOS SALVOS (múltiplos, com mapa) --- */}
+      <AddressBook />
     </div>
   );
 }
