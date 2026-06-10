@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import {
   ArrowLeft, Phone, Star, Clock, CheckCircle, ChefHat, Bike, MapPin, Package, MessageCircle,
@@ -6,6 +6,22 @@ import {
 import { supabase } from "../services/restaurantService";
 import { CLIENT_API_URL, createAuthHeaders } from "../services/api";
 import ChatModal from "../components/ChatModal";
+import LiveTrackingMap, { etaMinutes } from "../components/LiveTrackingMap";
+
+// Extrai {lat,lng} de varias formas possiveis (objeto JSON ou campos soltos)
+function parseCoord(...candidates) {
+  for (const c of candidates) {
+    if (!c) continue;
+    const lat = c.lat ?? c.latitude ?? c.client_latitude;
+    const lng = c.lng ?? c.lon ?? c.longitude ?? c.client_longitude;
+    const nLat = Number(lat);
+    const nLng = Number(lng);
+    if (Number.isFinite(nLat) && Number.isFinite(nLng) && (nLat !== 0 || nLng !== 0)) {
+      return { lat: nLat, lng: nLng };
+    }
+  }
+  return null;
+}
 
 // ─── Stage definitions ───────────────────────────────────────────────────────
 const STAGES = [
@@ -289,6 +305,32 @@ export function OrderTrackingPage() {
     return () => { supabase.removeChannel(channel); };
   }, [orderId]);
 
+  // ── Coordenadas para o mapa ao vivo ─────────────────────────────────────────
+  const driverPos = useMemo(
+    () => parseCoord(
+      delivererLocation,
+      driver ? { lat: driver.current_lat, lng: driver.current_lng } : null,
+    ),
+    [delivererLocation, driver],
+  );
+  const destPos = useMemo(
+    () => parseCoord(order?.delivery_address, order),
+    [order],
+  );
+  const restaurantPos = useMemo(
+    () => parseCoord(
+      order ? { lat: order.restaurant_latitude, lng: order.restaurant_longitude } : null,
+      order?.restaurant_address,
+    ),
+    [order],
+  );
+  const hasLiveMap = !!(driverPos || destPos || restaurantPos);
+  // ETA dinamico real (entregador -> destino) quando ambos conhecidos
+  const liveEta = useMemo(
+    () => (driverPos && destPos ? etaMinutes(driverPos, destPos) : null),
+    [driverPos, destPos],
+  );
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50">
@@ -345,12 +387,16 @@ export function OrderTrackingPage() {
       </div>
 
       <div className="p-4 max-w-md mx-auto">
-        {/* Countdown */}
+        {/* Countdown — usa ETA real (entregador->destino) quando disponivel */}
         {!isDelivered && (
-          <CountdownTimer
-            estimatedMinutes={order?.estimated_delivery_minutes || 30}
-            startedAt={order?.created_at}
-          />
+          liveEta != null ? (
+            <CountdownTimer estimatedMinutes={liveEta} startedAt={Date.now()} />
+          ) : (
+            <CountdownTimer
+              estimatedMinutes={order?.estimated_delivery_minutes || 30}
+              startedAt={order?.created_at}
+            />
+          )
         )}
 
         {isDelivered && (
@@ -361,9 +407,13 @@ export function OrderTrackingPage() {
           </div>
         )}
 
-        {/* Track visual */}
+        {/* Track visual — mapa real ao vivo quando ha coordenadas, senao animacao */}
         <div className="mb-5">
-          <TrackMap stage={currentStage} />
+          {hasLiveMap && !isDelivered ? (
+            <LiveTrackingMap driver={driverPos} restaurant={restaurantPos} destination={destPos} />
+          ) : (
+            <TrackMap stage={currentStage} />
+          )}
         </div>
 
         {/* Driver card */}
