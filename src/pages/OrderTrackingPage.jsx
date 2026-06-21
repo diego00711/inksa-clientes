@@ -363,6 +363,7 @@ export function OrderTrackingPage() {
   }
 
   const isDelivered = currentStage >= 4;
+  const isFailed = order?.status === 'delivery_failed';
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -378,7 +379,7 @@ export function OrderTrackingPage() {
             #{orderId?.substring(0, 8).toUpperCase()}
           </p>
         </div>
-        {!isDelivered && (
+        {!isDelivered && !isFailed && (
           <div className="ml-auto flex items-center gap-1.5 bg-orange-50 px-3 py-1.5 rounded-full border border-orange-200">
             <div className="w-2 h-2 bg-orange-500 rounded-full animate-pulse" />
             <span className="text-xs font-semibold text-orange-600">Ao vivo</span>
@@ -387,8 +388,19 @@ export function OrderTrackingPage() {
       </div>
 
       <div className="p-4 max-w-md mx-auto">
+        {/* Entrega não realizada */}
+        {isFailed && (
+          <div className="bg-gradient-to-r from-red-500 to-rose-600 rounded-2xl p-6 text-white text-center mb-5 shadow-lg">
+            <div className="text-5xl mb-2">⚠️</div>
+            <p className="text-xl sm:text-2xl font-black">Entrega não realizada</p>
+            <p className="text-sm opacity-90 mt-1">
+              Tivemos um problema ao entregar seu pedido. Nossa equipe está cuidando do caso e, se houver reembolso, ele será processado automaticamente.
+            </p>
+          </div>
+        )}
+
         {/* Countdown — usa ETA real (entregador->destino) quando disponivel */}
-        {!isDelivered && (
+        {!isDelivered && !isFailed && (
           liveEta != null ? (
             <CountdownTimer estimatedMinutes={liveEta} startedAt={Date.now()} />
           ) : (
@@ -408,13 +420,15 @@ export function OrderTrackingPage() {
         )}
 
         {/* Track visual — mapa real ao vivo quando ha coordenadas, senao animacao */}
-        <div className="mb-5">
-          {hasLiveMap && !isDelivered ? (
-            <LiveTrackingMap driver={driverPos} restaurant={restaurantPos} destination={destPos} />
-          ) : (
-            <TrackMap stage={currentStage} />
-          )}
-        </div>
+        {!isFailed && (
+          <div className="mb-5">
+            {hasLiveMap && !isDelivered ? (
+              <LiveTrackingMap driver={driverPos} restaurant={restaurantPos} destination={destPos} />
+            ) : (
+              <TrackMap stage={currentStage} />
+            )}
+          </div>
+        )}
 
         {/* Driver card */}
         <DriverCard driver={driver} />
