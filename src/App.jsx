@@ -21,6 +21,7 @@ const RestaurantDetailsPage = lazy(() => import("./pages/RestaurantDetailsPage")
 const LoginPage = lazy(() => import("./pages/LoginPage").then(m => ({ default: m.LoginPage })));
 const RegisterPage = lazy(() => import("./pages/RegisterPage"));
 const ForgotPasswordPage = lazy(() => import("./pages/ForgotPasswordPage"));
+const ResetPasswordPage = lazy(() => import("./pages/ResetPasswordPage"));
 const CartPage = lazy(() => import("./pages/CartPage").then(m => ({ default: m.CartPage })));
 const ProfilePage = lazy(() => import("./pages/ProfilePage").then(m => ({ default: m.ProfilePage })));
 const MyOrdersPage = lazy(() => import("./pages/MyOrdersPage"));
@@ -135,6 +136,7 @@ function AppContent() {
               <Route path="/login" element={<LoginPage />} />
               <Route path="/register" element={<RegisterPage />} />
               <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+              <Route path="/reset-password" element={<ResetPasswordPage />} />
               <Route path="/pagamento/sucesso" element={<PaymentSuccessPage />} />
               <Route path="/pagamento/falha" element={<PaymentFailurePage />} />
               <Route path="/pagamento/pendente" element={<PaymentPendingPage />} />

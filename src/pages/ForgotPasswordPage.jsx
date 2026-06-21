@@ -68,7 +68,7 @@ export default function ForgotPasswordPage() {
           <div>
             <button
               type="submit"
-              disabled={isLoading || message} // Desativa o botão após o envio bem-sucedido
+              disabled={isLoading || isSuccess} // Trava só após sucesso; em erro permite tentar de novo
               className="w-full flex justify-center py-2.5 px-4 min-h-[44px] border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:bg-indigo-400 transition-colors"
             >
               {isLoading ? 'A Enviar...' : 'Enviar Link de Recuperação'}
