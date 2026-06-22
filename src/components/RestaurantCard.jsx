@@ -15,13 +15,13 @@ function getFavorites() {
 
 export function RestaurantCard({ restaurant }) {
   const [isFavorited, setIsFavorited] = useState(() => getFavorites().has(restaurant.id));
+  const [imgFailed, setImgFailed] = useState(false);
   // --- LÓGICA DE DADOS ---
   const deliveryFee = restaurant.delivery_fee ?? 0;
   const isFreeDelivery = deliveryFee === 0;
   const ratingValue = restaurant.rating ?? 0;
   const deliveryTime = restaurant.delivery_time;
   const category = restaurant.category ?? "Restaurante";
-  const imageUrl = restaurant.logo_url || 'https://via.placeholder.com/400x240?text=Inksa+Delivery';
   const isOpen = restaurant.is_open;
   const deliveryType = restaurant.delivery_type;
   const distance = restaurant.distance_km;
@@ -85,15 +85,20 @@ export function RestaurantCard({ restaurant }) {
       >
         {/* Container da Imagem */}
         <div className="relative overflow-hidden">
-          <img
-            src={imageUrl}
-            alt={restaurant.restaurant_name}
-            className={`
-              w-full h-48 object-cover transition-transform duration-500
-              ${isOpen ? 'group-hover:scale-110' : ''}
-            `}
-            loading="lazy"
-          />
+          {(!imgFailed && restaurant.logo_url) ? (
+            <img
+              src={restaurant.logo_url}
+              alt={restaurant.restaurant_name}
+              className={`w-full h-48 object-cover transition-transform duration-500 ${isOpen ? 'group-hover:scale-110' : ''}`}
+              loading="lazy"
+              onError={() => setImgFailed(true)}
+            />
+          ) : (
+            <div className="w-full h-48 bg-gradient-to-br from-orange-100 to-orange-200 flex flex-col items-center justify-center gap-1">
+              <span className="text-5xl">🍽️</span>
+              <span className="text-orange-700 font-semibold text-sm">{category}</span>
+            </div>
+          )}
           
           {/* Overlay gradiente sutil */}
           <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent" />
