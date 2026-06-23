@@ -1,5 +1,10 @@
 {
   "appId": "com.inksa.cliente",
   "appName": "Inksa Cliente",
-  "webDir": "dist"
+  "webDir": "dist",
+  "server": {
+    "url": "https://clientes.inksadelivery.com.br",
+    "cleartext": false,
+    "androidScheme": "https"
+  }
 }
