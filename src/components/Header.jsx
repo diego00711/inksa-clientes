@@ -1,5 +1,6 @@
-import { Link, useNavigate } from "react-router-dom";
-import { ShoppingCart, LogOut, Receipt, Star, Trophy, Medal } from "lucide-react";
+import { useState, useEffect, useRef } from "react";
+import { Link, useNavigate, useLocation } from "react-router-dom";
+import { ShoppingCart, LogOut, Receipt, Star, Trophy, Medal, Menu, X } from "lucide-react";
 import { Button } from "./ui/button";
 import { useAuth } from "../context/AuthContext";
 import { useCart } from "../context/CartContext";
@@ -10,13 +11,28 @@ export function Header() {
   const { isAuthenticated, logout, user } = useAuth();
   const { totalItemsInCart } = useCart();
   const navigate = useNavigate();
+  const location = useLocation();
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef(null);
+
+  useEffect(() => { setMenuOpen(false); }, [location.pathname]);
+
+  useEffect(() => {
+    if (!menuOpen) return;
+    const onClick = (e) => { if (menuRef.current && !menuRef.current.contains(e.target)) setMenuOpen(false); };
+    document.addEventListener('mousedown', onClick);
+    document.addEventListener('touchstart', onClick);
+    return () => {
+      document.removeEventListener('mousedown', onClick);
+      document.removeEventListener('touchstart', onClick);
+    };
+  }, [menuOpen]);
 
   const handleLogout = () => {
     logout();
     navigate("/login");
   };
 
-  // ✅ CORREÇÃO: Usa 'user.first_name' que é o campo correto vindo da API.
   const userFirstName = user?.first_name || 'Usuário';
   const userInitials = userFirstName ? userFirstName[0].toUpperCase() : "U";
 
@@ -35,7 +51,6 @@ export function Header() {
             <>
               <div className="hidden md:flex flex-col items-end">
                 <span className="text-sm font-semibold text-gray-800">
-                  {/* ✅ CORREÇÃO: Exibe o primeiro nome do usuário */}
                   Olá, {userFirstName}!
                 </span>
                 <span className="text-xs text-muted-foreground">
@@ -58,22 +73,22 @@ export function Header() {
                 </Button>
               </Link>
 
-              {/* Central de Avaliações */}
-              <Link to="/avaliacoes" className="relative min-h-[44px] min-w-[44px] flex items-center justify-center">
+              {/* Avaliações — desktop apenas */}
+              <Link to="/avaliacoes" className="relative hidden md:flex min-h-[44px] min-w-[44px] items-center justify-center">
                 <Button variant="ghost" size="icon" aria-label="Avaliações">
                   <Star className="h-5 w-5" />
                 </Button>
               </Link>
 
-              {/* Gamificação / Pontos */}
-              <Link to="/gamificacao" className="relative min-h-[44px] min-w-[44px] flex items-center justify-center">
+              {/* Gamificação — desktop apenas */}
+              <Link to="/gamificacao" className="relative hidden md:flex min-h-[44px] min-w-[44px] items-center justify-center">
                 <Button variant="ghost" size="icon" aria-label="Minha Pontuação">
                   <Trophy className="h-5 w-5 text-amber-500" />
                 </Button>
               </Link>
 
-              {/* Clube Inksa */}
-              <Link to="/clube" className="relative min-h-[44px] min-w-[44px] flex items-center justify-center">
+              {/* Clube — desktop apenas */}
+              <Link to="/clube" className="relative hidden md:flex min-h-[44px] min-w-[44px] items-center justify-center">
                 <Button variant="ghost" size="icon" aria-label="Clube Inksa">
                   <Medal className="h-5 w-5 text-orange-400" />
                 </Button>
@@ -90,7 +105,47 @@ export function Header() {
                 </Button>
               </Link>
 
-              <Button variant="ghost" size="icon" aria-label="Sair" onClick={handleLogout} className="min-h-[44px] min-w-[44px]">
+              {/* Menu hambúrguer — mobile apenas */}
+              <div className="relative md:hidden" ref={menuRef}>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  aria-label="Abrir menu"
+                  aria-expanded={menuOpen}
+                  onClick={() => setMenuOpen(v => !v)}
+                  className="min-h-[44px] min-w-[44px]"
+                >
+                  {menuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+                </Button>
+
+                {menuOpen && (
+                  <div className="absolute right-0 top-full mt-2 w-56 bg-white rounded-xl shadow-xl border border-gray-100 py-2 z-50 animate-in fade-in slide-in-from-top-2">
+                    <Link to="/avaliacoes" className="flex items-center gap-3 px-4 py-3 text-sm text-gray-700 hover:bg-orange-50 hover:text-orange-700">
+                      <Star className="h-5 w-5 text-gray-500" />
+                      <span>Avaliações</span>
+                    </Link>
+                    <Link to="/gamificacao" className="flex items-center gap-3 px-4 py-3 text-sm text-gray-700 hover:bg-orange-50 hover:text-orange-700">
+                      <Trophy className="h-5 w-5 text-amber-500" />
+                      <span>Minha Pontuação</span>
+                    </Link>
+                    <Link to="/clube" className="flex items-center gap-3 px-4 py-3 text-sm text-gray-700 hover:bg-orange-50 hover:text-orange-700">
+                      <Medal className="h-5 w-5 text-orange-400" />
+                      <span>Clube Inksa</span>
+                    </Link>
+                    <div className="h-px bg-gray-100 my-1" />
+                    <button
+                      onClick={handleLogout}
+                      className="w-full flex items-center gap-3 px-4 py-3 text-sm text-red-600 hover:bg-red-50"
+                    >
+                      <LogOut className="h-5 w-5" />
+                      <span>Sair</span>
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              {/* Sair — desktop apenas */}
+              <Button variant="ghost" size="icon" aria-label="Sair" onClick={handleLogout} className="hidden md:flex min-h-[44px] min-w-[44px]">
                 <LogOut className="h-5 w-5 text-red-500" />
               </Button>
             </>
