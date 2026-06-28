@@ -58,22 +58,22 @@ export function Header() {
                 </Button>
               </Link>
 
-              {/* NOVO LINK: Central de Avaliações */}
-              <Link to="/avaliacoes" className="relative hidden sm:flex min-h-[44px] min-w-[44px] items-center justify-center">
+              {/* Central de Avaliações */}
+              <Link to="/avaliacoes" className="relative min-h-[44px] min-w-[44px] flex items-center justify-center">
                 <Button variant="ghost" size="icon" aria-label="Avaliações">
                   <Star className="h-5 w-5" />
                 </Button>
               </Link>
 
-              {/* NOVO LINK: Gamificação / Pontos */}
-              <Link to="/gamificacao" className="relative hidden sm:flex min-h-[44px] min-w-[44px] items-center justify-center">
+              {/* Gamificação / Pontos */}
+              <Link to="/gamificacao" className="relative min-h-[44px] min-w-[44px] flex items-center justify-center">
                 <Button variant="ghost" size="icon" aria-label="Minha Pontuação">
                   <Trophy className="h-5 w-5 text-amber-500" />
                 </Button>
               </Link>
 
               {/* Clube Inksa */}
-              <Link to="/clube" className="relative hidden sm:flex min-h-[44px] min-w-[44px] items-center justify-center">
+              <Link to="/clube" className="relative min-h-[44px] min-w-[44px] flex items-center justify-center">
                 <Button variant="ghost" size="icon" aria-label="Clube Inksa">
                   <Medal className="h-5 w-5 text-orange-400" />
                 </Button>
