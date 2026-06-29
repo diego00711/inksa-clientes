@@ -6,6 +6,7 @@
 import { useState, useCallback } from "react";
 import { MapContainer, TileLayer, Marker, useMapEvents, useMap } from "react-leaflet";
 import { LocateFixed, Loader2 } from "lucide-react";
+import { useToast } from "../context/ToastContext";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 
@@ -35,6 +36,7 @@ function Recenter({ position }) {
 
 export default function AddressMapPicker({ value, onChange }) {
   const [locating, setLocating] = useState(false);
+  const { addToast } = useToast();
   const pos = value && Number.isFinite(value.lat) && Number.isFinite(value.lng) ? value : null;
   const center = pos || DEFAULT_CENTER;
 
@@ -45,25 +47,37 @@ export default function AddressMapPicker({ value, onChange }) {
       let coords;
       try {
         const { Geolocation } = await import("@capacitor/geolocation");
-        const p = await Geolocation.getCurrentPosition({ enableHighAccuracy: true });
+        // Pede permissão explicitamente antes (Android 13+)
+        try { await Geolocation.requestPermissions(); } catch {}
+        const p = await Geolocation.getCurrentPosition({ enableHighAccuracy: true, timeout: 15000 });
         coords = { lat: p.coords.latitude, lng: p.coords.longitude };
-      } catch {
+      } catch (capErr) {
         coords = await new Promise((resolve, reject) => {
-          if (!navigator.geolocation) return reject(new Error("sem geolocalização"));
+          if (!navigator.geolocation) return reject(new Error("Seu navegador não suporta localização"));
           navigator.geolocation.getCurrentPosition(
             (p) => resolve({ lat: p.coords.latitude, lng: p.coords.longitude }),
-            reject,
-            { enableHighAccuracy: true, timeout: 10000 },
+            (err) => {
+              const msg = err.code === 1
+                ? "Permissão de localização negada. Habilite nas configurações do app."
+                : err.code === 2
+                ? "Não foi possível obter sua localização. Verifique o GPS."
+                : err.code === 3
+                ? "Tempo esgotado ao buscar localização. Tente de novo."
+                : "Erro ao buscar localização.";
+              reject(new Error(msg));
+            },
+            { enableHighAccuracy: true, timeout: 15000 },
           );
         });
       }
       onChange(coords);
-    } catch {
-      // silencioso — usuário pode marcar manualmente
+      addToast("success", "Localização capturada! Confira o pino no mapa.");
+    } catch (err) {
+      addToast("error", err?.message || "Não foi possível obter sua localização. Toque no mapa pra marcar manualmente.");
     } finally {
       setLocating(false);
     }
-  }, [onChange]);
+  }, [onChange, addToast]);
 
   return (
     <div className="relative">

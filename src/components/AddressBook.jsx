@@ -18,11 +18,38 @@ function AddressForm({ initial, onCancel, onSaved }) {
   const { addToast } = useToast();
   const [form, setForm] = useState({ ...EMPTY, ...initial });
   const [saving, setSaving] = useState(false);
+  const [loadingCep, setLoadingCep] = useState(false);
 
   const set = (k, v) => setForm((p) => ({ ...p, [k]: v }));
   const coord = form.latitude != null && form.longitude != null
     ? { lat: Number(form.latitude), lng: Number(form.longitude) }
     : null;
+
+  const lookupCep = async () => {
+    const cep = String(form.zipcode || "").replace(/\D/g, "");
+    if (cep.length !== 8) return;
+    setLoadingCep(true);
+    try {
+      const res = await fetch(`https://viacep.com.br/ws/${cep}/json/`);
+      const data = await res.json();
+      if (data.erro) {
+        addToast("error", "CEP não encontrado. Confira o número.");
+        return;
+      }
+      setForm((p) => ({
+        ...p,
+        street: data.logradouro || p.street,
+        neighborhood: data.bairro || p.neighborhood,
+        city: data.localidade || p.city,
+        state: data.uf || p.state,
+      }));
+      addToast("success", "Endereço preenchido pelo CEP. Confirme o número.");
+    } catch {
+      addToast("error", "Não foi possível buscar o CEP agora.");
+    } finally {
+      setLoadingCep(false);
+    }
+  };
 
   const submit = async () => {
     if (!form.street || !form.number) {
@@ -60,7 +87,23 @@ function AddressForm({ initial, onCancel, onSaved }) {
     <div className="border border-orange-200 rounded-xl p-4 bg-orange-50/40 space-y-3">
       <div className="grid grid-cols-2 gap-3">
         {field("label", "Identificação (ex: Casa, Trabalho)", "col-span-2")}
-        {field("zipcode", "CEP")}
+        <div>
+          <label className="text-xs font-medium text-gray-600">CEP</label>
+          <div className="relative">
+            <input
+              value={form.zipcode || ""}
+              onChange={(e) => set("zipcode", e.target.value)}
+              onBlur={lookupCep}
+              inputMode="numeric"
+              maxLength={9}
+              placeholder="00000-000"
+              className="w-full border rounded-lg px-3 py-2 text-sm mt-0.5 pr-8"
+            />
+            {loadingCep && (
+              <Loader2 className="animate-spin h-4 w-4 text-orange-500 absolute right-2 top-1/2 -translate-y-1/2" />
+            )}
+          </div>
+        </div>
         {field("number", "Número")}
         {field("street", "Rua", "col-span-2")}
         {field("complement", "Complemento")}
@@ -69,6 +112,9 @@ function AddressForm({ initial, onCancel, onSaved }) {
         {field("state", "Estado")}
         {field("reference", "Ponto de referência", "col-span-2")}
       </div>
+      <p className="text-xs text-gray-500 -mt-1">
+        💡 Digite o CEP que preenchemos rua, bairro, cidade e estado pra você.
+      </p>
 
       <AddressMapPicker
         value={coord}
