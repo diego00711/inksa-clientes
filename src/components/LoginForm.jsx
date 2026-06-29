@@ -6,6 +6,7 @@ import { useAuth } from "../context/AuthContext"; // 1. Importamos o useAuth
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { PasswordInput } from "@/components/ui/password-input";
 import { Label } from "@/components/ui/label";
 
 export function LoginForm() {
@@ -71,9 +72,8 @@ export function LoginForm() {
                 Esqueceu a senha?
               </Link>
             </div>
-            <Input
+            <PasswordInput
               id="password"
-              type="password"
               required
               value={password}
               onChange={(e) => setPassword(e.target.value)}

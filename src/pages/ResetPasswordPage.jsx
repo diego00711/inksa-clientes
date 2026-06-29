@@ -5,7 +5,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import AuthService from '../services/authService';
-import { Lock, CheckCircle } from 'lucide-react';
+import { Lock, CheckCircle, Eye, EyeOff } from 'lucide-react';
 
 export default function ResetPasswordPage() {
   const [password, setPassword] = useState('');
@@ -14,6 +14,8 @@ export default function ResetPasswordPage() {
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [showPwd, setShowPwd] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
   const navigate = useNavigate();
 
   // Extrai o access_token do hash da URL (formato do Supabase: #access_token=...)
@@ -73,13 +75,23 @@ export default function ResetPasswordPage() {
           <form className="space-y-5" onSubmit={handleSubmit}>
             <div>
               <label htmlFor="password" className="text-sm text-gray-600">Nova senha</label>
-              <input id="password" type="password" required value={password} onChange={(e) => setPassword(e.target.value)}
-                className="mt-1 block w-full px-3 py-2 text-base border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500" />
+              <div className="relative mt-1">
+                <input id="password" type={showPwd ? "text" : "password"} required value={password} onChange={(e) => setPassword(e.target.value)}
+                  className="block w-full pr-10 px-3 py-2 text-base border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500" />
+                <button type="button" onClick={() => setShowPwd(v => !v)} aria-label={showPwd ? "Ocultar senha" : "Mostrar senha"} tabIndex={-1} className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 text-gray-400 hover:text-gray-600">
+                  {showPwd ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              </div>
             </div>
             <div>
               <label htmlFor="confirmPassword" className="text-sm text-gray-600">Confirmar nova senha</label>
-              <input id="confirmPassword" type="password" required value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)}
-                className="mt-1 block w-full px-3 py-2 text-base border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500" />
+              <div className="relative mt-1">
+                <input id="confirmPassword" type={showConfirm ? "text" : "password"} required value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)}
+                  className="block w-full pr-10 px-3 py-2 text-base border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500" />
+                <button type="button" onClick={() => setShowConfirm(v => !v)} aria-label={showConfirm ? "Ocultar senha" : "Mostrar senha"} tabIndex={-1} className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 text-gray-400 hover:text-gray-600">
+                  {showConfirm ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              </div>
             </div>
 
             {error && <p className="text-sm text-red-500 text-center">{error}</p>}
