@@ -25,6 +25,26 @@ function AddressForm({ initial, onCancel, onSaved }) {
     ? { lat: Number(form.latitude), lng: Number(form.longitude) }
     : null;
 
+  const geocodeOnMap = async (logradouro, bairro, cidade, uf) => {
+    // Centraliza o mapa no endereco usando OpenStreetMap Nominatim (gratis, sem API key)
+    try {
+      const q = encodeURIComponent([logradouro, bairro, cidade, uf, "Brasil"].filter(Boolean).join(", "));
+      const res = await fetch(`https://nominatim.openstreetmap.org/search?q=${q}&format=json&limit=1&countrycodes=br`, {
+        headers: { "Accept-Language": "pt-BR" },
+      });
+      const arr = await res.json();
+      if (Array.isArray(arr) && arr[0]) {
+        const lat = Number(arr[0].lat);
+        const lng = Number(arr[0].lon);
+        if (Number.isFinite(lat) && Number.isFinite(lng)) {
+          setForm((p) => ({ ...p, latitude: lat, longitude: lng }));
+        }
+      }
+    } catch {
+      // silencioso - usuario ainda pode marcar manualmente no mapa
+    }
+  };
+
   const lookupCep = async () => {
     const cep = String(form.zipcode || "").replace(/\D/g, "");
     if (cep.length !== 8) return;
@@ -36,14 +56,16 @@ function AddressForm({ initial, onCancel, onSaved }) {
         addToast("error", "CEP não encontrado. Confira o número.");
         return;
       }
-      setForm((p) => ({
-        ...p,
-        street: data.logradouro || p.street,
-        neighborhood: data.bairro || p.neighborhood,
-        city: data.localidade || p.city,
-        state: data.uf || p.state,
-      }));
-      addToast("success", "Endereço preenchido pelo CEP. Confirme o número.");
+      const novo = {
+        street: data.logradouro || form.street,
+        neighborhood: data.bairro || form.neighborhood,
+        city: data.localidade || form.city,
+        state: data.uf || form.state,
+      };
+      setForm((p) => ({ ...p, ...novo }));
+      addToast("success", "Endereço preenchido. Confirme o número e veja o mapa.");
+      // Centraliza o mapa no endereco do CEP
+      await geocodeOnMap(novo.street, novo.neighborhood, novo.city, novo.state);
     } catch {
       addToast("error", "Não foi possível buscar o CEP agora.");
     } finally {
