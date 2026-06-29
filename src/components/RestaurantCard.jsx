@@ -5,6 +5,7 @@ import { Link } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Star, MapPin, Clock, Heart, Info } from "lucide-react";
+import { useToast } from "../context/ToastContext";
 
 const FAVORITES_KEY = 'inksa.favorites';
 
@@ -16,6 +17,7 @@ function getFavorites() {
 export function RestaurantCard({ restaurant }) {
   const [isFavorited, setIsFavorited] = useState(() => getFavorites().has(restaurant.id));
   const [imgFailed, setImgFailed] = useState(false);
+  const { addToast } = useToast();
   // --- LÓGICA DE DADOS ---
   const deliveryFee = restaurant.delivery_fee ?? 0;
   const isFreeDelivery = deliveryFee === 0;
@@ -193,11 +195,11 @@ export function RestaurantCard({ restaurant }) {
                           },
                           (error) => {
                             console.error("Erro ao obter localização:", error);
-                            alert("Não foi possível obter sua localização. Verifique as permissões do navegador.");
+                            addToast('error', 'Não foi possível obter sua localização. Verifique as permissões.');
                           }
                         );
                       } else {
-                        alert("Seu navegador não suporta geolocalização.");
+                        addToast('error', 'Seu navegador não suporta geolocalização.');
                       }
                     }}
                     className="flex items-center gap-1 text-xs text-orange-600 bg-orange-50 px-2 py-1 rounded-full hover:bg-orange-100 transition-colors"

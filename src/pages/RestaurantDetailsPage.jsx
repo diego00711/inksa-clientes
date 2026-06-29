@@ -125,11 +125,17 @@ export function RestaurantDetailsPage() {
         {/* Banner do Restaurante */}
         <div className="bg-white rounded-2xl overflow-hidden shadow-sm">
           <div className="relative h-44 sm:h-64">
-            <img
-              src={restaurant.logo_url || 'https://via.placeholder.com/800x300?text=Inksa+Delivery'}
-              alt={restaurant.restaurant_name}
-              className="w-full h-full object-cover"
-            />
+            {restaurant.logo_url ? (
+              <img
+                src={restaurant.logo_url}
+                alt={restaurant.restaurant_name}
+                className="w-full h-full object-cover"
+              />
+            ) : (
+              <div className="w-full h-full bg-gradient-to-br from-orange-400 to-orange-600 flex items-center justify-center">
+                <span className="text-6xl select-none" aria-hidden>🍽️</span>
+              </div>
+            )}
             <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
             <div className="absolute bottom-3 left-4 right-4 text-white">
               <h2 className="text-lg sm:text-2xl font-bold mb-1 truncate">{restaurant.restaurant_name}</h2>
@@ -199,11 +205,17 @@ export function RestaurantDetailsPage() {
                 return (
                   <div key={item.id} className="border border-gray-200 rounded-xl p-3 sm:p-4 hover:shadow-sm transition-shadow">
                     <div className="flex gap-3">
-                      <img
-                        src={item.image_url || 'https://via.placeholder.com/100x100?text=Item'}
-                        alt={item.name}
-                        className="w-20 h-20 sm:w-24 sm:h-24 object-cover rounded-lg flex-shrink-0"
-                      />
+                      {item.image_url ? (
+                        <img
+                          src={item.image_url}
+                          alt={item.name}
+                          className="w-20 h-20 sm:w-24 sm:h-24 object-cover rounded-lg flex-shrink-0"
+                        />
+                      ) : (
+                        <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-lg flex-shrink-0 bg-gradient-to-br from-orange-100 to-orange-200 flex items-center justify-center">
+                          <span className="text-2xl select-none" aria-hidden>🍔</span>
+                        </div>
+                      )}
 
                       <div className="flex-grow min-w-0">
                         <h3 className="text-base sm:text-lg font-semibold text-gray-800 mb-1 leading-tight">{item.name}</h3>
