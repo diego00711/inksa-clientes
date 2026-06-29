@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { DateInputBR } from "@/components/ui/date-input-br";
 import { Label } from "@/components/ui/label";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { User, Camera, Loader2 } from "lucide-react";
@@ -36,6 +37,34 @@ export function ProfilePage() {
   const [isSaving, setIsSaving] = useState(false);
   const [selectedFile, setSelectedFile] = useState(null);
   const [preview, setPreview] = useState(null);
+  const [isLoadingCep, setIsLoadingCep] = useState(false);
+
+  const handleCepBlur = async () => {
+    const cep = String(formData.address_zipcode || '').replace(/\D/g, '');
+    if (cep.length !== 8) return;
+    setIsLoadingCep(true);
+    try {
+      const res = await fetch(`https://viacep.com.br/ws/${cep}/json/`);
+      if (!res.ok) throw new Error('CEP nao encontrado');
+      const data = await res.json();
+      if (data.erro) {
+        addToast('error', 'CEP nao encontrado. Confira o numero.');
+        return;
+      }
+      setFormData(prev => ({
+        ...prev,
+        address_street: data.logradouro || prev.address_street,
+        address_neighborhood: data.bairro || prev.address_neighborhood,
+        address_city: data.localidade || prev.address_city,
+        address_state: data.uf || prev.address_state,
+      }));
+      addToast('success', 'Endereco preenchido pelo CEP. Confirme o numero.');
+    } catch (e) {
+      addToast('error', 'Nao foi possivel buscar o CEP agora.');
+    } finally {
+      setIsLoadingCep(false);
+    }
+  };
 
   useEffect(() => {
     const loadProfile = async () => {
@@ -181,10 +210,9 @@ export function ProfilePage() {
               </div>
               <div>
                 <Label htmlFor="birth_date">Data de Nascimento</Label>
-                <Input
+                <DateInputBR
                   id="birth_date"
                   name="birth_date"
-                  type="date"
                   value={formData.birth_date || ''}
                   onChange={handleInputChange}
                 />
@@ -208,12 +236,24 @@ export function ProfilePage() {
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
             <div className="sm:col-span-1">
               <Label htmlFor="address_zipcode">CEP</Label>
-              <Input
-                id="address_zipcode"
-                name="address_zipcode"
-                value={formData.address_zipcode || ''}
-                onChange={handleInputChange}
-              />
+              <div className="relative">
+                <Input
+                  id="address_zipcode"
+                  name="address_zipcode"
+                  inputMode="numeric"
+                  maxLength={9}
+                  placeholder="00000-000"
+                  value={formData.address_zipcode || ''}
+                  onChange={handleInputChange}
+                  onBlur={handleCepBlur}
+                />
+                {isLoadingCep && (
+                  <Loader2 className="animate-spin h-4 w-4 text-orange-500 absolute right-2 top-1/2 -translate-y-1/2" />
+                )}
+              </div>
+              <p className="mt-1 text-xs text-gray-400">
+                Digite o CEP que preenchemos rua, bairro, cidade e estado pra voce.
+              </p>
             </div>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 mt-6">
