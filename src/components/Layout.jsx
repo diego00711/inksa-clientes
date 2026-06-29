@@ -18,7 +18,10 @@ function BottomNav() {
   ];
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-gray-100 shadow-[0_-2px_12px_rgba(0,0,0,0.08)] flex sm:hidden">
+    <nav
+      className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-gray-100 shadow-[0_-2px_12px_rgba(0,0,0,0.08)] flex sm:hidden"
+      style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
+    >
       {tabs.map(({ to, icon: Icon, label, badge }) => (
         <NavLink
           key={to}
@@ -49,7 +52,7 @@ export function Layout() {
   return (
     <div className="bg-orange-50 min-h-screen">
       <Header />
-      <main className="w-full max-w-screen-2xl mx-auto pb-20 sm:pb-0">
+      <main className="w-full max-w-screen-2xl mx-auto pb-[calc(72px+env(safe-area-inset-bottom))] sm:pb-0">
         <Outlet />
       </main>
       <BottomNav />

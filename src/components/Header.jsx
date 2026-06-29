@@ -67,7 +67,7 @@ export function Header() {
                 </Avatar>
               </Link>
 
-              <Link to="/meus-pedidos" className="relative min-h-[44px] min-w-[44px] flex items-center justify-center">
+              <Link to="/meus-pedidos" className="relative hidden sm:flex min-h-[44px] min-w-[44px] items-center justify-center">
                 <Button variant="ghost" size="icon" aria-label="Meus Pedidos">
                   <Receipt className="h-5 w-5" />
                 </Button>
@@ -94,7 +94,7 @@ export function Header() {
                 </Button>
               </Link>
 
-              <Link to="/carrinho" className="relative min-h-[44px] min-w-[44px] flex items-center justify-center">
+              <Link to="/carrinho" className="relative hidden sm:flex min-h-[44px] min-w-[44px] items-center justify-center">
                 <Button variant="ghost" size="icon" aria-label="Carrinho">
                   <ShoppingCart className="h-5 w-5" />
                   {totalItemsInCart > 0 && (
