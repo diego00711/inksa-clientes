@@ -1,10 +1,18 @@
 import { useState, useEffect, forwardRef } from "react";
 import { Input } from "./input";
 
-const isoToBr = (iso) => {
-  if (!iso) return "";
-  const m = String(iso).match(/^(\d{4})-(\d{2})-(\d{2})/);
-  return m ? `${m[3]}/${m[2]}/${m[1]}` : "";
+const isoToBr = (value) => {
+  if (!value) return "";
+  // Caso 1: ja vem em YYYY-MM-DD ou YYYY-MM-DDT... (ISO)
+  const m = String(value).match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (m) return `${m[3]}/${m[2]}/${m[1]}`;
+  // Caso 2: tenta parsear como Date (formato HTTP "Mon, 03 Jun 1990 ..." ou timestamp)
+  const d = new Date(value);
+  if (isNaN(d.getTime())) return "";
+  const dd = String(d.getUTCDate()).padStart(2, "0");
+  const mm = String(d.getUTCMonth() + 1).padStart(2, "0");
+  const yyyy = d.getUTCFullYear();
+  return `${dd}/${mm}/${yyyy}`;
 };
 
 const brToIso = (br) => {
