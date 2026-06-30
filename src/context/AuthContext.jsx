@@ -5,6 +5,7 @@ import authService from '../services/authService';
 import clientService from '../services/clientService';
 import { requestNotificationPermission, saveFcmToken } from '../services/notificationService';
 import { CLIENT_API_URL, createAuthHeaders } from '../services/api';
+import { isTokenExpired } from '../services/apiClient';
 
 export const AuthContext = createContext(null);
 
@@ -14,6 +15,14 @@ export const AuthProvider = ({ children }) => {
 
   const fetchAndSetUser = useCallback(async () => {
     const token = authService.getToken();
+    // Se o token ja expirou, encerra sessao limpa antes de tentar usar
+    if (token && isTokenExpired(token)) {
+      console.warn('[AuthContext] Token expirado detectado na inicializacao, fazendo logout limpo.');
+      authService.logout();
+      setUser(null);
+      setIsLoading(false);
+      return;
+    }
     if (token) {
       try {
         // 1️⃣ Pega dados salvos no localStorage (do login - TEM O EMAIL!)
@@ -52,6 +61,26 @@ export const AuthProvider = ({ children }) => {
   useEffect(() => {
     fetchAndSetUser();
   }, [fetchAndSetUser]);
+
+  // Verifica periodicamente se o token expirou (a cada 30s). Se sim, desloga.
+  useEffect(() => {
+    const checkExpiry = () => {
+      const token = authService.getToken();
+      if (token && isTokenExpired(token)) {
+        authService.logout();
+        setUser(null);
+        window.dispatchEvent(new CustomEvent('auth:unauthorized'));
+      }
+    };
+    const interval = setInterval(checkExpiry, 30_000);
+    // Tambem verifica quando a aba volta a ficar visivel (Capacitor/celular)
+    const onVisible = () => { if (!document.hidden) checkExpiry(); };
+    document.addEventListener('visibilitychange', onVisible);
+    return () => {
+      clearInterval(interval);
+      document.removeEventListener('visibilitychange', onVisible);
+    };
+  }, []);
 
   const login = async (email, password) => {
     try {
