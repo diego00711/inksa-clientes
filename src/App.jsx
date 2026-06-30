@@ -33,6 +33,7 @@ const PaymentSuccessPage = lazy(() => import("./pages/PaymentSuccessPage"));
 const PaymentFailurePage = lazy(() => import("./pages/PaymentFailurePage"));
 const PaymentPendingPage = lazy(() => import("./pages/PaymentPendingPage"));
 const ClubePage = lazy(() => import("./pages/ClubePage"));
+const SuportePage = lazy(() => import("./pages/SuportePage"));
 
 const PageLoader = () => (
   <div className="flex h-screen items-center justify-center">
@@ -151,6 +152,7 @@ function AppContent() {
                 <Route path="gamificacao" element={<GamificationPage />} />
                 <Route path="gamificacao-dev" element={<ClientGamificationDevPage />} />
                 <Route path="clube" element={<ClubePage />} />
+                <Route path="suporte" element={<SuportePage />} />
                 <Route path="pedido/:orderId/acompanhar" element={<OrderTrackingPage />} />
               </Route>
             </Routes>

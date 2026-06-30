@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
-import { ShoppingCart, LogOut, Receipt, Star, Trophy, Medal, Menu, X } from "lucide-react";
+import { ShoppingCart, LogOut, Receipt, Star, Trophy, Medal, Menu, X, LifeBuoy } from "lucide-react";
 import { Button } from "./ui/button";
 import { useAuth } from "../context/AuthContext";
 import { useCart } from "../context/CartContext";
@@ -131,6 +131,10 @@ export function Header() {
                     <Link to="/clube" className="flex items-center gap-3 px-4 py-3 text-sm text-gray-700 hover:bg-orange-50 hover:text-orange-700">
                       <Medal className="h-5 w-5 text-orange-400" />
                       <span>Clube Inksa</span>
+                    </Link>
+                    <Link to="/suporte" className="flex items-center gap-3 px-4 py-3 text-sm text-gray-700 hover:bg-orange-50 hover:text-orange-700">
+                      <LifeBuoy className="h-5 w-5 text-blue-500" />
+                      <span>Suporte</span>
                     </Link>
                     <div className="h-px bg-gray-100 my-1" />
                     <button
