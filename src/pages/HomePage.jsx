@@ -361,11 +361,19 @@ export function HomePage() {
   const [mounted, setMounted] = useState(false);
   const [quickFilters, setQuickFilters] = useState([]);
 
-  const { location, loading: locationLoading, error: locationError } = useLocation();
+  const { location, loading: locationLoading, error: locationError, refreshFromAddress } = useLocation();
   const { user } = useAuth();
 
   // Animate-in on mount
   useEffect(() => { setMounted(true); }, []);
+
+  // Garante que o endereço cadastrado seja usado para calcular o frete
+  // (caso o LocationProvider tenha montado antes do login concluir)
+  useEffect(() => {
+    if (!location && typeof refreshFromAddress === 'function') {
+      refreshFromAddress();
+    }
+  }, [location, refreshFromAddress]);
 
   // Fetch banners
   useEffect(() => {
