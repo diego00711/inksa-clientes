@@ -22,19 +22,25 @@ const processResponse = async (response) => {
 const authService = {
   async login(email, password) {
     try {
-      const response = await apiFetch(`${API_BASE_URL}/api/auth/login`, {
+      // NAO usa processResponse aqui: no login, um 401 e senha errada (nao sessao expirada)
+      const response = await fetch(`${API_BASE_URL}/api/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ email, password, expected_user_type: 'client' }),
       });
-      const data = await processResponse(response);
-      
+      const data = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        // Backend retorna a mensagem amigavel no campo `error`
+        throw new Error(data.error || 'Não foi possível entrar. Tente novamente.');
+      }
+
       if (data && data.data && data.data.token) {
         localStorage.setItem(AUTH_TOKEN_KEY, data.data.token);
         localStorage.setItem(CLIENT_USER_DATA_KEY, JSON.stringify(data.data.user));
         return data.data;
       }
-      throw new Error('Token não recebido');
+      throw new Error('Não foi possível entrar. Tente novamente.');
     } catch (error) {
       console.error('Erro no login:', error);
       throw error;
