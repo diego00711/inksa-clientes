@@ -1,9 +1,7 @@
-const CACHE_NAME = 'inksa-cliente-v3';
+const CACHE_NAME = 'inksa-cliente-v4';
 
 self.addEventListener('install', (event) => {
-  event.waitUntil(
-    caches.open(CACHE_NAME).then(cache => cache.add('/')).catch(() => {})
-  );
+  // Nao pre-cacheia o index: ele sera cacheado (atualizado) a cada navegacao com rede
   self.skipWaiting();
 });
 
@@ -21,9 +19,17 @@ self.addEventListener('fetch', (event) => {
   if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(request.method)) return;
   if (request.url.includes('/api/')) return;
 
+  // Navegacao: SEMPRE network-first + atualiza a copia offline do index.
+  // Evita servir um index antigo apontando para bundles que ja sairam do ar (tela travada).
   if (request.mode === 'navigate') {
     event.respondWith(
-      fetch(request).catch(() => caches.match('/').then(r => r || new Response('Offline', { status: 503 })))
+      fetch(request).then((res) => {
+        if (res && res.ok) {
+          const copy = res.clone();
+          caches.open(CACHE_NAME).then((c) => c.put('/', copy)).catch(() => {});
+        }
+        return res;
+      }).catch(() => caches.match('/').then(r => r || new Response('Offline', { status: 503 })))
     );
     return;
   }
