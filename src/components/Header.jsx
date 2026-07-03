@@ -37,7 +37,7 @@ export function Header() {
   const userInitials = userFirstName ? userFirstName[0].toUpperCase() : "U";
 
   return (
-    <header className="bg-white shadow-md sticky top-0 z-50">
+    <header className="bg-white shadow-md sticky top-0 z-50" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
       <div className="container mx-auto flex justify-between items-center px-2 sm:px-3 py-2 sm:py-3">
         <Link to="/" className="flex items-center gap-2 min-h-[44px]">
           <img src="/inka-logo.png" alt="Inksa Delivery Logo" className="h-9 w-auto" />
