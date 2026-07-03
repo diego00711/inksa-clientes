@@ -449,11 +449,12 @@ export default function GamificationPage() {
     setLbError(null);
     try {
       const res = await apiFetch(
-        `${CLIENT_API_URL}/api/gamification/leaderboard?type=clients&limit=10`,
+        `${CLIENT_API_URL}/api/gamification/leaderboard?scope=client&limit=10`,
         { headers }
       );
       const data = await processResponse(res);
-      const users = data?.data?.users ?? data?.data ?? data?.users ?? data ?? [];
+      // Backend responde {status, data:{items:[...], limit}} -- "items", nao "users".
+      const users = data?.data?.items ?? data?.items ?? [];
       setLeaderboard(Array.isArray(users) ? users : []);
     } catch (err) {
       setLbError(err.message || 'Erro ao carregar ranking.');
