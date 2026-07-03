@@ -35,9 +35,12 @@ export function ProfilePage() {
 
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
   const [selectedFile, setSelectedFile] = useState(null);
   const [preview, setPreview] = useState(null);
   const [isLoadingCep, setIsLoadingCep] = useState(false);
+  // Guarda o último estado salvo pra poder descartar alterações no "Cancelar"
+  const [savedSnapshot, setSavedSnapshot] = useState(null);
 
   const handleCepBlur = async () => {
     const cep = String(formData.address_zipcode || '').replace(/\D/g, '');
@@ -82,6 +85,7 @@ export function ProfilePage() {
           }
 
           setFormData(prev => ({ ...prev, ...normalized }));
+          setSavedSnapshot({ ...formData, ...normalized });
           if (normalized.avatar_url) setPreview(normalized.avatar_url);
         }
       } catch (error) {
@@ -121,12 +125,16 @@ export function ProfilePage() {
       }
 
       const updatedProfile = await ClientService.updateProfile(dataToUpdate);
+      let finalData = dataToUpdate;
       if (updatedProfile) {
+        finalData = { ...dataToUpdate, ...updatedProfile };
         setFormData(prev => ({ ...prev, ...updatedProfile }));
         if (updatedProfile.avatar_url) setPreview(updatedProfile.avatar_url);
       }
+      setSavedSnapshot(finalData);
 
       setSelectedFile(null);
+      setIsEditing(false);
 
       // Atualiza o usuário no contexto global
       if (typeof refreshUser === 'function') refreshUser();
@@ -137,6 +145,13 @@ export function ProfilePage() {
     } finally {
       setIsSaving(false);
     }
+  };
+
+  const handleCancelEdit = () => {
+    if (savedSnapshot) setFormData(savedSnapshot);
+    setPreview(savedSnapshot?.avatar_url || null);
+    setSelectedFile(null);
+    setIsEditing(false);
   };
 
   if (isLoading) {
@@ -151,28 +166,38 @@ export function ProfilePage() {
 
   return (
     <div className="container mx-auto px-4 py-6 max-w-4xl">
-      <h1 className="text-2xl sm:text-3xl font-bold mb-6 sm:mb-8 text-gray-800">Meu Perfil</h1>
+      <div className="flex flex-wrap justify-between items-center gap-2 mb-6 sm:mb-8">
+        <h1 className="text-2xl sm:text-3xl font-bold text-gray-800">Meu Perfil</h1>
+        {!isEditing && (
+          <Button type="button" onClick={() => setIsEditing(true)} className="min-h-[44px]">
+            Editar Perfil
+          </Button>
+        )}
+      </div>
 
       <form onSubmit={handleSubmit} className="bg-white p-4 sm:p-8 rounded-lg shadow-md space-y-8">
         {/* --- SECÇÃO DE FOTO E DADOS PESSOAIS --- */}
         <div className="flex flex-col md:flex-row items-start gap-6">
           <div className="flex flex-col items-center flex-shrink-0 w-full md:w-auto">
-            <label htmlFor="avatar-upload" className="cursor-pointer group relative">
+            <label htmlFor="avatar-upload" className={`group relative ${isEditing ? 'cursor-pointer' : 'cursor-default'}`}>
               <Avatar className="h-24 w-24 sm:h-32 sm:w-32 md:h-40 md:w-40 border-4 border-white shadow-lg">
                 <AvatarImage src={preview || ''} alt="User Avatar" />
                 <AvatarFallback className="bg-gray-200">
                   <User className="h-20 w-20 text-gray-400" />
                 </AvatarFallback>
               </Avatar>
-              <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-40 flex items-center justify-center rounded-full transition-all">
-                <Camera className="h-8 w-8 sm:h-10 sm:w-10 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
-              </div>
+              {isEditing && (
+                <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-40 flex items-center justify-center rounded-full transition-all">
+                  <Camera className="h-8 w-8 sm:h-10 sm:w-10 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
+                </div>
+              )}
             </label>
             <input
               id="avatar-upload"
               type="file"
               accept="image/*"
               className="hidden"
+              disabled={!isEditing}
               onChange={handleFileChange}
             />
           </div>
@@ -186,6 +211,7 @@ export function ProfilePage() {
                   name="first_name"
                   value={formData.first_name || ''}
                   onChange={handleInputChange}
+                disabled={!isEditing}
                 />
               </div>
               <div>
@@ -195,6 +221,7 @@ export function ProfilePage() {
                   name="last_name"
                   value={formData.last_name || ''}
                   onChange={handleInputChange}
+                disabled={!isEditing}
                 />
               </div>
             </div>
@@ -206,6 +233,7 @@ export function ProfilePage() {
                   name="cpf"
                   value={formData.cpf || ''}
                   onChange={handleInputChange}
+                disabled={!isEditing}
                 />
               </div>
               <div>
@@ -215,6 +243,7 @@ export function ProfilePage() {
                   name="birth_date"
                   value={formData.birth_date || ''}
                   onChange={handleInputChange}
+                disabled={!isEditing}
                 />
               </div>
             </div>
@@ -225,6 +254,7 @@ export function ProfilePage() {
                 name="phone"
                 value={formData.phone || ''}
                 onChange={handleInputChange}
+                disabled={!isEditing}
               />
             </div>
           </div>
@@ -245,6 +275,7 @@ export function ProfilePage() {
                   placeholder="00000-000"
                   value={formData.address_zipcode || ''}
                   onChange={handleInputChange}
+                disabled={!isEditing}
                   onBlur={handleCepBlur}
                 />
                 {isLoadingCep && (
@@ -264,6 +295,7 @@ export function ProfilePage() {
                 name="address_street"
                 value={formData.address_street || ''}
                 onChange={handleInputChange}
+                disabled={!isEditing}
               />
             </div>
             <div className="sm:col-span-1">
@@ -273,6 +305,7 @@ export function ProfilePage() {
                 name="address_number"
                 value={formData.address_number || ''}
                 onChange={handleInputChange}
+                disabled={!isEditing}
               />
             </div>
           </div>
@@ -284,6 +317,7 @@ export function ProfilePage() {
                 name="address_complement"
                 value={formData.address_complement || ''}
                 onChange={handleInputChange}
+                disabled={!isEditing}
               />
             </div>
             <div className="sm:col-span-2">
@@ -293,6 +327,7 @@ export function ProfilePage() {
                 name="address_neighborhood"
                 value={formData.address_neighborhood || ''}
                 onChange={handleInputChange}
+                disabled={!isEditing}
               />
             </div>
           </div>
@@ -304,6 +339,7 @@ export function ProfilePage() {
                 name="address_city"
                 value={formData.address_city || ''}
                 onChange={handleInputChange}
+                disabled={!isEditing}
               />
             </div>
             <div>
@@ -313,22 +349,34 @@ export function ProfilePage() {
                 name="address_state"
                 value={formData.address_state || ''}
                 onChange={handleInputChange}
+                disabled={!isEditing}
               />
             </div>
           </div>
         </div>
 
-        <div className="mt-8 pt-6 border-t flex justify-end">
-          <Button type="submit" disabled={isSaving} className="min-h-[44px] w-full sm:w-auto">
-            {isSaving ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" /> A guardar...
-              </>
-            ) : (
-              'Guardar Alterações'
-            )}
-          </Button>
-        </div>
+        {isEditing && (
+          <div className="mt-8 pt-6 border-t flex flex-col sm:flex-row justify-end gap-3">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={handleCancelEdit}
+              disabled={isSaving}
+              className="min-h-[44px] w-full sm:w-auto"
+            >
+              Cancelar
+            </Button>
+            <Button type="submit" disabled={isSaving} className="min-h-[44px] w-full sm:w-auto">
+              {isSaving ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" /> A guardar...
+                </>
+              ) : (
+                'Guardar Alterações'
+              )}
+            </Button>
+          </div>
+        )}
       </form>
 
       {/* --- ENDEREÇOS SALVOS (múltiplos, com mapa) --- */}
