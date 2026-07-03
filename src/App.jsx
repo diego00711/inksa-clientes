@@ -26,7 +26,6 @@ const CartPage = lazy(() => import("./pages/CartPage").then(m => ({ default: m.C
 const ProfilePage = lazy(() => import("./pages/ProfilePage").then(m => ({ default: m.ProfilePage })));
 const MyOrdersPage = lazy(() => import("./pages/MyOrdersPage"));
 const ClientEvaluationsCenter = lazy(() => import("./pages/ClientEvaluationsCenter"));
-const ClientGamificationDevPage = lazy(() => import("./pages/ClientGamificationDevPage"));
 const GamificationPage = lazy(() => import("./pages/GamificationPage"));
 const OrderTrackingPage = lazy(() => import("./pages/OrderTrackingPage").then(m => ({ default: m.OrderTrackingPage })));
 const PaymentSuccessPage = lazy(() => import("./pages/PaymentSuccessPage"));
@@ -150,7 +149,6 @@ function AppContent() {
                 <Route path="meus-pedidos" element={<MyOrdersPage />} />
                 <Route path="avaliacoes" element={<ClientEvaluationsCenter />} />
                 <Route path="gamificacao" element={<GamificationPage />} />
-                <Route path="gamificacao-dev" element={<ClientGamificationDevPage />} />
                 <Route path="clube" element={<ClubePage />} />
                 <Route path="suporte" element={<SuportePage />} />
                 <Route path="pedido/:orderId/acompanhar" element={<OrderTrackingPage />} />
