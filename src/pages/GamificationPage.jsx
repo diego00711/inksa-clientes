@@ -506,12 +506,11 @@ export default function GamificationPage() {
     setHistoryError(null);
     try {
       const res = await apiFetch(
-        `${CLIENT_API_URL}/api/gamification/user-points/${userId}`,
+        `${CLIENT_API_URL}/api/gamification/points-history/${userId}`,
         { headers }
       );
       const data = await processResponse(res);
-      // Try to extract history from points response; fallback to empty
-      const hist = data?.data?.history ?? data?.history ?? data?.points_history ?? [];
+      const hist = data?.data?.items ?? data?.items ?? [];
       setHistory(Array.isArray(hist) ? hist : []);
     } catch (err) {
       setHistoryError(err.message || 'Erro ao carregar histórico.');

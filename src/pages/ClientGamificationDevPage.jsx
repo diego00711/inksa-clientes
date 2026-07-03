@@ -52,7 +52,8 @@ export default function ClientGamificationDevPage() {
 
         if (lbRes.ok) {
           const lbJson = await lbRes.json();
-          const users = lbJson.data?.users ?? lbJson.data ?? lbJson.users ?? [];
+          // Backend responde {status, data:{items:[...], limit}} -- "items", nao "users".
+          const users = lbJson.data?.items ?? lbJson.items ?? [];
           setLeaderboard(Array.isArray(users) ? users : []);
         }
       } catch (err) {
