@@ -12,6 +12,7 @@ import {
   AlertCircle,
   Star,
   Lock,
+  Zap,
 } from 'lucide-react';
 import { CLIENT_API_URL, createAuthHeaders, processResponse } from '../services/api';
 import { apiFetch } from '../services/apiClient';
@@ -398,6 +399,10 @@ export default function GamificationPage() {
   const [pointsLoading, setPointsLoading] = useState(true);
   const [pointsError, setPointsError] = useState(null);
 
+  // State: point rules ("como ganhar pontos")
+  const [pointRules, setPointRules] = useState([]);
+  const [rulesLoading, setRulesLoading] = useState(true);
+
   // State: leaderboard
   const [leaderboard, setLeaderboard] = useState([]);
   const [lbLoading, setLbLoading] = useState(true);
@@ -443,6 +448,22 @@ export default function GamificationPage() {
       setPointsLoading(false);
     }
   }, [userId]);
+
+  const fetchPointRules = useCallback(async () => {
+    setRulesLoading(true);
+    try {
+      const res = await apiFetch(
+        `${CLIENT_API_URL}/api/gamification/point-rules?applies_to=client`,
+        { headers }
+      );
+      const data = await processResponse(res);
+      setPointRules(data?.data?.items ?? data?.items ?? []);
+    } catch {
+      setPointRules([]);
+    } finally {
+      setRulesLoading(false);
+    }
+  }, []);
 
   const fetchLeaderboard = useCallback(async () => {
     setLbLoading(true);
@@ -523,11 +544,12 @@ export default function GamificationPage() {
 
   useEffect(() => {
     fetchUserPoints();
+    fetchPointRules();
     fetchLeaderboard();
     fetchChallenges();
     fetchRewards();
     fetchHistory();
-  }, [fetchUserPoints, fetchLeaderboard, fetchChallenges, fetchRewards, fetchHistory]);
+  }, [fetchUserPoints, fetchPointRules, fetchLeaderboard, fetchChallenges, fetchRewards, fetchHistory]);
 
   // ── Redeem ───────────────────────────────────────────────────────────────────
 
@@ -611,6 +633,25 @@ export default function GamificationPage() {
         ) : (
           <PointsLevelCard data={userPoints} />
         )}
+
+        {/* ── Como ganhar pontos ─────────────────────────────────────────────── */}
+        <Card>
+          <SectionHeader icon={Zap} title="Como ganhar pontos" color="text-orange-500" />
+          {rulesLoading ? (
+            <SectionLoading />
+          ) : pointRules.length === 0 ? (
+            <SectionEmpty message="Nenhuma regra disponível no momento." />
+          ) : (
+            <div className="divide-y divide-gray-50">
+              {pointRules.map((rule) => (
+                <div key={rule.action_key} className="flex justify-between items-center py-2.5">
+                  <span className="text-sm text-gray-600">{rule.label}</span>
+                  <span className="text-sm font-bold text-green-600">+{rule.points}</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </Card>
 
         {/* ── Leaderboard ────────────────────────────────────────────────────── */}
         <Card>
