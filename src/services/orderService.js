@@ -69,7 +69,7 @@ export const createPaymentPreference = async (preferenceData) => {
   const url = `${CLIENT_API_URL}/api/pagamentos/criar_preferencia`;
   const response = await apiFetch(url, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', ...createAuthHeaders() },
     body: JSON.stringify(preferenceData),
   });
   return processResponse(response);
@@ -80,7 +80,7 @@ export const processCardPayment = async (payload) => {
   const url = `${CLIENT_API_URL}/api/pagamentos/processar_cartao`;
   const response = await apiFetch(url, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', ...createAuthHeaders() },
     body: JSON.stringify(payload),
   });
   return processResponse(response);
