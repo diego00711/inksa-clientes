@@ -3,7 +3,7 @@
 // Polling a cada 5s enquanto aberto; auto-scroll para a última mensagem.
 
 import { useState, useEffect, useRef } from 'react';
-import { CLIENT_API_URL } from '../services/api';
+import { CLIENT_API_URL, createAuthHeaders } from '../services/api';
 import { supabase } from '../services/restaurantService';
 import { X, Send } from 'lucide-react';
 
@@ -32,7 +32,9 @@ export default function ChatModal({ orderId, isOpen, onClose, senderType = 'clie
 
   const fetchMessages = async () => {
     try {
-      const res = await fetch(`${CLIENT_API_URL}/api/chat/${orderId}/messages`);
+      const res = await fetch(`${CLIENT_API_URL}/api/chat/${orderId}/messages`, {
+        headers: createAuthHeaders(),
+      });
       if (res.ok) {
         const data = await res.json();
         setMessages(data.messages || data.data || []);
@@ -89,7 +91,7 @@ export default function ChatModal({ orderId, isOpen, onClose, senderType = 'clie
     try {
       await fetch(`${CLIENT_API_URL}/api/chat/${orderId}/messages`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { ...createAuthHeaders(), 'Content-Type': 'application/json' },
         body: JSON.stringify({ sender_type: senderType, message: newMessage.trim() }),
       });
       setNewMessage('');
