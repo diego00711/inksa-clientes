@@ -147,6 +147,19 @@ export const deleteOrder = async (orderId) => {
   return processMaybeNoContent(response);
 };
 
+/**
+ * ✅ Cancela o próprio pedido (apenas enquanto o restaurante ainda não aceitou).
+ * Se o pedido já estava pago online, o backend dispara o estorno automático.
+ */
+export const cancelOrderByClient = async (orderId) => {
+  const url = `${CLIENT_API_URL}/api/orders/${orderId}/cancel-by-client`;
+  const response = await apiFetch(url, {
+    method: 'POST',
+    headers: { ...createAuthHeaders() },
+  });
+  return processResponse(response);
+};
+
 /* (Opcional) export default para facilitar import agrupado */
 const OrderService = {
   calculateDeliveryFee,
@@ -157,6 +170,7 @@ const OrderService = {
   getReviewStatus,
   getOrderCodes,
   deleteOrder,
+  cancelOrderByClient,
 };
 
 export default OrderService;

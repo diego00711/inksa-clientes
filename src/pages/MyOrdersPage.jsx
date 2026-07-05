@@ -6,7 +6,7 @@ import { ArrowLeft, Trash2, Star, X, Loader2 } from 'lucide-react';
 import AuthService from '../services/authService';
 import { useToast } from '../context/ToastContext.jsx';
 import { PickupCodeDisplay } from '../components/PickupCodeDisplay.jsx';
-import { deleteOrder as deleteOrderApi } from '../services/orderService';
+import { deleteOrder as deleteOrderApi, cancelOrderByClient } from '../services/orderService';
 import { CLIENT_API_URL } from '../services/api';
 import { postRestaurantReview, postDeliveryReview } from '../services/reviewService';
 import { supabase } from '../services/restaurantService';
@@ -27,6 +27,7 @@ function saveReviewedOrder(orderId) {
 }
 
 const STATUS_MAP = {
+  awaiting_payment: 'Aguardando pagamento',
   pending: 'Pendente',
   accepted: 'Aceito',
   preparing: 'Em Preparo',
@@ -49,6 +50,7 @@ const STATUS_TOAST = {
 };
 
 const STATUS_COLORS = {
+  awaiting_payment:    'bg-gray-100 text-gray-700',
   pending:             'bg-yellow-100 text-yellow-800',
   accepted:            'bg-blue-100 text-blue-800',
   preparing:           'bg-indigo-100 text-indigo-800',
@@ -285,6 +287,21 @@ const MyOrdersPage = () => {
     }
   };
 
+  const [cancelingId, setCancelingId] = useState(null);
+  const handleCancelOrder = async (orderId) => {
+    if (!window.confirm('Deseja mesmo cancelar este pedido? Se já estiver pago, o estorno é solicitado automaticamente.')) return;
+    setCancelingId(orderId);
+    try {
+      await cancelOrderByClient(orderId);
+      setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status: 'cancelled' } : o));
+      addToast('success', 'Pedido cancelado com sucesso.');
+    } catch (err) {
+      addToast('error', err.message || 'Não foi possível cancelar o pedido.');
+    } finally {
+      setCancelingId(null);
+    }
+  };
+
   const handleReviewDone = () => {
     setReviewedIds(getReviewedOrders());
     setReviewingOrder(null);
@@ -326,6 +343,7 @@ const MyOrdersPage = () => {
       const isDelivered = order.status === 'delivered';
       const alreadyReviewed = reviewedIds.has(order.id);
       const canDelete = ['delivered', 'cancelled'].includes(order.status);
+      const canCancel = ['awaiting_payment', 'pending'].includes(order.status);
 
       return (
         <div key={order.id} className="bg-white p-4 sm:p-6 rounded-lg shadow-md border border-gray-200 mb-4 sm:mb-6">
@@ -356,6 +374,17 @@ const MyOrdersPage = () => {
           </div>
 
           <PickupCodeDisplay orderId={order.id} orderStatus={order.status} />
+
+          {canCancel && (
+            <button
+              onClick={() => handleCancelOrder(order.id)}
+              disabled={cancelingId === order.id}
+              className="mt-4 w-full flex items-center justify-center gap-2 bg-red-50 hover:bg-red-100 text-red-600 font-semibold py-2.5 rounded-lg border border-red-200 transition-colors text-sm disabled:opacity-60"
+            >
+              {cancelingId === order.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <X className="w-4 h-4" />}
+              Cancelar pedido
+            </button>
+          )}
 
           {isDelivered && !alreadyReviewed && (
             <button
