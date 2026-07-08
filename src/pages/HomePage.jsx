@@ -139,7 +139,7 @@ function BannerCarousel({ banners }) {
 
   return (
     <div
-      className="relative w-full rounded-2xl overflow-hidden shadow-lg select-none"
+      className="relative w-full rounded-2xl overflow-hidden shadow-lg select-none bg-gray-100"
       style={{ aspectRatio: "16/7" }}
       onTouchStart={(e) => { touchStartX.current = e.touches[0].clientX; }}
       onTouchEnd={(e) => {
@@ -157,7 +157,7 @@ function BannerCarousel({ banners }) {
           style={{ opacity: i === current ? 1 : 0, pointerEvents: i === current ? "auto" : "none" }}
         >
           {b.image_url ? (
-            <img src={b.image_url} alt={b.title || ""} className="w-full h-full object-cover" />
+            <img src={b.image_url} alt={b.title || ""} className="w-full h-full object-contain" />
           ) : (
             <div className={`w-full h-full bg-gradient-to-br ${b.gradient || "from-orange-500 to-red-500"} flex items-center px-5 sm:px-12`}>
               <div className="flex-1">

@@ -48,7 +48,10 @@ export async function apiFetch(url, options = {}) {
 
   try {
     const response = await fetch(url, options);
-    if (response.status === 401 || response.status === 403) {
+    // Só 401 (não autenticado) encerra a sessão. 403 é AUTORIZAÇÃO (autenticado,
+    // mas sem permissão pra AQUELE recurso) — não deve deslogar o usuário, senão
+    // um endpoint que responde 403 (ex.: gamificação) derruba a sessão toda.
+    if (response.status === 401) {
       expireSessionLocally();
     }
     return response;
