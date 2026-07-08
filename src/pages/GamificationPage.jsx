@@ -98,14 +98,22 @@ function Card({ children, className = '' }) {
 
 function PointsLevelCard({ data }) {
   const totalPoints = data?.total_points ?? data?.points ?? 0;
-  const level = getLevelInfo(totalPoints);
+  // Fonte da verdade = backend (níveis reais da tabela `levels`). A constante
+  // LEVELS local serve só de fallback visual (gradiente/cor por nome) — antes
+  // ela recalculava o nível com faixas divergentes do servidor e mostrava
+  // nível/progresso errados (ex.: "Ouro" com 900 pts quando o real era Prata).
+  const levelName = data?.level_name ?? getLevelInfo(totalPoints).name;
+  const toNext = Number(data?.points_to_next_level ?? 0);
+  const hasNext = toNext > 0;
+  const progress = Math.max(0, Math.min(100, Number(data?.progress_pct ?? 0)));
+  const style = LEVELS.find((l) => l.name === levelName) || getLevelInfo(totalPoints);
 
   return (
-    <div className={`rounded-2xl bg-gradient-to-br ${level.gradient} p-6 text-white shadow-xl`}>
+    <div className={`rounded-2xl bg-gradient-to-br ${style.gradient} p-6 text-white shadow-xl`}>
       <div className="flex items-start justify-between mb-3">
         <div>
           <p className="text-white/70 text-xs uppercase tracking-widest mb-1">Nível atual</p>
-          <h2 className="text-3xl font-black">{level.name}</h2>
+          <h2 className="text-3xl font-black">{levelName}</h2>
         </div>
         <div className="bg-white/20 rounded-full p-3">
           <Trophy className="w-8 h-8 text-white" />
@@ -115,17 +123,16 @@ function PointsLevelCard({ data }) {
       <p className="text-5xl font-black tabular-nums">{totalPoints.toLocaleString('pt-BR')}</p>
       <p className="text-white/70 text-sm mb-5">pontos acumulados</p>
 
-      {level.next ? (
+      {hasNext ? (
         <>
           <div className="bg-black/20 rounded-full h-2.5 overflow-hidden">
             <div
               className="bg-white h-2.5 rounded-full transition-all duration-700 ease-out"
-              style={{ width: `${level.progress}%` }}
+              style={{ width: `${progress}%` }}
             />
           </div>
           <p className="text-white/70 text-xs mt-2">
-            Faltam <span className="font-bold text-white">{level.toNext.toLocaleString('pt-BR')} pontos</span> para{' '}
-            <span className="font-bold text-white">{level.next.name}</span> ({level.progress}% concluído)
+            Faltam <span className="font-bold text-white">{toNext.toLocaleString('pt-BR')} pontos</span> para o próximo nível ({progress}% concluído)
           </p>
         </>
       ) : (
