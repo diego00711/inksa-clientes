@@ -13,6 +13,7 @@ import { useAuth } from "../context/AuthContext";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { usePullToRefresh } from "../hooks/usePullToRefresh";
 import { RestaurantSkeleton as RestaurantSkeletonGrid } from "../components/skeletons/RestaurantSkeleton";
+import SocialDayBanner from "../components/SocialDayBanner";
 
 // ─── Constants ─────────────────────────────────────────────────────────────
 
@@ -553,6 +554,9 @@ export function HomePage() {
       </div>
 
       <div className="max-w-7xl mx-auto px-4">
+        {/* Dia I — Inksa Social (só aparece quando habilitado no admin) */}
+        <SocialDayBanner />
+
         {/* ── 2. Hero Banner ──────────────────────────────────────────── */}
         <div
           className={`mt-5 transition-all duration-700 delay-100 ${
