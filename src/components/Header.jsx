@@ -50,7 +50,9 @@ export function Header() {
               onClick={() => setMenuOpen(v => !v)}
               className="min-h-[44px] min-w-[44px] text-white hover:bg-white/15 hover:text-white"
             >
-              {menuOpen ? <X className="h-7 w-7" /> : <Menu className="h-7 w-7" />}
+              {/* Usa size-* (não h-/w-): o Button força [&_svg:not([class*='size-'])]:size-4,
+                  então h-7 w-7 era ignorado e o ícone renderizava com 16px */}
+              {menuOpen ? <X className="size-8" /> : <Menu className="size-8" />}
             </Button>
 
             {menuOpen && (
