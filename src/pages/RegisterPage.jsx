@@ -90,6 +90,13 @@ export default function RegisterPage() {
           {successMessage && <p className="text-sm text-center text-green-600 font-medium">{successMessage}</p>}
           {error && <p className="text-sm text-center text-red-500">{error}</p>}
 
+          <p className="text-xs text-center text-gray-500">
+            Ao criar sua conta, você concorda com os{' '}
+            <a href="https://inksadelivery.com.br/termos" target="_blank" rel="noopener noreferrer" className="text-indigo-600 underline">Termos de Uso</a>{' '}
+            e a{' '}
+            <a href="https://inksadelivery.com.br/privacidade" target="_blank" rel="noopener noreferrer" className="text-indigo-600 underline">Política de Privacidade</a>.
+          </p>
+
           <div className="pt-2">
             <button
               type="submit"
