@@ -53,7 +53,16 @@ export function CartPage() {
   const [cardModalOpen, setCardModalOpen] = useState(false);
   const [cardPayload, setCardPayload] = useState(null);
 
+  // Provider de pagamento ativo no backend ('mercadopago' | 'asaas').
+  // O cartão in-app (MP Bricks) só funciona no MP; com Asaas tudo online vai
+  // pelo checkout hospedado (checkout_link), que aceita PIX e cartão.
+  const [payProvider, setPayProvider] = useState('mercadopago');
+
   useEffect(() => {
+    fetch(`${CLIENT_API_URL}/api/pagamentos/config`)
+      .then((r) => r.json())
+      .then((d) => { if (d?.provider) setPayProvider(d.provider); })
+      .catch(() => {});
     ClientService.getProfile().then(setClientProfile).catch(() => {});
     AddressService.list()
       .then((list) => {
@@ -201,8 +210,9 @@ export function CartPage() {
         ...(couponData?.valid && couponCode.trim() ? { coupon_code: couponCode.trim() } : {}),
       };
 
-      // Cartão DENTRO do app (sem redirecionar) quando a chave pública do MP existe
-      if (['credit', 'debit'].includes(paymentMethod) && MP_PUBLIC_KEY) {
+      // Cartão DENTRO do app (sem redirecionar) — só no MP (Bricks). Com outro
+      // provider, cartão segue pelo checkout hospedado como o PIX.
+      if (['credit', 'debit'].includes(paymentMethod) && MP_PUBLIC_KEY && payProvider === 'mercadopago') {
         setCardPayload(basePayload);
         setCardModalOpen(true);
         setIsProcessingOrder(false);
