@@ -135,6 +135,10 @@ export function CartPage() {
     : 0;
   const finalTotal = Math.max(0, subTotal + safeFee - couponDiscount);
   const acceptsCash = restaurantInfo?.accepts_cash ?? true;
+  // Só bloqueia quando o backend confirma que está fechado (is_open === false).
+  // Se o campo vier ausente, trata como aberto pra não travar o checkout à toa —
+  // o servidor tem a trava autoritativa de qualquer forma.
+  const restauranteFechado = restaurantInfo?.is_open === false;
 
   const handlePaymentMethodChange = (method) => {
     setPaymentMethod(method);
@@ -167,6 +171,10 @@ export function CartPage() {
       return;
     }
     if (cartItems.length === 0) { addToast('warning', 'Seu carrinho está vazio!'); return; }
+    if (restauranteFechado) {
+      addToast('warning', 'Este restaurante está fechado e não está aceitando pedidos no momento.');
+      return;
+    }
     const restaurantIds = [...new Set(cartItems.map(item => item.restaurant_id))];
     if (restaurantIds.length > 1) { addToast('warning', 'Apenas um restaurante por pedido.'); return; }
     if (deliveryFee === null || isCalculatingFee || feeError) {
@@ -468,6 +476,14 @@ export function CartPage() {
             onChangeForChange={setChangeFor}
           />
 
+          {/* Aviso de restaurante fechado */}
+          {restauranteFechado && (
+            <div className="mt-6 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 flex items-center gap-2">
+              <span className="text-lg">🔒</span>
+              <span>Este restaurante está <strong>fechado</strong> agora e não está aceitando pedidos. Você pode montar o carrinho e finalizar quando ele reabrir.</span>
+            </div>
+          )}
+
           {/* Actions */}
           <div className="flex justify-between mt-8 gap-4 flex-col sm:flex-row">
             <Button variant="outline" onClick={clearCart}
@@ -478,10 +494,12 @@ export function CartPage() {
             <Button
               className="flex-1 bg-primary text-primary-foreground hover:bg-primary/90"
               onClick={handleFinalizarPedido}
-              disabled={isProcessingOrder || isCalculatingFee || !!feeError || deliveryFee === null}
+              disabled={isProcessingOrder || isCalculatingFee || !!feeError || deliveryFee === null || restauranteFechado}
             >
               {isProcessingOrder ? (
                 <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Processando...</>
+              ) : restauranteFechado ? (
+                'Restaurante fechado'
               ) : paymentMethod === 'cash' ? (
                 '💵 Confirmar Pedido'
               ) : (
