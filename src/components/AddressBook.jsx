@@ -7,6 +7,7 @@ import { MapPin, Plus, Star, Pencil, Trash2, Loader2, Check, X } from "lucide-re
 import AddressService, { formatAddress } from "../services/addressService";
 import AddressMapPicker from "./AddressMapPicker";
 import { useToast } from "../context/ToastContext";
+import { useConfirm } from "./ConfirmProvider.jsx";
 
 const EMPTY = {
   label: "Casa", street: "", number: "", complement: "",
@@ -157,6 +158,7 @@ function AddressForm({ initial, onCancel, onSaved }) {
 
 export default function AddressBook() {
   const { addToast } = useToast();
+  const confirm = useConfirm();
   const [addresses, setAddresses] = useState([]);
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState(null); // 'new' | address object | null
@@ -177,7 +179,7 @@ export default function AddressBook() {
   const onSaved = () => { setEditing(null); load(); };
 
   const remove = async (id) => {
-    if (!window.confirm("Remover este endereço?")) return;
+    if (!(await confirm({ title: 'Remover endereço', message: 'Remover este endereço?', confirmText: 'Remover', danger: true }))) return;
     try {
       await AddressService.remove(id);
       load();

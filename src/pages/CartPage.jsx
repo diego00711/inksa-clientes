@@ -7,6 +7,7 @@ import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
 import { createPaymentPreference, calculateDeliveryFee } from '../services/orderService';
 import { useToast } from '../context/ToastContext.jsx';
+import { useConfirm } from '../components/ConfirmProvider.jsx';
 import ClientService from '../services/clientService';
 import AddressService, { formatAddress } from '../services/addressService';
 import { PaymentMethodSelector } from '../components/PaymentMethodSelector';
@@ -20,6 +21,7 @@ export function CartPage() {
   const { isAuthenticated, user } = useAuth();
   const navigate = useNavigate();
   const { addToast } = useToast();
+  const confirm = useConfirm();
 
   const [isProcessingOrder, setIsProcessingOrder] = useState(false);
   const [deliveryFee, setDeliveryFee] = useState(null);
@@ -269,8 +271,10 @@ export function CartPage() {
     }
   };
 
-  const handleRemoveItem = (itemId) => {
-    if (window.confirm('Remover este item do carrinho?')) removeItemFromCart(itemId);
+  const handleRemoveItem = async (itemId) => {
+    if (await confirm({ title: 'Remover item', message: 'Remover este item do carrinho?', confirmText: 'Remover', danger: true })) {
+      removeItemFromCart(itemId);
+    }
   };
 
   // ── Cash confirmation screen ───────────────────────────────────────────────

@@ -5,6 +5,7 @@ import { ArrowLeft, Trash2, Star, X, Loader2 } from 'lucide-react';
 
 import AuthService from '../services/authService';
 import { useToast } from '../context/ToastContext.jsx';
+import { useConfirm } from '../components/ConfirmProvider.jsx';
 import { PickupCodeDisplay } from '../components/PickupCodeDisplay.jsx';
 import { deleteOrder as deleteOrderApi, cancelOrderByClient } from '../services/orderService';
 import { CLIENT_API_URL } from '../services/api';
@@ -227,6 +228,7 @@ const MyOrdersPage = () => {
   const [reviewingOrder, setReviewingOrder] = useState(null);
   const [reviewedIds, setReviewedIds] = useState(getReviewedOrders);
   const { addToast } = useToast();
+  const confirm = useConfirm();
 
   const fetchOrders = useCallback(async () => {
     try {
@@ -277,7 +279,7 @@ const MyOrdersPage = () => {
   }, [addToast]);
 
   const handleDeleteOrder = async (orderId) => {
-    if (!window.confirm('Tem certeza que deseja excluir este pedido?')) return;
+    if (!(await confirm({ title: 'Excluir pedido', message: 'Tem certeza que deseja excluir este pedido?', confirmText: 'Excluir', danger: true }))) return;
     try {
       await deleteOrderApi(orderId);
       setOrders(prev => prev.filter(o => o.id !== orderId));
@@ -289,7 +291,7 @@ const MyOrdersPage = () => {
 
   const [cancelingId, setCancelingId] = useState(null);
   const handleCancelOrder = async (orderId) => {
-    if (!window.confirm('Deseja mesmo cancelar este pedido? Se já estiver pago, o estorno é solicitado automaticamente.')) return;
+    if (!(await confirm({ title: 'Cancelar pedido', message: 'Deseja mesmo cancelar este pedido? Se já estiver pago, o estorno é solicitado automaticamente.', confirmText: 'Cancelar pedido', cancelText: 'Voltar', danger: true }))) return;
     setCancelingId(orderId);
     try {
       await cancelOrderByClient(orderId);

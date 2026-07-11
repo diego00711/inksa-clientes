@@ -3,6 +3,7 @@ import ReactDOM from 'react-dom/client'
 import App from './App.jsx'
 import './index.css'
 import { BrowserRouter } from 'react-router-dom'
+import { ConfirmProvider } from './components/ConfirmProvider.jsx'
 
 // 🚀 REGISTRO DO SERVICE WORKER - PWA
 if ('serviceWorker' in navigator) {
@@ -36,7 +37,9 @@ window.addEventListener('appinstalled', (evt) => {
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
     <BrowserRouter>
-      <App />
+      <ConfirmProvider>
+        <App />
+      </ConfirmProvider>
     </BrowserRouter>
   </React.StrictMode>,
 )
