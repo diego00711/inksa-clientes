@@ -68,10 +68,13 @@ const CATEGORY_OPTIONS = [
 
 const FAVORITES_KEY = "inksa.favorites";
 
+// Só entram filtros com dado real por trás. 'Entrega rápida' e 'Promoção'
+// foram removidos: liam colunas que não existem (estimated_delivery_time,
+// delivery_time_min, has_promotion, discount). O primeiro não filtrava nada; o
+// segundo descartava TODO restaurante (!undefined é true), deixando o cliente
+// com a tela vazia. Quando existir promoção de verdade no banco, o 🔥 volta.
 const QUICK_FILTERS = [
   { key: 'top_rated',    label: 'Mais avaliados', emoji: '🏆' },
-  { key: 'fast',         label: 'Entrega rápida', emoji: '⚡' },
-  { key: 'promo',        label: 'Promoção',        emoji: '🔥' },
   { key: 'nearest',      label: 'Mais próximos',   emoji: '📍' },
   { key: 'new',          label: 'Novidades',        emoji: '⭐' },
 ];
@@ -468,13 +471,6 @@ export function HomePage() {
       const matchCat = selectedCategory === 'Todos' || r.category === selectedCategory;
       if (!matchSearch || !matchCat) return false;
 
-      if (quickFilters.includes('fast')) {
-        const t = r.estimated_delivery_time ?? r.delivery_time_min;
-        if (t !== undefined && t !== null && Number(t) > 30) return false;
-      }
-      if (quickFilters.includes('promo')) {
-        if (!r.has_promotion && !(r.discount > 0)) return false;
-      }
       if (quickFilters.includes('new')) {
         const created = r.created_at ? new Date(r.created_at) : null;
         if (!created || created < thirtyDaysAgo) return false;
@@ -486,7 +482,9 @@ export function HomePage() {
     list = list.slice().sort((a, b) => (b.is_open ? 1 : 0) - (a.is_open ? 1 : 0));
 
     if (quickFilters.includes('nearest') && !quickFilters.includes('top_rated')) {
-      list.sort((a, b) => (a.distance ?? 999) - (b.distance ?? 999));
+      // distance_km (nao 'distance'): e o nome que o backend devolve. Com
+      // 'distance' todos caiam no 999 e a ordenacao nao fazia nada.
+      list.sort((a, b) => (a.distance_km ?? 999) - (b.distance_km ?? 999));
     } else if (quickFilters.includes('top_rated')) {
       list.sort((a, b) => (parseFloat(b.rating) || 0) - (parseFloat(a.rating) || 0));
     }
@@ -601,7 +599,12 @@ export function HomePage() {
                 ? "Obtendo sua localização..."
                 : locationError
                 ? "Exibindo todos os restaurantes disponíveis"
-                : "Entrega em até 30 min"
+                // NAO prometer prazo aqui: nao existe estimativa de entrega no
+                // sistema, e o texto fixo "Entrega em ate 30 min" era so uma
+                // frase escrita a mao. Este subtitulo descreve o que a tela de
+                // fato faz — backend ordena por distancia, front poe os abertos
+                // na frente.
+                : "Abertos primeiro, mais perto de você"
             }
           />
 
