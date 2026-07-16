@@ -39,7 +39,15 @@ const STATUS_TO_STAGE = {
 };
 
 // ─── Countdown ───────────────────────────────────────────────────────────────
-function CountdownTimer({ estimatedMinutes = 30, startedAt }) {
+// Sem default para estimatedMinutes: o antigo "= 30" fazia a tela inventar um
+// prazo quando nao havia estimativa nenhuma. Prazo ou e real ou nao aparece.
+function CountdownTimer({
+  estimatedMinutes,
+  startedAt,
+  label = "Chega em aproximadamente",
+  doneLabel = "Chegou!",
+  doneText = "🎉 Aqui está!",
+}) {
   const [remaining, setRemaining] = useState(null);
 
   useEffect(() => {
@@ -53,7 +61,8 @@ function CountdownTimer({ estimatedMinutes = 30, startedAt }) {
     return () => clearInterval(id);
   }, [estimatedMinutes, startedAt]);
 
-  if (remaining === null) return null;
+  // sem estimativa real -> nao desenha nada (melhor vazio que inventado)
+  if (remaining === null || !Number.isFinite(Number(estimatedMinutes))) return null;
   const mins = Math.floor(remaining);
   const secs = Math.floor((remaining - mins) * 60);
   const arrived = remaining === 0;
@@ -61,10 +70,10 @@ function CountdownTimer({ estimatedMinutes = 30, startedAt }) {
   return (
     <div className="bg-gradient-to-r from-orange-500 to-red-500 rounded-2xl p-6 text-white text-center mb-5 shadow-lg shadow-orange-200">
       <p className="text-sm font-medium opacity-90 mb-1">
-        {arrived ? "Chegou!" : "Chega em aproximadamente"}
+        {arrived ? doneLabel : label}
       </p>
       {arrived ? (
-        <p className="text-3xl sm:text-4xl font-black">🎉 Aqui está!</p>
+        <p className="text-3xl sm:text-4xl font-black">{doneText}</p>
       ) : (
         <div className="flex items-end justify-center gap-1">
           <span className="text-5xl sm:text-6xl font-black leading-none">{mins}</span>
@@ -399,16 +408,26 @@ export function OrderTrackingPage() {
           </div>
         )}
 
-        {/* Countdown — usa ETA real (entregador->destino) quando disponivel */}
+        {/* Countdown — so aparece com numero REAL, nunca inventado.
+            1) entregador a caminho: ETA calculado do GPS dele ate o destino
+            2) sem entregador ainda: o tempo de PREPARO que o restaurante
+               informou ao aceitar (orders.estimated_prep_time) — rotulado como
+               preparo, nao como chegada, porque nao inclui o trajeto
+            3) restaurante ainda nao aceitou/nao informou: nada.
+            Antes daqui o fallback era "estimated_delivery_minutes || 30" — e a
+            coluna nao existe, entao TODO pedido mostrava 30 min inventados. */}
         {!isDelivered && !isFailed && (
           liveEta != null ? (
             <CountdownTimer estimatedMinutes={liveEta} startedAt={Date.now()} />
-          ) : (
+          ) : order?.estimated_prep_time ? (
             <CountdownTimer
-              estimatedMinutes={order?.estimated_delivery_minutes || 30}
-              startedAt={order?.created_at}
+              estimatedMinutes={order.estimated_prep_time}
+              startedAt={order.accepted_at || order.created_at}
+              label="Fica pronto em aproximadamente"
+              doneLabel="Preparo concluído"
+              doneText="👨‍🍳 Saindo da cozinha!"
             />
-          )
+          ) : null
         )}
 
         {isDelivered && (
