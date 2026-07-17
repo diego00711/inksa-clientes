@@ -4,11 +4,13 @@ import { CLIENT_API_URL as API_BASE_URL } from './api';
 import { apiFetch } from './apiClient.js';
 const AUTH_TOKEN_KEY = 'clientAuthToken';
 const CLIENT_USER_DATA_KEY = 'clientUser';
+const REFRESH_TOKEN_KEY = 'clientRefreshToken';
 
 const processResponse = async (response) => {
   if (response.status === 401) {
     localStorage.removeItem(AUTH_TOKEN_KEY);
     localStorage.removeItem(CLIENT_USER_DATA_KEY);
+    localStorage.removeItem(REFRESH_TOKEN_KEY);
     window.location.href = '/login';
     return null;
   }
@@ -38,6 +40,11 @@ const authService = {
       if (data && data.data && data.data.token) {
         localStorage.setItem(AUTH_TOKEN_KEY, data.data.token);
         localStorage.setItem(CLIENT_USER_DATA_KEY, JSON.stringify(data.data.user));
+        // Sem o refresh_token o apiClient não renova a sessão e o cliente cai
+        // no login quando o access_token vence (~1h) — no meio de um pedido.
+        if (data.data.refresh_token) {
+          localStorage.setItem(REFRESH_TOKEN_KEY, data.data.refresh_token);
+        }
         return data.data;
       }
       throw new Error('Não foi possível entrar. Tente novamente.');
@@ -64,6 +71,7 @@ const authService = {
   async logout() {
     localStorage.removeItem(AUTH_TOKEN_KEY);
     localStorage.removeItem(CLIENT_USER_DATA_KEY);
+    localStorage.removeItem(REFRESH_TOKEN_KEY);
     window.location.href = '/login';
   },
 
