@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { usePullToRefresh } from '../hooks/usePullToRefresh';
-import { ArrowLeft, Trash2, Star, X, Loader2 } from 'lucide-react';
+import { ArrowLeft, Trash2, Star, X, Loader2, MapPin } from 'lucide-react';
 
 import AuthService from '../services/authService';
 import { useToast } from '../context/ToastContext.jsx';
@@ -346,6 +346,10 @@ const MyOrdersPage = () => {
       const alreadyReviewed = reviewedIds.has(order.id);
       const canDelete = ['delivered', 'cancelled'].includes(order.status);
       const canCancel = ['awaiting_payment', 'pending'].includes(order.status);
+      // Pedido em movimento -> tem mapa/status ao vivo pra acompanhar. Antes
+      // NAO havia nenhum caminho desta tela pro tracking: com o pedido a
+      // caminho, o cliente nao tinha como abrir o mapa.
+      const canTrack = !['awaiting_payment', 'delivered', 'cancelled', 'canceled', 'archived'].includes(order.status);
 
       return (
         <div key={order.id} className="bg-white p-4 sm:p-6 rounded-lg shadow-md border border-gray-200 mb-4 sm:mb-6">
@@ -376,6 +380,16 @@ const MyOrdersPage = () => {
           </div>
 
           <PickupCodeDisplay orderId={order.id} orderStatus={order.status} />
+
+          {canTrack && (
+            <Link
+              to={`/pedido/${order.id}/acompanhar`}
+              className="mt-4 w-full flex items-center justify-center gap-2 bg-orange-500 hover:bg-orange-600 text-white font-semibold py-2.5 rounded-lg transition-colors text-sm shadow-sm"
+            >
+              <MapPin className="w-4 h-4" />
+              Acompanhar pedido
+            </Link>
+          )}
 
           {canCancel && (
             <button

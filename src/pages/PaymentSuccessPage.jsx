@@ -55,7 +55,9 @@ export default function PaymentSuccessPage() {
   useConfetti(containerRef);
 
   const lastOrderId = localStorage.getItem('last_order_id');
-  const trackingLink = lastOrderId ? `/acompanhar/${lastOrderId}` : '/pedidos';
+  // Rota real do tracking e /pedido/:id/acompanhar (App.jsx). O caminho antigo
+  // /acompanhar/:id nao existe no router — o botao pos-pagamento caia no vazio.
+  const trackingLink = lastOrderId ? `/pedido/${lastOrderId}/acompanhar` : '/pedidos';
 
   return (
     <div ref={containerRef} className="min-h-screen bg-green-50 flex items-center justify-center px-4 py-12">
