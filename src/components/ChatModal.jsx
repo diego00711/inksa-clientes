@@ -106,7 +106,10 @@ export default function ChatModal({ orderId, isOpen, onClose, senderType = 'clie
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col bg-white">
+    // z-[1100]: acima das camadas do Leaflet (panes ate 700, controles 1000),
+    // que vivem no MESMO stacking context — com z-50 o mapa pintava por cima
+    // do chat aberto.
+    <div className="fixed inset-0 z-[1100] flex flex-col bg-white">
       {/* Header */}
       <div className="flex items-center justify-between p-4 border-b bg-[#FF6F00] text-white">
         <h2 className="font-bold text-lg">Chat com Entregador</h2>

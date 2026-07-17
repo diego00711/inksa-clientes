@@ -5,8 +5,10 @@ import './index.css'
 import { BrowserRouter } from 'react-router-dom'
 import { ConfirmProvider } from './components/ConfirmProvider.jsx'
 
-// 🚀 REGISTRO DO SERVICE WORKER - PWA
-if ('serviceWorker' in navigator) {
+// 🚀 REGISTRO DO SERVICE WORKER - PWA (só no build de produção: em dev o SW
+// intercepta os fetches do Vite/mocks e causa "Failed to fetch" fantasma —
+// atrapalhou a própria depuração da tela branca do chat)
+if (import.meta.env.PROD && 'serviceWorker' in navigator) {
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('/sw.js')
       .then((registration) => {

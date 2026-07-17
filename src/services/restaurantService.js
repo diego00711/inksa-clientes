@@ -5,10 +5,29 @@ import { apiFetch } from './apiClient.js';
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
-export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-  db: { schema: 'public' },
-  realtime: { params: { eventsPerSecond: 10 } },
-});
+// NUNCA estourar no import: createClient sem env lança "supabaseUrl is
+// required" na carga do modulo e derruba QUALQUER pagina que importe este
+// service (tela branca total). Sem env, o realtime vira um stub inofensivo —
+// o app funciona, so sem atualizacoes ao vivo.
+function makeSupabase() {
+  const stubChannel = { on() { return this; }, subscribe() { return this; } };
+  const stub = { channel: () => stubChannel, removeChannel: () => {} };
+  if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
+    console.warn('[restaurantService] VITE_SUPABASE_URL/ANON_KEY ausentes — realtime desativado.');
+    return stub;
+  }
+  try {
+    return createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+      db: { schema: 'public' },
+      realtime: { params: { eventsPerSecond: 10 } },
+    });
+  } catch (e) {
+    console.warn('[restaurantService] createClient falhou — realtime desativado.', e);
+    return stub;
+  }
+}
+
+export const supabase = makeSupabase();
 
 const API_URL = `${CLIENT_API_URL}/api`;
 
