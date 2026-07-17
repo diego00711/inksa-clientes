@@ -80,8 +80,14 @@ export const PickupCodeDisplay = ({ orderId, orderStatus }) => {
     return null;
   }
 
-  const showPickupCode = ['accepted_by_delivery', 'delivering', 'delivered'].includes(orderStatus);
-  const showDeliveryCode = ['delivering', 'delivered'].includes(orderStatus);
+  // So renderiza a caixa se o codigo VEIO na resposta. O /codes do backend,
+  // de proposito, nunca manda o pickup_code pro CLIENTE (ele e o segredo do
+  // entregador com o restaurante) — sem esta guarda, o cliente via uma caixa
+  // "Codigo de Retirada" eternamente vazia e achava que era erro.
+  const showPickupCode = !!codes.pickup_code
+    && ['accepted_by_delivery', 'delivering', 'delivered'].includes(orderStatus);
+  const showDeliveryCode = !!codes.delivery_code
+    && ['delivering', 'delivered'].includes(orderStatus);
 
   return (
     <div className="mt-4 border-t border-gray-100 pt-4">
