@@ -258,7 +258,14 @@ export function CartPage() {
         },
       });
       if (paymentResponse.checkout_link) {
-        if (paymentResponse.pedido_id) localStorage.setItem('last_order_id', paymentResponse.pedido_id);
+        if (paymentResponse.pedido_id) {
+          localStorage.setItem('last_order_id', paymentResponse.pedido_id);
+          // rede de segurança: ao voltar do checkout do Asaas (mesmo sem
+          // redirect — típico no PIX), o app leva pra tela do pedido.
+          try {
+            localStorage.setItem('payment_redirect', JSON.stringify({ id: paymentResponse.pedido_id, ts: Date.now() }));
+          } catch {}
+        }
         clearCart();
         window.location.href = paymentResponse.checkout_link;
       } else {

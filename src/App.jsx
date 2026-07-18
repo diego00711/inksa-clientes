@@ -71,6 +71,32 @@ function OnlineStatusHandler() {
   return null;
 }
 
+// Rede de segurança pós-pagamento: ao mandar o cliente pro checkout hospedado
+// do Asaas, o CartPage grava a flag 'payment_redirect'. Quando ele volta pro
+// app (mesmo que o Asaas NÃO tenha redirecionado — típico no PIX, que confirma
+// no app do banco), levamos direto pra tela de acompanhamento do pedido.
+function PaymentReturnHandler() {
+  const navigate = useNavigate();
+  useEffect(() => {
+    let raw = null;
+    try { raw = localStorage.getItem('payment_redirect'); } catch {}
+    if (!raw) return;
+    try { localStorage.removeItem('payment_redirect'); } catch {}
+    let data = null;
+    try { data = JSON.parse(raw); } catch { return; }
+    if (!data?.id) return;
+    // só honra se voltou há pouco; e não atropela as páginas que já se viram
+    // sozinhas (/pagamento/* e /pedido/*)
+    const recente = Date.now() - (data.ts || 0) < 30 * 60 * 1000;
+    const path = window.location.pathname || '';
+    const jaTratada = path.startsWith('/pagamento/') || path.startsWith('/pedido/');
+    if (recente && !jaTratada) {
+      navigate(`/pedido/${data.id}/acompanhar`, { replace: true });
+    }
+  }, [navigate]);
+  return null;
+}
+
 function OnboardingManager() {
   const { isAuthenticated } = useAuth();
 
@@ -128,6 +154,7 @@ function AppContent() {
         <>
           <AuthUnauthorizedHandler />
           <OnlineStatusHandler />
+          <PaymentReturnHandler />
           <GlobalError />
           <OnboardingManager />
           <SupportButton />
