@@ -46,6 +46,10 @@ export function CartPage() {
   const [couponData, setCouponData] = useState(null); // {valid, discount_amount, message}
   const [couponLoading, setCouponLoading] = useState(false);
 
+  // Observação do cliente pro pedido (ex: "sem cebola"). Chega no restaurante
+  // (modal de detalhes + comanda impressa). O backend já grava em orders.notes.
+  const [notes, setNotes] = useState('');
+
   // Cash order confirmation state
   const [cashOrderConfirmed, setCashOrderConfirmed] = useState(false);
   const [confirmedTotal, setConfirmedTotal] = useState(0);
@@ -215,7 +219,7 @@ export function CartPage() {
         client_latitude: deliveryLat,
         client_longitude: deliveryLng,
         delivery_distance_km: deliveryDistance || 0,
-        notes: '',
+        notes: notes.trim(),
         cliente_email: user.email,
         ...(couponData?.valid && couponCode.trim() ? { coupon_code: couponCode.trim() } : {}),
       };
@@ -414,6 +418,20 @@ export function CartPage() {
                     : couponData.message}
                 </p>
               )}
+            </div>
+
+            {/* Observações do pedido — vão pro restaurante (modal + comanda) */}
+            <div className="border-t pt-3 mt-3">
+              <p className="text-sm font-medium text-gray-700 mb-2">Observações do pedido</p>
+              <textarea
+                value={notes}
+                onChange={e => setNotes(e.target.value)}
+                maxLength={300}
+                rows={2}
+                placeholder="Ex: sem cebola, ponto da carne, tocar a campainha…"
+                className="w-full border rounded-lg px-3 py-2 text-sm resize-none"
+              />
+              <p className="text-xs text-gray-400 mt-0.5 text-right">{notes.length}/300</p>
             </div>
 
             {couponDiscount > 0 && (
