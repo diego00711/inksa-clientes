@@ -12,6 +12,7 @@ import ClientService from '../services/clientService';
 import AddressService, { formatAddress } from '../services/addressService';
 import { PaymentMethodSelector } from '../components/PaymentMethodSelector';
 import CardPaymentModal from '../components/CardPaymentModal';
+import PixPaymentModal from '../components/PixPaymentModal';
 import { CLIENT_API_URL } from '../services/api';
 
 const MP_PUBLIC_KEY = import.meta.env.VITE_MERCADOPAGO_PUBLIC_KEY;
@@ -57,6 +58,7 @@ export function CartPage() {
 
   // Card-in-app (MP Bricks) state
   const [cardModalOpen, setCardModalOpen] = useState(false);
+  const [pixModal, setPixModal] = useState(null); // {pix, orderId, amount, checkoutLink}
   const [cardPayload, setCardPayload] = useState(null);
 
   // Provider de pagamento ativo no backend ('mercadopago' | 'asaas').
@@ -261,6 +263,21 @@ export function CartPage() {
           pendente: `${window.location.origin}/pagamento/pendente`,
         },
       });
+      // PIX inline: se o backend mandou o QR/copia-e-cola, mostra a tela de PIX
+      // DENTRO do app em vez de redirecionar pro checkout do Asaas. O pedido já
+      // existe (awaiting_payment); o modal detecta a confirmação e leva pro
+      // acompanhamento. checkout_link fica como rede de segurança no próprio modal.
+      if (paymentResponse.pix?.payload && paymentResponse.pedido_id) {
+        localStorage.setItem('last_order_id', paymentResponse.pedido_id);
+        clearCart();
+        setPixModal({
+          pix: paymentResponse.pix,
+          orderId: paymentResponse.pedido_id,
+          amount: finalTotal,
+          checkoutLink: paymentResponse.checkout_link,
+        });
+        return;
+      }
       if (paymentResponse.checkout_link) {
         if (paymentResponse.pedido_id) {
           localStorage.setItem('last_order_id', paymentResponse.pedido_id);
@@ -561,6 +578,27 @@ export function CartPage() {
         onError={(m) => addToast('error', m || 'Pagamento não concluído.')}
         onClose={() => setCardModalOpen(false)}
       />
+
+      {pixModal && (
+        <PixPaymentModal
+          pix={pixModal.pix}
+          orderId={pixModal.orderId}
+          amount={pixModal.amount}
+          checkoutLink={pixModal.checkoutLink}
+          onPaid={() => {
+            addToast('success', '✅ Pagamento confirmado!');
+            const id = pixModal.orderId;
+            setPixModal(null);
+            navigate(`/pedido/${id}/acompanhar`);
+          }}
+          onClose={() => {
+            // Fechou sem pagar: o pedido fica em "Aguardando pagamento" e ele
+            // pode retomar por "Meus pedidos".
+            setPixModal(null);
+            navigate('/meus-pedidos');
+          }}
+        />
+      )}
     </div>
   );
 }
