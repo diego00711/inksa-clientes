@@ -332,7 +332,12 @@ const MyOrdersPage = () => {
         </button>
       </div>
     );
-    if (orders.length === 0) return (
+    // "Arquivado" é soft-delete: quando o cliente exclui um pedido (cancelado/
+    // entregue), o backend só arquiva. Então esses somem da visão do cliente
+    // (continuam no banco pro histórico do restaurante/admin). Sem isso, o
+    // pedido excluído voltava no próximo poll como "Arquivado" e ficava preso.
+    const visibleOrders = orders.filter(o => o.status !== 'archived');
+    if (visibleOrders.length === 0) return (
       // FIX: styled empty state
       <div className="text-center py-16 bg-white rounded-lg shadow-md border border-gray-100 p-8">
         <div className="text-5xl mb-4">🛍️</div>
@@ -341,7 +346,7 @@ const MyOrdersPage = () => {
       </div>
     );
 
-    return orders.map(order => {
+    return visibleOrders.map(order => {
       const isDelivered = order.status === 'delivered';
       const alreadyReviewed = reviewedIds.has(order.id);
       const canDelete = ['delivered', 'cancelled'].includes(order.status);
