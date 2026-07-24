@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import { X, MessageCircle, Mail, Phone, Clock, Loader2 } from 'lucide-react';
 import { CLIENT_API_URL } from '../services/api';
+import { useCart } from '../context/CartContext';
 
 const FALLBACK = {
   email: "suporte@inksadelivery.com.br",
@@ -34,6 +36,11 @@ export default function SupportButton() {
   const [open, setOpen] = useState(false);
   const [info, setInfo] = useState(() => loadCached() || FALLBACK);
   const [loading, setLoading] = useState(false);
+  const { totalItemsInCart } = useCart();
+  const location = useLocation();
+  // Sobe o botão pra não cobrir a barra "Ver carrinho" — que só aparece na
+  // tela do restaurante (/restaurantes/:id) quando há itens no carrinho.
+  const raised = totalItemsInCart > 0 && /^\/restaurantes\//.test(location.pathname);
 
   useEffect(() => {
     let alive = true;
@@ -61,7 +68,11 @@ export default function SupportButton() {
     <>
       <button
         onClick={() => setOpen(true)}
-        className="fixed right-6 z-50 w-14 h-14 bg-orange-500 hover:bg-orange-600 text-white rounded-full shadow-lg flex items-center justify-center transition-all duration-200 hover:scale-110 bottom-[calc(56px+env(safe-area-inset-bottom)+1rem)] sm:bottom-6"
+        className={`fixed right-6 z-50 w-14 h-14 bg-orange-500 hover:bg-orange-600 text-white rounded-full shadow-lg flex items-center justify-center transition-all duration-200 hover:scale-110 ${
+          raised
+            ? 'bottom-[calc(130px+env(safe-area-inset-bottom))]'
+            : 'bottom-[calc(56px+env(safe-area-inset-bottom)+1rem)] sm:bottom-6'
+        }`}
         title="Suporte / SAC"
       >
         <MessageCircle className="w-6 h-6" />
