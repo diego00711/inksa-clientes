@@ -20,7 +20,6 @@ export function RestaurantCard({ restaurant }) {
   const { addToast } = useToast();
   // --- LÓGICA DE DADOS ---
   const deliveryFee = restaurant.delivery_fee ?? 0;
-  const isFreeDelivery = deliveryFee === 0;
   const ratingValue = restaurant.rating ?? 0;
   const deliveryTime = restaurant.delivery_time;
   const category = restaurant.category ?? "Restaurante";
@@ -31,24 +30,20 @@ export function RestaurantCard({ restaurant }) {
 
   // --- COMPONENTE INTERNO PARA O TEXTO DA ENTREGA ---
   const DeliveryInfo = () => {
-    if (deliveryType === 'platform') {
+    // O frete real é calculado por distância no checkout. O delivery_fee estático
+    // do restaurante (0/nulo) NÃO significa grátis — só mostra valor se houver um
+    // fixo real (>0); caso contrário, "Entrega a calcular" (honesto).
+    if (deliveryFee > 0 && deliveryType !== 'platform') {
       return (
-        <span className="flex items-center gap-1 font-medium text-blue-600 bg-blue-50 px-2 py-1 rounded-full text-xs">
-          <Info className="w-3 h-3" />
-          Entrega a calcular
-        </span>
-      );
-    }
-    if (isFreeDelivery) {
-      return (
-        <span className="flex items-center gap-1 font-medium text-green-600 bg-green-50 px-2 py-1 rounded-full text-xs">
-          Entrega Grátis
+        <span className="flex items-center gap-1 font-medium text-gray-600 bg-gray-50 px-2 py-1 rounded-full text-xs">
+          R$ {parseFloat(deliveryFee).toFixed(2)}
         </span>
       );
     }
     return (
-      <span className="flex items-center gap-1 font-medium text-gray-600 bg-gray-50 px-2 py-1 rounded-full text-xs">
-        R$ {parseFloat(deliveryFee).toFixed(2)}
+      <span className="flex items-center gap-1 font-medium text-blue-600 bg-blue-50 px-2 py-1 rounded-full text-xs">
+        <Info className="w-3 h-3" />
+        Entrega a calcular
       </span>
     );
   };

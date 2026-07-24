@@ -172,10 +172,10 @@ export function RestaurantDetailsPage() {
               
               <div className="flex items-center gap-2 text-gray-600">
                 <span className="text-sm font-medium">
-                  {deliveryFee === 0 ? (
-                    <span className="text-green-600 font-semibold">Entrega Grátis</span>
-                  ) : (
+                  {deliveryFee > 0 ? (
                     `Entrega: R$ ${parseFloat(deliveryFee).toFixed(2)}`
+                  ) : (
+                    <span className="text-blue-600 font-medium">Frete calculado no seu endereço</span>
                   )}
                 </span>
               </div>
