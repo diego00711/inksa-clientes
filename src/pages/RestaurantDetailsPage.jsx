@@ -9,7 +9,7 @@ import RestaurantService from '../services/restaurantService';
 
 export function RestaurantDetailsPage() {
   const { id } = useParams();
-  const { addItemToCart } = useCart();
+  const { addItemToCart, totalItemsInCart, subTotal } = useCart();
 
   const [restaurant, setRestaurant] = useState(null);
   const [menuItems, setMenuItems] = useState([]);
@@ -277,7 +277,33 @@ export function RestaurantDetailsPage() {
             </div>
           )}
         </div>
+
+        {/* espaçador: evita o último item ficar atrás da barra "Ver carrinho" */}
+        {totalItemsInCart > 0 && <div className="h-20" aria-hidden />}
       </div>
+
+      {/* Barra flutuante "Ver carrinho" — aparece quando há itens no carrinho */}
+      {totalItemsInCart > 0 && (
+        <div
+          className="fixed left-0 right-0 z-40 px-4 sm:px-6"
+          style={{ bottom: 'calc(64px + env(safe-area-inset-bottom))' }}
+        >
+          <div className="max-w-4xl mx-auto">
+            <Link
+              to="/carrinho"
+              className="flex items-center justify-between gap-3 bg-orange-500 hover:bg-orange-600 active:bg-orange-700 text-white font-semibold rounded-2xl shadow-lg shadow-orange-500/30 px-5 py-3.5 transition-colors"
+            >
+              <span className="flex items-center gap-2">
+                <span className="bg-white/25 text-sm font-bold rounded-full min-w-[24px] h-6 px-2 flex items-center justify-center">
+                  {totalItemsInCart}
+                </span>
+                Ver carrinho
+              </span>
+              <span className="font-bold">R$ {Number(subTotal || 0).toFixed(2)}</span>
+            </Link>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
