@@ -54,6 +54,36 @@ const authService = {
     }
   },
 
+  // Login com Google: manda o id_token do Google pro backend e guarda os mesmos
+  // tokens do login normal (o backend cria a conta 'client' no 1º acesso).
+  async loginWithGoogle(idToken) {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/auth/google`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id_token: idToken, expected_user_type: 'client' }),
+      });
+      const data = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Não foi possível entrar com o Google. Tente novamente.');
+      }
+
+      if (data && data.data && data.data.token) {
+        localStorage.setItem(AUTH_TOKEN_KEY, data.data.token);
+        localStorage.setItem(CLIENT_USER_DATA_KEY, JSON.stringify(data.data.user));
+        if (data.data.refresh_token) {
+          localStorage.setItem(REFRESH_TOKEN_KEY, data.data.refresh_token);
+        }
+        return data.data;
+      }
+      throw new Error('Não foi possível entrar com o Google. Tente novamente.');
+    } catch (error) {
+      console.error('Erro no login com Google:', error);
+      throw error;
+    }
+  },
+
   async register(userData) {
     try {
       const response = await apiFetch(`${API_BASE_URL}/api/auth/register`, {

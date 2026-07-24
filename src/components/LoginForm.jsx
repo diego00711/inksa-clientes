@@ -8,6 +8,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { Input } from "@/components/ui/input";
 import { PasswordInput } from "@/components/ui/password-input";
 import { Label } from "@/components/ui/label";
+import { Capacitor } from "@capacitor/core";
+import { GoogleSignInButton } from "./GoogleSignInButton";
 
 export function LoginForm() {
   const [email, setEmail] = useState("");
@@ -15,7 +17,7 @@ export function LoginForm() {
   const [error, setError] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
-  const { login } = useAuth(); // 2. Pegamos a função de login do nosso contexto
+  const { login, loginWithGoogle } = useAuth(); // 2. Pegamos a função de login do nosso contexto
 
   const handleSubmit = async (event) => {
     event.preventDefault();
@@ -40,6 +42,22 @@ export function LoginForm() {
       setIsLoading(false);
     }
   };
+
+  const handleGoogleCredential = async (credential) => {
+    setError(null);
+    setIsLoading(true);
+    try {
+      await loginWithGoogle(credential);
+      navigate("/");
+    } catch (err) {
+      console.error("Falha no login com Google:", err);
+      setError(err.message || "Não foi possível entrar com o Google.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const googleEnabled = !!import.meta.env.VITE_GOOGLE_CLIENT_ID && !Capacitor.isNativePlatform();
 
   return (
     <Card className="w-full max-w-sm shadow-lg mx-4">
@@ -88,6 +106,24 @@ export function LoginForm() {
             {isLoading ? "A entrar..." : "Entrar"}
           </Button>
         </form>
+
+        {googleEnabled && (
+          <>
+            <div className="relative my-4">
+              <div className="absolute inset-0 flex items-center">
+                <span className="w-full border-t" />
+              </div>
+              <div className="relative flex justify-center text-xs uppercase">
+                <span className="bg-card px-2 text-muted-foreground">ou</span>
+              </div>
+            </div>
+            <GoogleSignInButton
+              onCredential={handleGoogleCredential}
+              onError={(e) => setError(e?.message || "Falha ao carregar o Google.")}
+              text="signin_with"
+            />
+          </>
+        )}
       </CardContent>
       <CardFooter className="justify-center text-sm">
         <p className="text-muted-foreground">

@@ -103,6 +103,27 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  const loginWithGoogle = async (idToken) => {
+    try {
+      await authService.loginWithGoogle(idToken);
+      console.log('✅ [AuthContext] Login com Google bem-sucedido');
+
+      // Atualiza o contexto após login
+      await fetchAndSetUser();
+
+      // FCM: solicita permissão e salva token — falha nunca quebra o login
+      try {
+        const fcmToken = await requestNotificationPermission();
+        if (fcmToken) await saveFcmToken(fcmToken, CLIENT_API_URL, createAuthHeaders());
+      } catch (fcmErr) {
+        console.warn('FCM pós-login Google error (ignorado):', fcmErr);
+      }
+    } catch (error) {
+      console.error("❌ [AuthContext] Erro no login com Google:", error);
+      throw error;
+    }
+  };
+
   const logout = () => {
     authService.logout();
     setUser(null);
@@ -114,6 +135,7 @@ export const AuthProvider = ({ children }) => {
     isAuthenticated: !!user,
     isLoading,
     login,
+    loginWithGoogle,
     logout,
     refreshUser: fetchAndSetUser,
   };
