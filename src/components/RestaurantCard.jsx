@@ -152,7 +152,7 @@ export function RestaurantCard({ restaurant }) {
             <div className="flex items-center gap-1 bg-orange-50 px-2 py-1 rounded-full shrink-0">
               <Star className="w-4 h-4 fill-orange-400 text-orange-400" />
               <span className="font-bold text-sm text-orange-600">
-                {parseFloat(ratingValue).toFixed(1)}
+                {Number(ratingValue) > 0 ? parseFloat(ratingValue).toFixed(1) : 'Novo'}
               </span>
               {totalReviews > 0 && (
                 <span className="text-xs text-gray-500 ml-1">
