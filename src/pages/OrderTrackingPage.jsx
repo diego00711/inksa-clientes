@@ -256,6 +256,19 @@ export function OrderTrackingPage() {
 
   useEffect(() => { fetchOrder(); }, [fetchOrder]);
 
+  // Atualização periódica (polling) do status. O realtime abaixo depende de RLS
+  // e de o cliente estar autenticado no supabase-js; como aqui a auth é via
+  // backend (o supabase-js roda anônimo), os eventos de `orders` podem não
+  // chegar — e o cliente ficava tendo que sair e voltar pra ver o status mudar.
+  // O polling garante o avanço sozinho. Para quando entregue/falhou.
+  useEffect(() => {
+    if (currentStage >= 4 || order?.status === 'delivery_failed') return;
+    const id = setInterval(fetchOrder, 15000);
+    const onVis = () => { if (document.visibilityState === 'visible') fetchOrder(); };
+    document.addEventListener('visibilitychange', onVis);
+    return () => { clearInterval(id); document.removeEventListener('visibilitychange', onVis); };
+  }, [fetchOrder, currentStage, order?.status]);
+
   // Realtime: order status
   useEffect(() => {
     if (!orderId) return;
@@ -499,12 +512,19 @@ export function OrderTrackingPage() {
           <div className="bg-white rounded-2xl shadow-md p-5 mb-5 border border-gray-100">
             <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3">Seu pedido</p>
             <div className="space-y-2">
-              {order.items.map((item, i) => (
-                <div key={i} className="flex justify-between text-sm text-gray-700">
-                  <span>{item.quantity}× {item.name}</span>
-                  <span className="font-semibold">R$ {(+item.price * item.quantity).toFixed(2)}</span>
-                </div>
-              ))}
+              {order.items.map((item, i) => {
+                // O pedido grava os itens como {title, unit_price, quantity} —
+                // ler item.name/item.price dava nome em branco e "R$ NaN".
+                const nome = item.title || item.name || item.product_name || 'Item';
+                const qtd = Number(item.quantity ?? 1) || 1;
+                const unit = Number(item.unit_price ?? item.price ?? 0) || 0;
+                return (
+                  <div key={i} className="flex justify-between gap-2 text-sm text-gray-700">
+                    <span className="min-w-0 break-words">{qtd}× {nome}</span>
+                    <span className="font-semibold whitespace-nowrap">R$ {(unit * qtd).toFixed(2)}</span>
+                  </div>
+                );
+              })}
               <div className="border-t pt-2 flex justify-between font-bold text-gray-800">
                 <span>Total</span>
                 <span>R$ {(+order.total_amount || 0).toFixed(2)}</span>
