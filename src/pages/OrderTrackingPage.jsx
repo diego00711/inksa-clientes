@@ -507,31 +507,55 @@ export function OrderTrackingPage() {
           <Timeline currentStage={currentStage} />
         </div>
 
-        {/* Order summary */}
-        {order?.items?.length > 0 && (
-          <div className="bg-white rounded-2xl shadow-md p-5 mb-5 border border-gray-100">
-            <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3">Seu pedido</p>
-            <div className="space-y-2">
-              {order.items.map((item, i) => {
-                // O pedido grava os itens como {title, unit_price, quantity} —
-                // ler item.name/item.price dava nome em branco e "R$ NaN".
-                const nome = item.title || item.name || item.product_name || 'Item';
-                const qtd = Number(item.quantity ?? 1) || 1;
-                const unit = Number(item.unit_price ?? item.price ?? 0) || 0;
-                return (
-                  <div key={i} className="flex justify-between gap-2 text-sm text-gray-700">
-                    <span className="min-w-0 break-words">{qtd}× {nome}</span>
-                    <span className="font-semibold whitespace-nowrap">R$ {(unit * qtd).toFixed(2)}</span>
+        {/* Order summary — separa os produtos da taxa de entrega (padrão iFood):
+            mais claro e igualmente transparente. A taxa aparece rotulada, não
+            como um item "1× Taxa de Entrega" (que confundia). Os itens são
+            gravados como {title, unit_price, quantity}. */}
+        {order?.items?.length > 0 && (() => {
+          const isFee = (it) =>
+            !it.menu_item_id && /taxa|entrega|frete/i.test(it.title || it.name || '');
+          const lineTotal = (it) =>
+            (Number(it.unit_price ?? it.price ?? 0) || 0) * (Number(it.quantity ?? 1) || 1);
+          const produtos = order.items.filter((it) => !isFee(it));
+          const subtotal = produtos.reduce((s, it) => s + lineTotal(it), 0);
+          const feeFromItems = order.items.filter(isFee).reduce((s, it) => s + lineTotal(it), 0);
+          const deliveryFee = Number.isFinite(+order.delivery_fee) && +order.delivery_fee > 0
+            ? +order.delivery_fee
+            : feeFromItems;
+          const total = +order.total_amount || (subtotal + deliveryFee);
+          return (
+            <div className="bg-white rounded-2xl shadow-md p-5 mb-5 border border-gray-100">
+              <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3">Seu pedido</p>
+              <div className="space-y-2">
+                {produtos.map((item, i) => {
+                  const nome = item.title || item.name || item.product_name || 'Item';
+                  const qtd = Number(item.quantity ?? 1) || 1;
+                  return (
+                    <div key={i} className="flex justify-between gap-2 text-sm text-gray-700">
+                      <span className="min-w-0 break-words">{qtd}× {nome}</span>
+                      <span className="font-semibold whitespace-nowrap">R$ {lineTotal(item).toFixed(2)}</span>
+                    </div>
+                  );
+                })}
+
+                <div className="border-t pt-2 flex justify-between text-sm text-gray-600">
+                  <span>Subtotal</span>
+                  <span>R$ {subtotal.toFixed(2)}</span>
+                </div>
+                {deliveryFee > 0 && (
+                  <div className="flex justify-between text-sm text-gray-600">
+                    <span>Taxa de entrega</span>
+                    <span>R$ {deliveryFee.toFixed(2)}</span>
                   </div>
-                );
-              })}
-              <div className="border-t pt-2 flex justify-between font-bold text-gray-800">
-                <span>Total</span>
-                <span>R$ {(+order.total_amount || 0).toFixed(2)}</span>
+                )}
+                <div className="border-t pt-2 flex justify-between font-bold text-gray-800">
+                  <span>Total</span>
+                  <span>R$ {total.toFixed(2)}</span>
+                </div>
               </div>
             </div>
-          </div>
-        )}
+          );
+        })()}
 
         {/* Rate button */}
         {isDelivered && (
