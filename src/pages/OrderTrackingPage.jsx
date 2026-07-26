@@ -465,6 +465,25 @@ export function OrderTrackingPage() {
         {/* Driver card */}
         <DriverCard driver={driver} />
 
+        {/* Código de entrega — o cliente mostra ao entregador na hora da entrega
+            pra confirmar o recebimento. Fica aqui na própria tela de
+            acompanhamento pra não precisar sair pra outra tela. Só aparece
+            enquanto o pedido está em andamento (some depois de entregue/falhado)
+            e quando o backend devolve o código (só pro dono do pedido). */}
+        {order?.delivery_code && !isDelivered && !isFailed && (
+          <div className="bg-gradient-to-br from-orange-500 to-red-500 rounded-2xl p-5 mb-5 text-white text-center shadow-lg shadow-orange-200">
+            <p className="text-xs font-bold uppercase tracking-widest opacity-90 mb-1">
+              🔑 Código de entrega
+            </p>
+            <p className="text-4xl font-black tracking-[0.35em] pl-[0.35em] my-1">
+              {String(order.delivery_code).toUpperCase()}
+            </p>
+            <p className="text-xs opacity-90 mt-1">
+              Mostre este código ao entregador para confirmar o recebimento.
+            </p>
+          </div>
+        )}
+
         {/* Localização do entregador — card informativo quando em rota */}
         {delivererLocation?.latitude && delivererLocation?.longitude && (
           <div className="bg-orange-50 border border-orange-200 rounded-2xl p-4 mb-5 flex items-center gap-3">
