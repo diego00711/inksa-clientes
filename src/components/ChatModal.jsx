@@ -146,8 +146,12 @@ export default function ChatModal({ orderId, isOpen, onClose, senderType = 'clie
         <div ref={bottomRef} />
       </div>
 
-      {/* Input area */}
-      <div className="border-t p-3 flex gap-2 bg-white">
+      {/* Input area — piso de padding embaixo pra não ficar atrás da barra de
+          navegação do Android (env volta 0 na navegação de 3 botões). */}
+      <div
+        className="border-t px-3 pt-3 flex gap-2 bg-white"
+        style={{ paddingBottom: 'max(2rem, calc(0.75rem + env(safe-area-inset-bottom)))' }}
+      >
         <input
           value={newMessage}
           onChange={e => setNewMessage(e.target.value)}

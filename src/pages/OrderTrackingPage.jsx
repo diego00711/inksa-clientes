@@ -27,15 +27,18 @@ function parseCoord(...candidates) {
 const STAGES = [
   { key: "pending",   label: "Pedido recebido",       emoji: "✅", icon: CheckCircle, msg: "Restaurante recebeu seu pedido." },
   { key: "preparing", label: "Restaurante preparando", emoji: "🍳", icon: ChefHat,     msg: "A cozinha está no trabalho!" },
-  { key: "ready",     label: "Saiu para entrega",      emoji: "🛵", icon: Bike,        msg: "A caminho de você!" },
-  { key: "delivering",label: "Entregador próximo",     emoji: "📍", icon: MapPin,      msg: "Seu entregador está quase lá!" },
-  { key: "delivered", label: "Entregue!",              emoji: "🎉", icon: Package,     msg: "Aproveite sua refeição! 😊" },
+  { key: "ready",     label: "Pedido pronto",          emoji: "📦", icon: Package,     msg: "Pronto! Aguardando um entregador retirar." },
+  { key: "delivering",label: "Saiu para entrega",      emoji: "🛵", icon: Bike,        msg: "Seu pedido está a caminho de você!" },
+  { key: "delivered", label: "Entregue!",              emoji: "🎉", icon: MapPin,      msg: "Aproveite sua refeição! 😊" },
 ];
 
+// 'ready' = restaurante marcou pronto, mas AINDA NÃO há entregador → estágio
+// "Pedido pronto" (não "Saiu para entrega", que só vale quando o entregador
+// realmente retirou e está indo, status 'delivering'/'picked_up'/'on_the_way').
 const STATUS_TO_STAGE = {
   pending: 0, accepted: 1, preparing: 1,
   ready: 2, accepted_by_delivery: 2,
-  delivering: 3, delivered: 4,
+  delivering: 3, picked_up: 3, on_the_way: 3, delivered: 4,
 };
 
 // ─── Countdown ───────────────────────────────────────────────────────────────
@@ -495,8 +498,12 @@ export function OrderTrackingPage() {
           </div>
         )}
 
-        {/* Botão de chat com entregador */}
-        {['picked_up', 'on_the_way', 'delivering'].includes(order?.status) && (
+        {/* Botão de chat com entregador — aparece assim que há um entregador
+            atribuído (delivery_id) e o pedido ainda está em andamento. Antes só
+            aparecia em 'delivering', então o cliente não via o chat enquanto o
+            entregador estava indo buscar no restaurante (accepted_by_delivery),
+            mesmo o entregador já podendo mandar mensagem. */}
+        {order?.delivery_id && !isDelivered && !isFailed && (
           <button
             onClick={() => { setChatOpen(true); setChatUnread(0); }}
             className="w-full flex items-center justify-center gap-2 bg-white border-2 border-[#FF6F00] text-[#FF6F00] font-bold py-3 min-h-[44px] rounded-2xl mb-5 hover:bg-orange-50 transition-colors shadow-sm relative"
