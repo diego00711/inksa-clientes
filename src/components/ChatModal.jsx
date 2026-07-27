@@ -53,31 +53,32 @@ export default function ChatModal({ orderId, isOpen, onClose, senderType = 'clie
 
     fetchMessages();
 
-    if (!supabase) return;
-    const channel = supabase
-      .channel(`chat-${orderId}`)
-      .on('postgres_changes', {
-        event: 'INSERT',
-        schema: 'public',
-        table: 'chat_messages',
-        filter: `order_id=eq.${orderId}`,
-      }, (payload) => {
-        setMessages(prev => {
-          const updated = [...prev, payload.new];
-          // Only beep if message is from the other party
-          if (payload.new?.sender_type !== senderType) {
-            playBeep();
-            if (!isOpen) {
-              lastCountRef.current += 1;
-              onUnreadChange?.(lastCountRef.current);
-            }
-          }
-          return updated;
-        });
-      })
-      .subscribe();
+    // Polling: o realtime do Supabase não entrega aqui (chat_messages tem RLS
+    // ligada e sem policy pro anon do supabase-js), então a mensagem demorava.
+    // Busca a cada 3s enquanto o chat está aberto.
+    const pollId = setInterval(fetchMessages, 3000);
 
-    return () => { supabase.removeChannel(channel); };
+    let channel = null;
+    if (supabase) {
+      channel = supabase
+        .channel(`chat-${orderId}`)
+        .on('postgres_changes', {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'chat_messages',
+          filter: `order_id=eq.${orderId}`,
+        }, (payload) => {
+          setMessages(prev => {
+            if (prev.some(m => m.id === payload.new?.id)) return prev; // evita duplicar com o poll
+            const updated = [...prev, payload.new];
+            if (payload.new?.sender_type !== senderType) playBeep();
+            return updated;
+          });
+        })
+        .subscribe();
+    }
+
+    return () => { clearInterval(pollId); if (channel) supabase.removeChannel(channel); };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen, orderId]);
 
@@ -150,7 +151,7 @@ export default function ChatModal({ orderId, isOpen, onClose, senderType = 'clie
           navegação do Android (env volta 0 na navegação de 3 botões). */}
       <div
         className="border-t px-3 pt-3 flex gap-2 bg-white"
-        style={{ paddingBottom: 'max(2rem, calc(0.75rem + env(safe-area-inset-bottom)))' }}
+        style={{ paddingBottom: 'max(3rem, calc(0.75rem + env(safe-area-inset-bottom)))' }}
       >
         <input
           value={newMessage}

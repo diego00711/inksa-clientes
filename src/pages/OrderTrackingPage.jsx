@@ -272,6 +272,36 @@ export function OrderTrackingPage() {
     return () => { clearInterval(id); document.removeEventListener('visibilitychange', onVis); };
   }, [fetchOrder, currentStage, order?.status]);
 
+  // Aviso de nova mensagem do entregador (estilo WhatsApp) mesmo com o chat
+  // fechado: checa as mensagens a cada 8s; se chegou uma nova do entregador,
+  // acende o badge do botão "Falar com entregador". Usa o endpoint autenticado
+  // (o realtime do Supabase não entrega o chat aqui).
+  const lastChatIdRef = useRef(null);
+  useEffect(() => {
+    lastChatIdRef.current = null;
+    if (!orderId || !order?.delivery_id) return;
+    let alive = true;
+    const check = async () => {
+      try {
+        const res = await fetch(`${CLIENT_API_URL}/api/chat/${orderId}/messages`, { headers: createAuthHeaders() });
+        if (!alive || !res.ok) return;
+        const data = await res.json();
+        const list = Array.isArray(data) ? data : (data?.messages || data?.data || []);
+        if (!list.length) return;
+        const last = list[list.length - 1];
+        if (lastChatIdRef.current === null) { lastChatIdRef.current = last.id; return; }
+        if (last.id !== lastChatIdRef.current) {
+          lastChatIdRef.current = last.id;
+          const fromDriver = (last.sender_type || last.sender) === 'delivery';
+          if (fromDriver && !chatOpen) setChatUnread((n) => n + 1);
+        }
+      } catch { /* silencioso */ }
+    };
+    check();
+    const id = setInterval(check, 8000);
+    return () => { alive = false; clearInterval(id); };
+  }, [orderId, order?.delivery_id, chatOpen]);
+
   // Realtime: order status
   useEffect(() => {
     if (!orderId) return;
