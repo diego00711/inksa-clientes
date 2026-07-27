@@ -293,12 +293,23 @@ export function OrderTrackingPage() {
         if (last.id !== lastChatIdRef.current) {
           lastChatIdRef.current = last.id;
           const fromDriver = (last.sender_type || last.sender) === 'delivery';
-          if (fromDriver && !chatOpen) setChatUnread((n) => n + 1);
+          if (fromDriver && !chatOpen) {
+            setChatUnread((n) => n + 1);
+            try {
+              const ctx = new (window.AudioContext || window.webkitAudioContext)();
+              const o = ctx.createOscillator(); const g = ctx.createGain();
+              o.connect(g); g.connect(ctx.destination);
+              o.frequency.value = 880; o.type = 'sine';
+              g.gain.setValueAtTime(0.2, ctx.currentTime);
+              g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.25);
+              o.start(); o.stop(ctx.currentTime + 0.25);
+            } catch { /* sem som se o browser bloquear */ }
+          }
         }
       } catch { /* silencioso */ }
     };
     check();
-    const id = setInterval(check, 8000);
+    const id = setInterval(check, 5000);
     return () => { alive = false; clearInterval(id); };
   }, [orderId, order?.delivery_id, chatOpen]);
 
