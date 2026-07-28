@@ -267,7 +267,7 @@ export function OrderTrackingPage() {
   useEffect(() => {
     if (currentStage >= 4 || order?.status === 'delivery_failed'
         || ['cancelled', 'canceled'].includes(order?.status)) return;
-    const id = setInterval(fetchOrder, 15000);
+    const id = setInterval(fetchOrder, 6000);
     const onVis = () => { if (document.visibilityState === 'visible') fetchOrder(); };
     document.addEventListener('visibilitychange', onVis);
     return () => { clearInterval(id); document.removeEventListener('visibilitychange', onVis); };
