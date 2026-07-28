@@ -265,7 +265,8 @@ export function OrderTrackingPage() {
   // chegar — e o cliente ficava tendo que sair e voltar pra ver o status mudar.
   // O polling garante o avanço sozinho. Para quando entregue/falhou.
   useEffect(() => {
-    if (currentStage >= 4 || order?.status === 'delivery_failed') return;
+    if (currentStage >= 4 || order?.status === 'delivery_failed'
+        || ['cancelled', 'canceled'].includes(order?.status)) return;
     const id = setInterval(fetchOrder, 15000);
     const onVis = () => { if (document.visibilityState === 'visible') fetchOrder(); };
     document.addEventListener('visibilitychange', onVis);
@@ -422,6 +423,64 @@ export function OrderTrackingPage() {
             className="mt-4 px-6 py-2 bg-orange-500 text-white rounded-full font-semibold"
           >
             Voltar
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // Pedido cancelado/recusado (restaurante não aceitou, pagamento não confirmou,
+  // ou o próprio cliente cancelou): tela dedicada em vez de deixar a linha do
+  // tempo travada em "Pedido recebido" (ou pior, quebrar e ficar branca).
+  const isCancelled = ['cancelled', 'canceled'].includes(order?.status);
+  if (isCancelled) {
+    const reason = String(order?.cancellation_reason || '');
+    const isPaymentIssue = /payment|pagamento|expired|overdue|rejeit|reject/i.test(reason);
+    const wasPaidOnline = order?.status_pagamento === 'approved';
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <div className="sticky top-0 z-10 bg-white shadow-sm px-4 py-4 flex items-center gap-3">
+          <button onClick={() => navigate(-1)} className="p-2 rounded-full hover:bg-gray-100 min-h-[44px] min-w-[44px] flex items-center justify-center">
+            <ArrowLeft className="w-5 h-5 text-gray-700" />
+          </button>
+          <div>
+            <h1 className="font-bold text-gray-800 text-base">Acompanhar Pedido</h1>
+            <p className="text-xs text-gray-500 flex items-center gap-1">
+              <Clock className="w-3 h-3" />
+              #{orderId?.substring(0, 8).toUpperCase()}
+            </p>
+          </div>
+        </div>
+
+        <div className="p-4 max-w-md mx-auto">
+          <div className="bg-gradient-to-r from-red-500 to-rose-600 rounded-2xl p-6 text-white text-center mb-5 shadow-lg">
+            <div className="text-5xl mb-2">🚫</div>
+            <p className="text-xl sm:text-2xl font-black">
+              {isPaymentIssue ? 'Pedido não confirmado' : 'Pedido recusado'}
+            </p>
+            <p className="text-sm opacity-90 mt-2">
+              {isPaymentIssue
+                ? 'O pagamento não foi confirmado, então o pedido foi cancelado.'
+                : 'O restaurante não pôde aceitar seu pedido no momento. Sentimos muito pelo transtorno.'}
+            </p>
+            {wasPaidOnline && (
+              <p className="text-sm opacity-90 mt-2">
+                Como o pagamento já havia sido feito, o reembolso será processado automaticamente.
+              </p>
+            )}
+          </div>
+
+          <button
+            onClick={() => navigate('/')}
+            className="w-full py-3 bg-orange-500 hover:bg-orange-600 text-white rounded-xl font-bold transition-colors"
+          >
+            Voltar ao início
+          </button>
+          <button
+            onClick={() => navigate('/meus-pedidos')}
+            className="w-full mt-3 py-3 border border-gray-300 text-gray-700 rounded-xl font-semibold hover:bg-gray-50 transition-colors"
+          >
+            Ver meus pedidos
           </button>
         </div>
       </div>

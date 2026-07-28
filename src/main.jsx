@@ -4,6 +4,7 @@ import App from './App.jsx'
 import './index.css'
 import { BrowserRouter } from 'react-router-dom'
 import { ConfirmProvider } from './components/ConfirmProvider.jsx'
+import ErrorBoundary from './components/ErrorBoundary.jsx'
 
 // 🚀 REGISTRO DO SERVICE WORKER - PWA (só no build de produção: em dev o SW
 // intercepta os fetches do Vite/mocks e causa "Failed to fetch" fantasma —
@@ -38,10 +39,12 @@ window.addEventListener('appinstalled', (evt) => {
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
-    <BrowserRouter>
-      <ConfirmProvider>
-        <App />
-      </ConfirmProvider>
-    </BrowserRouter>
+    <ErrorBoundary>
+      <BrowserRouter>
+        <ConfirmProvider>
+          <App />
+        </ConfirmProvider>
+      </BrowserRouter>
+    </ErrorBoundary>
   </React.StrictMode>,
 )
