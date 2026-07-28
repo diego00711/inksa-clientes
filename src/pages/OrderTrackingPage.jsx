@@ -429,14 +429,26 @@ export function OrderTrackingPage() {
     );
   }
 
-  // Pedido cancelado/recusado (restaurante não aceitou, pagamento não confirmou,
-  // ou o próprio cliente cancelou): tela dedicada em vez de deixar a linha do
-  // tempo travada em "Pedido recebido" (ou pior, quebrar e ficar branca).
+  // Estados TERMINAIS negativos: recusado/cancelado (restaurante não aceitou,
+  // pagamento não confirmou, cliente cancelou) OU entrega não realizada
+  // (delivery_failed). Tela dedicada em vez de deixar a linha do tempo travada
+  // em "Pedido recebido" com o banner por cima (confuso), ou quebrar e ficar
+  // branca.
   const isCancelled = ['cancelled', 'canceled'].includes(order?.status);
-  if (isCancelled) {
+  const isDeliveryFailed = order?.status === 'delivery_failed';
+  if (isCancelled || isDeliveryFailed) {
     const reason = String(order?.cancellation_reason || '');
-    const isPaymentIssue = /payment|pagamento|expired|overdue|rejeit|reject/i.test(reason);
+    const isPaymentIssue = isCancelled && /payment|pagamento|expired|overdue|rejeit|reject/i.test(reason);
     const wasPaidOnline = order?.status_pagamento === 'approved';
+    const headline = isDeliveryFailed
+      ? 'Entrega não realizada'
+      : isPaymentIssue ? 'Pedido não confirmado' : 'Pedido recusado';
+    const message = isDeliveryFailed
+      ? 'Tivemos um problema ao entregar seu pedido. Nossa equipe está cuidando do caso.'
+      : isPaymentIssue
+        ? 'O pagamento não foi confirmado, então o pedido foi cancelado.'
+        : 'O restaurante não pôde aceitar seu pedido no momento. Sentimos muito pelo transtorno.';
+    const emoji = isDeliveryFailed ? '⚠️' : '🚫';
     return (
       <div className="min-h-screen bg-gray-50">
         <div className="sticky top-0 z-10 bg-white shadow-sm px-4 py-4 flex items-center gap-3">
@@ -454,15 +466,9 @@ export function OrderTrackingPage() {
 
         <div className="p-4 max-w-md mx-auto">
           <div className="bg-gradient-to-r from-red-500 to-rose-600 rounded-2xl p-6 text-white text-center mb-5 shadow-lg">
-            <div className="text-5xl mb-2">🚫</div>
-            <p className="text-xl sm:text-2xl font-black">
-              {isPaymentIssue ? 'Pedido não confirmado' : 'Pedido recusado'}
-            </p>
-            <p className="text-sm opacity-90 mt-2">
-              {isPaymentIssue
-                ? 'O pagamento não foi confirmado, então o pedido foi cancelado.'
-                : 'O restaurante não pôde aceitar seu pedido no momento. Sentimos muito pelo transtorno.'}
-            </p>
+            <div className="text-5xl mb-2">{emoji}</div>
+            <p className="text-xl sm:text-2xl font-black">{headline}</p>
+            <p className="text-sm opacity-90 mt-2">{message}</p>
             {wasPaidOnline && (
               <p className="text-sm opacity-90 mt-2">
                 Como o pagamento já havia sido feito, o reembolso será processado automaticamente.
