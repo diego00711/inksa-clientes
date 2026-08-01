@@ -38,4 +38,9 @@
     <!-- Permissions -->
 
     <uses-permission android:name="android.permission.INTERNET" />
+    <!-- Localização: pro cliente usar "minha localização atual" no checkout
+         (Capacitor Geolocation / geolocation do WebView). Sem isto, o GPS no
+         app instalado não pega (no navegador funciona). Precisa de AAB novo. -->
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
 </manifest>
