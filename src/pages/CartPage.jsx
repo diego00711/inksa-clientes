@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
-import { ChevronLeft, ShoppingCart, PlusCircle, MinusCircle, Trash2, Loader2, MapPin, ChevronDown } from "lucide-react";
+import { ChevronLeft, ShoppingCart, PlusCircle, MinusCircle, Trash2, Loader2, MapPin, ChevronDown, LocateFixed, X } from "lucide-react";
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
 import { createPaymentPreference, calculateDeliveryFee } from '../services/orderService';
@@ -36,6 +36,10 @@ export function CartPage() {
   const [addresses, setAddresses] = useState([]);
   const [selectedAddressId, setSelectedAddressId] = useState(null);
   const [showAddressList, setShowAddressList] = useState(false);
+  // Localização atual (GPS): pro cliente pedir de onde está, mesmo sem endereço
+  // salvo ali (ex.: está em outra cidade). Quando setada, tem prioridade.
+  const [currentLoc, setCurrentLoc] = useState(null); // {lat, lng, address}
+  const [locatingNow, setLocatingNow] = useState(false);
 
   // Payment method state
   const [paymentMethod, setPaymentMethod] = useState('pix');
@@ -83,13 +87,53 @@ export function CartPage() {
 
   const selectedAddress = addresses.find((a) => a.id === selectedAddressId) || null;
 
-  // Coordenadas e endereço de entrega: prioriza endereço salvo selecionado,
-  // com fallback para o endereço principal do perfil.
-  const deliveryLat = selectedAddress?.latitude ?? clientProfile?.latitude ?? clientProfile?.lat ?? 0;
-  const deliveryLng = selectedAddress?.longitude ?? clientProfile?.longitude ?? clientProfile?.lng ?? 0;
-  const deliveryAddressStr = selectedAddress
-    ? formatAddress(selectedAddress)
-    : (clientProfile?.address || clientProfile?.full_address || '');
+  // Coordenadas e endereço de entrega: LOCALIZAÇÃO ATUAL (GPS) tem prioridade;
+  // senão, endereço salvo selecionado; senão, endereço principal do perfil.
+  const deliveryLat = currentLoc?.lat ?? selectedAddress?.latitude ?? clientProfile?.latitude ?? clientProfile?.lat ?? 0;
+  const deliveryLng = currentLoc?.lng ?? selectedAddress?.longitude ?? clientProfile?.longitude ?? clientProfile?.lng ?? 0;
+  const deliveryAddressStr = currentLoc?.address
+    ?? (selectedAddress
+      ? formatAddress(selectedAddress)
+      : (clientProfile?.address || clientProfile?.full_address || ''));
+
+  // Pega a localização atual do aparelho (Capacitor no app, navegador no web) e
+  // faz reverse-geocode pra um endereço legível. Vira o destino da entrega.
+  const useCurrentLocation = async () => {
+    setLocatingNow(true);
+    try {
+      let coords;
+      try {
+        const { Geolocation } = await import('@capacitor/geolocation');
+        try { await Geolocation.requestPermissions(); } catch { /* web ignora */ }
+        const p = await Geolocation.getCurrentPosition({ enableHighAccuracy: true, timeout: 15000 });
+        coords = { lat: p.coords.latitude, lng: p.coords.longitude };
+      } catch {
+        coords = await new Promise((resolve, reject) => {
+          if (!navigator.geolocation) return reject(new Error('Seu aparelho não suporta localização.'));
+          navigator.geolocation.getCurrentPosition(
+            (p) => resolve({ lat: p.coords.latitude, lng: p.coords.longitude }),
+            (err) => reject(new Error(
+              err.code === 1 ? 'Permissão de localização negada. Habilite nas configurações.'
+              : err.code === 3 ? 'Tempo esgotado ao buscar o GPS. Tente de novo.'
+              : 'Não foi possível obter sua localização.')),
+            { enableHighAccuracy: true, timeout: 15000 },
+          );
+        });
+      }
+      let address = `Minha localização (${coords.lat.toFixed(5)}, ${coords.lng.toFixed(5)})`;
+      try {
+        const r = await fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${coords.lat}&lon=${coords.lng}`, { headers: { 'Accept-Language': 'pt-BR' } });
+        if (r.ok) { const j = await r.json(); if (j?.display_name) address = j.display_name; }
+      } catch { /* sem reverse-geocode -> usa as coords */ }
+      setCurrentLoc({ ...coords, address });
+      setShowAddressList(false);
+      addToast('success', 'Usando sua localização atual para a entrega.');
+    } catch (e) {
+      addToast('error', e?.message || 'Não foi possível obter sua localização.');
+    } finally {
+      setLocatingNow(false);
+    }
+  };
 
   // Fetch restaurant info to check accepts_cash
   useEffect(() => {
@@ -506,6 +550,35 @@ export function CartPage() {
                     </button>
                   </div>
                 )}
+              </div>
+            )}
+
+            {/* Usar localização atual (GPS) — pra pedir de onde está, mesmo sem
+                endereço salvo aqui (ex.: está em outra cidade). */}
+            <button
+              type="button"
+              onClick={useCurrentLocation}
+              disabled={locatingNow}
+              className="mt-2 w-full flex items-center justify-center gap-2 rounded-xl border border-orange-300 bg-orange-50 text-orange-700 text-sm font-semibold py-2.5 hover:bg-orange-100 disabled:opacity-60"
+            >
+              {locatingNow ? <Loader2 className="w-4 h-4 animate-spin" /> : <LocateFixed className="w-4 h-4" />}
+              {locatingNow ? 'Buscando GPS...' : 'Usar minha localização atual'}
+            </button>
+            {currentLoc && (
+              <div className="mt-2 flex items-start gap-2 rounded-xl bg-green-50 border border-green-200 p-3">
+                <MapPin className="w-4 h-4 text-green-600 mt-0.5 shrink-0" />
+                <div className="min-w-0 flex-1">
+                  <p className="text-xs font-bold text-green-800">Entregar na minha localização atual</p>
+                  <p className="text-xs text-green-700 break-words">{currentLoc.address}</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setCurrentLoc(null)}
+                  className="text-green-700 hover:text-green-900 shrink-0"
+                  aria-label="Voltar a usar endereço salvo"
+                >
+                  <X className="w-4 h-4" />
+                </button>
               </div>
             )}
           </div>
