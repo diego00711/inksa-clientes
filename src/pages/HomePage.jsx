@@ -393,6 +393,15 @@ export function HomePage() {
   }, []);
 
   // Fetch restaurants (paginado, com scroll infinito)
+  // Seletor de cidade: o cliente pode trocar pra ver restaurantes de OUTRA
+  // cidade cadastrada, sem ficar preso ao raio da localização atual.
+  const [cities, setCities] = useState([]);
+  const [selectedCity, setSelectedCity] = useState('');
+  const [showCityMenu, setShowCityMenu] = useState(false);
+  useEffect(() => {
+    RestaurantService.getCities().then((cs) => setCities(Array.isArray(cs) ? cs : [])).catch(() => {});
+  }, []);
+
   const PAGE_SIZE = 20;
   const [hasMore, setHasMore] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
@@ -401,14 +410,14 @@ export function HomePage() {
   const sentinelRef = useRef(null);
 
   const loadPage = useCallback(async (reset) => {
-    if (!location && !locationError) return;
+    if (!location && !locationError && !selectedCity) return;
     if (loadingRef.current) return;
     loadingRef.current = true;
     const offset = reset ? 0 : offsetRef.current;
     if (reset) setIsLoading(true); else setLoadingMore(true);
     try {
       const { items, hasMore: more } = await RestaurantService.getAllRestaurants(
-        location, { limit: PAGE_SIZE, offset }
+        location, { limit: PAGE_SIZE, offset, city: selectedCity }
       );
       setAllRestaurants((prev) => {
         const base = reset ? [] : prev;
@@ -427,7 +436,7 @@ export function HomePage() {
       setIsLoading(false);
       setLoadingMore(false);
     }
-  }, [location, locationError]);
+  }, [location, locationError, selectedCity]);
 
   const loadRestaurants = useCallback(() => loadPage(true), [loadPage]);
 
@@ -517,14 +526,48 @@ export function HomePage() {
       <div className="bg-white sticky top-[73px] z-40 border-b border-gray-100 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 py-3">
           <div className="flex items-center gap-3">
-            {/* Location */}
-            <button className="flex items-center gap-1.5 shrink-0 group">
-              <MapPin className="h-4 w-4 text-orange-500 shrink-0" />
-              <span className="text-sm font-bold text-gray-900 max-w-[120px] truncate">{city}</span>
-              <svg className="h-3 w-3 text-gray-400 group-hover:text-orange-500 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
-              </svg>
-            </button>
+            {/* Location / seletor de cidade */}
+            <div className="relative shrink-0">
+              <button
+                type="button"
+                onClick={() => setShowCityMenu((v) => !v)}
+                className="flex items-center gap-1.5 group"
+              >
+                <MapPin className="h-4 w-4 text-orange-500 shrink-0" />
+                <span className="text-sm font-bold text-gray-900 max-w-[120px] truncate">{selectedCity || city}</span>
+                <svg className={`h-3 w-3 text-gray-400 group-hover:text-orange-500 transition-transform ${showCityMenu ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                </svg>
+              </button>
+              {showCityMenu && (
+                <>
+                  <div className="fixed inset-0 z-40" onClick={() => setShowCityMenu(false)} />
+                  <div className="absolute left-0 top-full mt-2 z-50 w-56 max-h-72 overflow-y-auto bg-white rounded-xl shadow-xl border border-gray-100 py-1">
+                    <p className="px-3 py-1.5 text-[11px] font-bold text-gray-400 uppercase tracking-wide">Escolha a cidade</p>
+                    <button
+                      type="button"
+                      onClick={() => { setSelectedCity(''); setShowCityMenu(false); }}
+                      className={`w-full text-left px-3 py-2 text-sm hover:bg-orange-50 flex items-center gap-2 ${!selectedCity ? 'text-orange-600 font-semibold' : 'text-gray-700'}`}
+                    >
+                      <MapPin className="h-3.5 w-3.5 shrink-0" /> Perto de mim {!selectedCity && '✓'}
+                    </button>
+                    {cities.length === 0 && (
+                      <p className="px-3 py-2 text-xs text-gray-400">Nenhuma cidade cadastrada ainda.</p>
+                    )}
+                    {cities.map((c) => (
+                      <button
+                        key={c}
+                        type="button"
+                        onClick={() => { setSelectedCity(c); setShowCityMenu(false); }}
+                        className={`w-full text-left px-3 py-2 text-sm hover:bg-orange-50 truncate ${selectedCity === c ? 'text-orange-600 font-semibold' : 'text-gray-700'}`}
+                      >
+                        {c} {selectedCity === c && '✓'}
+                      </button>
+                    ))}
+                  </div>
+                </>
+              )}
+            </div>
 
             {/* Search */}
             <div className="flex-1 relative">

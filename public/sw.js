@@ -1,4 +1,4 @@
-const CACHE_NAME = 'inksa-cliente-v8';
+const CACHE_NAME = 'inksa-cliente-v9';
 
 self.addEventListener('install', (event) => {
   // Nao pre-cacheia o index: ele sera cacheado (atualizado) a cada navegacao com rede

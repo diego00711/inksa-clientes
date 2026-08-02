@@ -43,13 +43,15 @@ const processResponse = async (response) => {
 const RestaurantService = {
   // Lista restaurantes paginados — GET /api/restaurants/ (pública, sem auth)
   // Retorna { items, hasMore }.
-  getAllRestaurants: async (location, { limit = 20, offset = 0 } = {}) => {
+  getAllRestaurants: async (location, { limit = 20, offset = 0, city = '' } = {}) => {
     try {
       const params = new URLSearchParams();
       if (location?.latitude && location?.longitude) {
         params.append('user_lat', location.latitude);
         params.append('user_lon', location.longitude);
       }
+      // Cidade escolhida no seletor: o backend filtra por ela e ignora o raio.
+      if (city) params.append('city', city);
       params.append('limit', limit);
       params.append('offset', offset);
       const url = `${API_URL}/restaurants?${params.toString()}`;
@@ -61,6 +63,18 @@ const RestaurantService = {
     } catch (err) {
       console.error('❌ Erro ao listar restaurantes:', err);
       throw err;
+    }
+  },
+
+  // Cidades que têm restaurante — GET /api/restaurants/cities (pública). Alimenta
+  // o seletor de cidade do cliente. Fail-soft: erro -> lista vazia.
+  getCities: async () => {
+    try {
+      const response = await apiFetch(`${API_URL}/restaurants/cities`);
+      const data = await processResponse(response);
+      return Array.isArray(data) ? data : (data?.data || []);
+    } catch {
+      return [];
     }
   },
 
