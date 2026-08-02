@@ -48,24 +48,6 @@ const FALLBACK_BANNERS = [
   },
 ];
 
-const CATEGORY_OPTIONS = [
-  { key: "Todos",      emoji: "🏠", label: "Todos",      bg: "bg-orange-100", text: "text-orange-700", activeBg: "bg-orange-500" },
-  { key: "Pizza",      emoji: "🍕", label: "Pizza",      bg: "bg-red-100",    text: "text-red-700",    activeBg: "bg-red-500" },
-  { key: "Hambúrguer", emoji: "🍔", label: "Hambúrguer", bg: "bg-yellow-100", text: "text-yellow-700", activeBg: "bg-yellow-500" },
-  { key: "Hamburguer", emoji: "🍔", label: "Hambúrguer", bg: "bg-yellow-100", text: "text-yellow-700", activeBg: "bg-yellow-500" },
-  { key: "Japonesa",   emoji: "🍣", label: "Japonesa",   bg: "bg-pink-100",   text: "text-pink-700",   activeBg: "bg-pink-500" },
-  { key: "Sushi",      emoji: "🍣", label: "Sushi",      bg: "bg-pink-100",   text: "text-pink-700",   activeBg: "bg-pink-500" },
-  { key: "Mexicana",   emoji: "🌮", label: "Mexicana",   bg: "bg-green-100",  text: "text-green-700",  activeBg: "bg-green-500" },
-  { key: "Saudável",   emoji: "🥗", label: "Saudável",   bg: "bg-lime-100",   text: "text-lime-700",   activeBg: "bg-lime-500" },
-  { key: "Sobremesa",  emoji: "🍰", label: "Sobremesa",  bg: "bg-purple-100", text: "text-purple-700", activeBg: "bg-purple-500" },
-  { key: "Café",       emoji: "☕", label: "Café",       bg: "bg-amber-100",  text: "text-amber-700",  activeBg: "bg-amber-500" },
-  { key: "Frango",     emoji: "🍗", label: "Frango",     bg: "bg-orange-100", text: "text-orange-700", activeBg: "bg-orange-500" },
-  { key: "Lanches",    emoji: "🥪", label: "Lanches",    bg: "bg-teal-100",   text: "text-teal-700",   activeBg: "bg-teal-500" },
-  { key: "Italiana",   emoji: "🍝", label: "Italiana",   bg: "bg-red-100",    text: "text-red-700",    activeBg: "bg-red-500" },
-  { key: "Brasileira", emoji: "🍖", label: "Brasileira", bg: "bg-yellow-100", text: "text-yellow-700", activeBg: "bg-yellow-500" },
-  { key: "Mercado",    emoji: "🛒", label: "Mercado",    bg: "bg-blue-100",   text: "text-blue-700",   activeBg: "bg-blue-500" },
-];
-
 const FAVORITES_KEY = "inksa.favorites";
 
 // Só entram filtros com dado real por trás. 'Entrega rápida' e 'Promoção'
@@ -236,51 +218,55 @@ function BannerCarousel({ banners }) {
   );
 }
 
-function CategoryPills({ apiCategories, selected, onSelect }) {
-  // Merge predefined categories with API ones, deduplicate
-  const seen = new Set();
-  const allOptions = CATEGORY_OPTIONS.filter((c) => {
-    if (seen.has(c.key)) return false;
-    seen.add(c.key);
-    return true;
-  });
+// Segmentos (verticais) — eixo de expansão. Só aparecem no topo quando houver
+// 2+ segmentos com parceiro (hoje, só restaurante → a barra nem aparece).
+const SEGMENTS = [
+  { value: "restaurante",  emoji: "🍽️", label: "Restaurantes" },
+  { value: "farmacia",     emoji: "💊", label: "Farmácia" },
+  { value: "mercado",      emoji: "🛒", label: "Mercado" },
+  { value: "padaria",      emoji: "🥖", label: "Padaria" },
+  { value: "pet",          emoji: "🐾", label: "Pet" },
+  { value: "conveniencia", emoji: "🏪", label: "Conveniência" },
+  { value: "bebidas",      emoji: "🍺", label: "Bebidas" },
+];
 
-  // Add any API categories not in our predefined list
-  apiCategories.forEach((cat) => {
-    if (!seen.has(cat)) {
-      seen.add(cat);
-      allOptions.push({ key: cat, emoji: "🍽️", label: cat, bg: "bg-gray-100", text: "text-gray-700", activeBg: "bg-gray-600" });
-    }
-  });
-
-  // Only show categories that have restaurants
-  const visible = allOptions.filter((c) => c.key === "Todos" || apiCategories.includes(c.key));
-
+function SegmentChips({ segments, selected, onSelect }) {
+  const opts = [{ value: "Todos", emoji: "🏠", label: "Todos" }, ...segments];
   return (
     <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide -mx-4 px-4">
-      {visible.map((cat) => {
-        const isActive = selected === cat.key;
+      {opts.map((s) => {
+        const isActive = selected === s.value;
         return (
           <button
-            key={cat.key}
-            onClick={() => onSelect(cat.key)}
-            className={`flex flex-col items-center gap-1.5 shrink-0 transition-all duration-200 ${
-              isActive ? "scale-105" : "hover:scale-105"
-            }`}
+            key={s.value}
+            onClick={() => onSelect(s.value)}
+            className={`flex flex-col items-center gap-1.5 shrink-0 transition-all duration-200 ${isActive ? "scale-105" : "hover:scale-105"}`}
           >
-            <div className={`w-14 h-14 rounded-2xl flex items-center justify-center text-2xl shadow-sm transition-all duration-200 ${
-              isActive ? `${cat.activeBg} shadow-md` : `${cat.bg}`
-            }`}>
-              {cat.emoji}
+            <div className={`w-14 h-14 rounded-2xl flex items-center justify-center text-2xl shadow-sm transition-all duration-200 ${isActive ? "bg-orange-500 shadow-md" : "bg-orange-100"}`}>
+              {s.emoji}
             </div>
-            <span className={`text-xs font-semibold whitespace-nowrap transition-colors ${
-              isActive ? "text-orange-600" : "text-gray-600"
-            }`}>
-              {cat.label}
+            <span className={`text-xs font-semibold whitespace-nowrap transition-colors ${isActive ? "text-orange-600" : "text-gray-600"}`}>
+              {s.label}
             </span>
           </button>
         );
       })}
+    </div>
+  );
+}
+
+function CuisineDropdown({ label, options, selected, onSelect }) {
+  return (
+    <div className="flex items-center gap-2">
+      <span className="text-sm font-semibold text-gray-700 shrink-0">{label}:</span>
+      <select
+        value={selected}
+        onChange={(e) => onSelect(e.target.value)}
+        className="flex-1 min-w-0 px-3 py-2 text-sm border border-gray-200 rounded-xl bg-white shadow-sm focus:outline-none focus:ring-2 focus:ring-orange-400"
+      >
+        <option value="Todos">Todos</option>
+        {options.map((o) => <option key={o} value={o}>{o}</option>)}
+      </select>
     </div>
   );
 }
@@ -363,8 +349,8 @@ export function HomePage() {
   const [banners, setBanners] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState("Todos");
-  const [apiCategories, setApiCategories] = useState([]);
+  const [selectedSegment, setSelectedSegment] = useState("Todos");
+  const [selectedCuisine, setSelectedCuisine] = useState("Todos");
   const [mounted, setMounted] = useState(false);
   const [quickFilters, setQuickFilters] = useState([]);
 
@@ -426,8 +412,6 @@ export function HomePage() {
         const base = reset ? [] : prev;
         const seen = new Set(base.map((r) => r.id));
         const merged = [...base, ...items.filter((r) => !seen.has(r.id))];
-        const cats = [...new Set(merged.map((r) => r.category).filter(Boolean))];
-        setApiCategories(cats);
         return merged;
       });
       offsetRef.current = offset + items.length;
@@ -474,14 +458,40 @@ export function HomePage() {
     return () => supabase.removeChannel(channel);
   }, []);
 
+  // Segmentos presentes nos restaurantes carregados (barra só aparece se 2+).
+  const segmentsPresent = useMemo(() => {
+    const found = new Set(allRestaurants.map((r) => r.segment || 'restaurante'));
+    return SEGMENTS.filter((s) => found.has(s.value));
+  }, [allRestaurants]);
+
+  // Tipos (cozinha etc.) disponíveis dentro do segmento selecionado.
+  const cuisineOptions = useMemo(() => {
+    const set = new Set();
+    allRestaurants.forEach((r) => {
+      if (selectedSegment !== 'Todos' && (r.segment || 'restaurante') !== selectedSegment) return;
+      (r.cuisine_type || '').split(',').map((s) => s.trim()).filter(Boolean).forEach((t) => set.add(t));
+    });
+    return [...set].sort((a, b) => a.localeCompare(b, 'pt-BR'));
+  }, [allRestaurants, selectedSegment]);
+
+  // Ao trocar de segmento, o tipo volta pra "Todos" (as opções mudam).
+  useEffect(() => { setSelectedCuisine('Todos'); }, [selectedSegment]);
+
+  // Rótulo do dropdown: "Tipo de cozinha" para restaurante, "Tipo" pros demais.
+  const cuisineLabel = (selectedSegment === 'restaurante' || selectedSegment === 'Todos')
+    ? 'Tipo de cozinha' : 'Tipo';
+
   // Filters + Quick filters
   const filteredRestaurants = useMemo(() => {
     const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
     let list = allRestaurants.filter((r) => {
       const name = (r.restaurant_name || r.name || '').toLowerCase();
       const matchSearch = name.includes(searchTerm.toLowerCase());
-      const matchCat = selectedCategory === 'Todos' || r.category === selectedCategory;
-      if (!matchSearch || !matchCat) return false;
+      const matchSegment = selectedSegment === 'Todos' || (r.segment || 'restaurante') === selectedSegment;
+      // "contém": um parceiro com "Pizza, Lanches" cai nos dois filtros.
+      const cuisineTokens = (r.cuisine_type || '').split(',').map((s) => s.trim());
+      const matchCuisine = selectedCuisine === 'Todos' || cuisineTokens.includes(selectedCuisine);
+      if (!matchSearch || !matchSegment || !matchCuisine) return false;
 
       if (quickFilters.includes('new')) {
         const created = r.created_at ? new Date(r.created_at) : null;
@@ -502,7 +512,7 @@ export function HomePage() {
     }
 
     return list;
-  }, [allRestaurants, searchTerm, selectedCategory, quickFilters]);
+  }, [allRestaurants, searchTerm, selectedSegment, selectedCuisine, quickFilters]);
 
   // Favorites
   const favoriteIds = getFavoriteIds();
@@ -616,11 +626,19 @@ export function HomePage() {
             mounted ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
           }`}
         >
-          <CategoryPills
-            apiCategories={apiCategories}
-            selected={selectedCategory}
-            onSelect={setSelectedCategory}
-          />
+          {segmentsPresent.length >= 2 && (
+            <SegmentChips segments={segmentsPresent} selected={selectedSegment} onSelect={setSelectedSegment} />
+          )}
+          {cuisineOptions.length > 0 && (
+            <div className={segmentsPresent.length >= 2 ? "mt-3" : ""}>
+              <CuisineDropdown
+                label={cuisineLabel}
+                options={cuisineOptions}
+                selected={selectedCuisine}
+                onSelect={setSelectedCuisine}
+              />
+            </div>
+          )}
         </div>
 
         {/* ── 3b. Quick Filters ───────────────────────────────────────────── */}
@@ -665,7 +683,7 @@ export function HomePage() {
               </p>
               {searchTerm && (
                 <button
-                  onClick={() => { setSearchTerm(""); setSelectedCategory("Todos"); }}
+                  onClick={() => { setSearchTerm(""); setSelectedSegment("Todos"); setSelectedCuisine("Todos"); }}
                   className="mt-4 px-5 py-2 min-h-[44px] bg-orange-500 text-white text-sm font-semibold rounded-full hover:bg-orange-600 transition-colors"
                 >
                   Limpar filtros
