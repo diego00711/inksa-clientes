@@ -7,7 +7,7 @@ import { useState } from 'react';
 const STEPS = [
   {
     title: 'Endereço de entrega',
-    desc: 'Defina seu endereço para ver restaurantes próximos',
+    desc: 'Defina seu endereço para ver lojas próximas',
   },
   {
     title: 'Restaurantes',

@@ -111,7 +111,7 @@ export function RestaurantList({
           <ChefHat className="h-8 w-8 text-orange-500" />
         </div>
         <div className="text-center space-y-2">
-          <h3 className="text-lg font-semibold text-gray-900">Nenhum restaurante encontrado</h3>
+          <h3 className="text-lg font-semibold text-gray-900">Nenhuma loja encontrada</h3>
           <p className="text-gray-600 max-w-md">
             Não há restaurantes disponíveis na sua região no momento. Tente expandir a área de busca.
           </p>

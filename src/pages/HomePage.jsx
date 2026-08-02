@@ -481,6 +481,11 @@ export function HomePage() {
   const cuisineLabel = (selectedSegment === 'restaurante' || selectedSegment === 'Todos')
     ? 'Tipo de cozinha' : 'Tipo';
 
+  // Título da lista: genérico ("Lojas próximas") ou o nome do segmento escolhido.
+  const listTitle = selectedSegment === 'Todos'
+    ? 'Lojas próximas'
+    : (SEGMENTS.find((s) => s.value === selectedSegment)?.label || 'Lojas próximas');
+
   // Filters + Quick filters
   const filteredRestaurants = useMemo(() => {
     const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
@@ -588,7 +593,7 @@ export function HomePage() {
                 type="search"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                placeholder="Buscar restaurantes ou pratos..."
+                placeholder="Buscar lojas ou produtos..."
                 className="w-full pl-9 pr-4 py-2.5 text-base bg-gray-100 hover:bg-gray-50 focus:bg-white border border-transparent focus:border-orange-300 focus:ring-2 focus:ring-orange-100 rounded-xl outline-none transition-all placeholder-gray-400"
               />
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
@@ -657,7 +662,7 @@ export function HomePage() {
           }`}
         >
           <SectionHeader
-            title="Restaurantes Próximos"
+            title={listTitle}
             subtitle={
               locationLoading
                 ? "Obtendo sua localização..."
@@ -677,9 +682,9 @@ export function HomePage() {
           ) : filteredRestaurants.length === 0 ? (
             <div className="text-center py-16 bg-white rounded-2xl border border-gray-100 shadow-sm">
               <div className="text-5xl mb-4">🍽️</div>
-              <p className="text-gray-700 font-semibold text-lg">Nenhum restaurante encontrado</p>
+              <p className="text-gray-700 font-semibold text-lg">Nenhuma loja encontrada</p>
               <p className="text-gray-400 text-sm mt-1">
-                {searchTerm ? `Sem resultados para "${searchTerm}"` : "Tente mudar a categoria ou localização."}
+                {searchTerm ? `Sem resultados para "${searchTerm}"` : "Tente mudar o filtro ou a localização."}
               </p>
               {searchTerm && (
                 <button
