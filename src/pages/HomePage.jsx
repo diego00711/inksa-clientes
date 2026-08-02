@@ -111,27 +111,30 @@ function QuickFiltersBar({ selected, onToggle }) {
 // ─── Sub-components ─────────────────────────────────────────────────────────
 
 function BannerCarousel({ banners }) {
+  const DEFAULT_SECS = 5; // tempo padrão quando o banner não define duração
   const [current, setCurrent] = useState(0);
-  const timerRef = useRef(null);
   const touchStartX = useRef(null);
 
-  const resetTimer = useCallback((list) => {
-    clearInterval(timerRef.current);
-    timerRef.current = setInterval(() => {
-      setCurrent((prev) => (prev + 1) % list.length);
-    }, 4000);
-  }, []);
-
+  // Cada banner fica o SEU próprio tempo na tela (duration_seconds) antes de
+  // girar. Assim quem paga mais pode ficar 30s enquanto os outros ficam 15s.
+  // Reagenda a cada troca de slide (o efeito depende de `current`).
   useEffect(() => {
-    if (!banners.length) return;
-    resetTimer(banners);
-    return () => clearInterval(timerRef.current);
-  }, [banners, resetTimer]);
+    if (banners.length <= 1) return;
+    const secs = Number(banners[current]?.duration_seconds) > 0
+      ? Number(banners[current].duration_seconds)
+      : DEFAULT_SECS;
+    const t = setTimeout(() => {
+      setCurrent((prev) => (prev + 1) % banners.length);
+    }, secs * 1000);
+    return () => clearTimeout(t);
+  }, [current, banners]);
 
-  const go = useCallback((idx) => {
-    setCurrent(idx);
-    resetTimer(banners);
-  }, [banners, resetTimer]);
+  // Se a lista encolher, mantém o índice válido.
+  useEffect(() => {
+    setCurrent((c) => (c >= banners.length ? 0 : c));
+  }, [banners.length]);
+
+  const go = useCallback((idx) => setCurrent(idx), []);
 
   const prev = useCallback(() => go((current - 1 + banners.length) % banners.length), [current, banners.length, go]);
   const next = useCallback(() => go((current + 1) % banners.length), [current, banners.length, go]);
