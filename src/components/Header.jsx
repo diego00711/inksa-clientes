@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
-import { ShoppingCart, LogOut, Receipt, Star, Trophy, Medal, Menu, X, LifeBuoy } from "lucide-react";
+import { ShoppingCart, LogOut, Receipt, Star, Medal, Menu, X, LifeBuoy } from "lucide-react";
 import { Button } from "./ui/button";
 import { useAuth } from "../context/AuthContext";
 import { useCart } from "../context/CartContext";
@@ -61,10 +61,6 @@ export function Header() {
                   <Star className="h-5 w-5 text-gray-500" />
                   <span>Avaliações</span>
                 </Link>
-                <Link to="/gamificacao" className="flex items-center gap-3 px-4 py-3 text-sm text-gray-700 hover:bg-orange-50 hover:text-orange-700">
-                  <Trophy className="h-5 w-5 text-amber-500" />
-                  <span>Minha Pontuação</span>
-                </Link>
                 <Link to="/clube" className="flex items-center gap-3 px-4 py-3 text-sm text-gray-700 hover:bg-orange-50 hover:text-orange-700">
                   <Medal className="h-5 w-5 text-orange-400" />
                   <span>Clube Inksa</span>
@@ -124,13 +120,6 @@ export function Header() {
               <Link to="/avaliacoes" className="relative hidden md:flex min-h-[44px] min-w-[44px] items-center justify-center">
                 <Button variant="ghost" size="icon" aria-label="Avaliações" className="text-white hover:bg-white/15 hover:text-white">
                   <Star className="h-5 w-5" />
-                </Button>
-              </Link>
-
-              {/* Gamificação — desktop apenas */}
-              <Link to="/gamificacao" className="relative hidden md:flex min-h-[44px] min-w-[44px] items-center justify-center">
-                <Button variant="ghost" size="icon" aria-label="Minha Pontuação" className="text-white hover:bg-white/15 hover:text-white">
-                  <Trophy className="h-5 w-5" />
                 </Button>
               </Link>
 

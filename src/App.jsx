@@ -31,7 +31,6 @@ const OrderTrackingPage = lazy(() => import("./pages/OrderTrackingPage").then(m 
 const PaymentSuccessPage = lazy(() => import("./pages/PaymentSuccessPage"));
 const PaymentFailurePage = lazy(() => import("./pages/PaymentFailurePage"));
 const PaymentPendingPage = lazy(() => import("./pages/PaymentPendingPage"));
-const ClubePage = lazy(() => import("./pages/ClubePage"));
 const SuportePage = lazy(() => import("./pages/SuportePage"));
 
 const PageLoader = () => (
@@ -175,8 +174,9 @@ function AppContent() {
                 <Route path="perfil" element={<ProfilePage />} />
                 <Route path="meus-pedidos" element={<MyOrdersPage />} />
                 <Route path="avaliacoes" element={<ClientEvaluationsCenter />} />
-                <Route path="gamificacao" element={<GamificationPage />} />
-                <Route path="clube" element={<ClubePage />} />
+                {/* Clube Inksa unificado (absorveu a antiga Gamificação/Minha Pontuação) */}
+                <Route path="clube" element={<GamificationPage />} />
+                <Route path="gamificacao" element={<Navigate to="/clube" replace />} />
                 <Route path="suporte" element={<SuportePage />} />
                 <Route path="pedido/:orderId/acompanhar" element={<OrderTrackingPage />} />
               </Route>
