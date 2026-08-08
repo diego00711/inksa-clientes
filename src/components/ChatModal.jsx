@@ -23,21 +23,50 @@ function playBeep() {
   } catch { /* sem erro silencioso */ }
 }
 
+function toMs(ts) {
+  if (!ts) return 0;
+  let s = String(ts);
+  if (!/[zZ]|[+-]\d{2}:?\d{2}$/.test(s)) s = s.replace(' ', 'T') + 'Z';
+  const t = new Date(s).getTime();
+  return Number.isNaN(t) ? 0 : t;
+}
+
+// Une o que está na tela com o que veio do servidor, SEM substituir a lista.
+// Antes o poll fazia setMessages(...) direto: uma resposta lenta, disparada
+// ANTES da mensagem existir, chegava DEPOIS do envio e apagava a mensagem
+// recém-enviada (parecia que só uma tinha sido enviada).
+function mergeMessages(prev, incoming) {
+  const byId = new Map();
+  for (const m of prev) if (!m?._pending && m?.id != null) byId.set(String(m.id), m);
+  for (const m of incoming) if (m?.id != null) byId.set(String(m.id), m);
+
+  const confirmed = [...byId.values()].sort((a, b) => toMs(a.created_at) - toMs(b.created_at));
+  const pending = prev.filter(m =>
+    m?._pending &&
+    !confirmed.some(c => c.sender_type === m.sender_type && c.message === m.message)
+  );
+  return [...confirmed, ...pending];
+}
+
 export default function ChatModal({ orderId, isOpen, onClose, senderType = 'client', onUnreadChange }) {
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState('');
   const [sending, setSending] = useState(false);
   const bottomRef = useRef(null);
   const lastCountRef = useRef(0);
+  const seqRef = useRef(0);
 
   const fetchMessages = async () => {
+    const seq = ++seqRef.current;
     try {
       const res = await fetch(`${CLIENT_API_URL}/api/chat/${orderId}/messages`, {
         headers: createAuthHeaders(),
       });
       if (res.ok) {
         const data = await res.json();
-        setMessages(data.messages || data.data || []);
+        const list = data.messages || data.data || [];
+        if (seq !== seqRef.current) return; // resposta fora de ordem — ignora
+        setMessages(prev => mergeMessages(prev, list));
       }
     } catch (e) {
       // falha silenciosa — polling tentará novamente
@@ -70,9 +99,8 @@ export default function ChatModal({ orderId, isOpen, onClose, senderType = 'clie
         }, (payload) => {
           setMessages(prev => {
             if (prev.some(m => m.id === payload.new?.id)) return prev; // evita duplicar com o poll
-            const updated = [...prev, payload.new];
             if (payload.new?.sender_type !== senderType) playBeep();
-            return updated;
+            return mergeMessages(prev, [payload.new]);
           });
         })
         .subscribe();
@@ -87,18 +115,40 @@ export default function ChatModal({ orderId, isOpen, onClose, senderType = 'clie
   }, [messages]);
 
   const sendMessage = async () => {
-    if (!newMessage.trim() || sending) return;
+    const text = newMessage.trim();
+    if (!text || !orderId) return;
+    // Eco otimista: a bolha aparece NA HORA. Antes era POST + GET (duas idas ao
+    // servidor) pra só então desenhar — parecia que a mensagem não foi enviada.
+    const tempId = `tmp-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+    const optimistic = {
+      id: tempId,
+      _pending: true,
+      sender_type: senderType,
+      message: text,
+      created_at: new Date().toISOString(),
+    };
+    setNewMessage('');
+    setMessages(prev => [...prev, optimistic]);
     setSending(true);
     try {
-      await fetch(`${CLIENT_API_URL}/api/chat/${orderId}/messages`, {
+      const res = await fetch(`${CLIENT_API_URL}/api/chat/${orderId}/messages`, {
         method: 'POST',
         headers: { ...createAuthHeaders(), 'Content-Type': 'application/json' },
-        body: JSON.stringify({ sender_type: senderType, message: newMessage.trim() }),
+        body: JSON.stringify({ sender_type: senderType, message: text }),
       });
-      setNewMessage('');
-      fetchMessages();
+      if (!res.ok) throw new Error('envio falhou');
+      // O POST devolve a mensagem criada — troca a pendente pela real sem GET.
+      let saved = null;
+      try { saved = await res.json(); } catch { /* corpo vazio */ }
+      setMessages(prev => {
+        const semTemp = prev.filter(m => m.id !== tempId);
+        return saved?.id ? mergeMessages(semTemp, [saved]) : semTemp;
+      });
+      if (!saved?.id) fetchMessages();
     } catch (e) {
-      // falha silenciosa
+      // Falhou: tira a bolha pendente e devolve o texto pro input.
+      setMessages(prev => prev.filter(m => m.id !== tempId));
+      setNewMessage(prev => (prev ? prev : text));
     } finally {
       setSending(false);
     }
@@ -130,15 +180,15 @@ export default function ChatModal({ orderId, isOpen, onClose, senderType = 'clie
         )}
         {messages.map((msg, i) => (
           <div
-            key={i}
+            key={msg.id ?? i}
             className={`flex ${msg.sender_type === senderType ? 'justify-end' : 'justify-start'}`}
           >
             <div
-              className={`max-w-[75%] rounded-2xl px-4 py-2 text-sm ${
+              className={`max-w-[75%] rounded-2xl px-4 py-2 text-sm transition-opacity ${
                 msg.sender_type === senderType
                   ? 'bg-[#FF6F00] text-white rounded-br-sm'
                   : 'bg-gray-100 text-gray-800 rounded-bl-sm'
-              }`}
+              } ${msg._pending ? 'opacity-60' : ''}`}
             >
               {msg.message}
             </div>
@@ -162,7 +212,7 @@ export default function ChatModal({ orderId, isOpen, onClose, senderType = 'clie
         />
         <button
           onClick={sendMessage}
-          disabled={sending}
+          disabled={!newMessage.trim()}
           className="bg-[#FF6F00] text-white rounded-full p-3 min-h-[44px] min-w-[44px] flex items-center justify-center disabled:opacity-50 hover:bg-orange-600 transition-colors"
           aria-label="Enviar mensagem"
         >
