@@ -21,6 +21,7 @@ import { CLIENT_API_URL, createAuthHeaders, processResponse } from '../services/
 import { apiFetch } from '../services/apiClient';
 import authService from '../services/authService';
 import { useToast } from '../context/ToastContext';
+import MyRedemptions from '../components/MyRedemptions';
 
 // ─── Level config ──────────────────────────────────────────────────────────────
 
@@ -551,6 +552,8 @@ export default function GamificationPage() {
   const [rewardsLoading, setRewardsLoading] = useState(true);
   const [rewardsError, setRewardsError] = useState(null);
   const [redeemingId, setRedeemingId] = useState(null);
+  // Muda a cada resgate concluído para a lista "Meus resgates" recarregar.
+  const [redemptionsKey, setRedemptionsKey] = useState(0);
   const [confirmReward, setConfirmReward] = useState(null); // reward object awaiting confirmation
 
   // State: history
@@ -746,6 +749,7 @@ export default function GamificationPage() {
       addToast('success', data?.data?.message ?? `"${reward.name}" resgatado com sucesso!`);
       fetchUserPoints();
       fetchHistory();
+      setRedemptionsKey(k => k + 1);
     } catch (err) {
       addToast('error', err.message || 'Erro ao resgatar recompensa.');
     } finally {
@@ -865,6 +869,9 @@ export default function GamificationPage() {
             />
           )}
         </Card>
+
+        {/* ── Meus resgates ──────────────────────────────────────────────────── */}
+        <MyRedemptions refreshKey={redemptionsKey} />
 
         {/* ── Todos os níveis do Clube ───────────────────────────────────────── */}
         <ClubLevelsCard levels={clubLevels} currentLevel={clubStatus?.current_level?.level} unit="pedido" />
