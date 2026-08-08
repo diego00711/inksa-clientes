@@ -41,10 +41,10 @@ const STATUS_MAP = {
 };
 
 const STATUS_TOAST = {
-  accepted:            'Seu pedido foi aceito pelo restaurante!',
+  accepted:            'Seu pedido foi aceito pela loja!',
   preparing:           'Seu pedido está sendo preparado.',
   ready:               'Pedido pronto! Aguardando entregador.',
-  accepted_by_delivery:'Entregador a caminho do restaurante!',
+  accepted_by_delivery:'Entregador a caminho da loja!',
   delivering:          'Pedido saiu para entrega!',
   delivered:           'Pedido entregue! Não esqueça de avaliar.',
   cancelled:           'Seu pedido foi cancelado.',
@@ -98,8 +98,8 @@ function ReviewModal({ order, onClose, onDone }) {
   const hasDelivery = !!order.delivery_id;
 
   const submitRestaurant = async () => {
-    if (!restaurantRating) { setErrorMsg('Selecione uma nota para o restaurante.'); return; }
-    if (!order.restaurant_id) { setErrorMsg('ID do restaurante não disponível.'); return; }
+    if (!restaurantRating) { setErrorMsg('Selecione uma nota para a loja.'); return; }
+    if (!order.restaurant_id) { setErrorMsg('ID da loja não disponível.'); return; }
     setLoading(true);
     setErrorMsg('');
     try {
@@ -116,7 +116,7 @@ function ReviewModal({ order, onClose, onDone }) {
         onDone();
       }
     } catch (err) {
-      setErrorMsg(err.message || 'Erro ao enviar avaliação do restaurante.');
+      setErrorMsg(err.message || 'Erro ao enviar avaliação da loja.');
     } finally {
       setLoading(false);
     }
@@ -156,7 +156,7 @@ function ReviewModal({ order, onClose, onDone }) {
 
         {step === 'restaurant' && (
           <div className="p-6">
-            <h2 className="text-xl font-bold text-gray-800 mb-1">Avalie o restaurante</h2>
+            <h2 className="text-xl font-bold text-gray-800 mb-1">Avalie a loja</h2>
             <p className="text-sm text-gray-500 mb-5">{order.restaurant_name}</p>
 
             <div className="flex justify-center mb-4">

@@ -109,7 +109,7 @@ export const PickupCodeDisplay = ({ orderId, orderStatus }) => {
               </p>
             </div>
             <p className="text-xs text-blue-700 mt-2 text-center">
-              {orderStatus === 'accepted_by_delivery' && '🚴 Entregador está a caminho do restaurante'}
+              {orderStatus === 'accepted_by_delivery' && '🚴 Entregador está a caminho da loja'}
               {orderStatus === 'delivering' && '✅ Pedido retirado pelo entregador'}
               {orderStatus === 'delivered' && '✅ Pedido foi retirado'}
             </p>
@@ -140,7 +140,7 @@ export const PickupCodeDisplay = ({ orderId, orderStatus }) => {
           <CheckCircle className="text-amber-600 flex-shrink-0 mt-0.5" size={16} />
           <div className="text-xs text-amber-800">
             {orderStatus === 'accepted_by_delivery' && (
-              <p><strong>Status:</strong> O entregador está a caminho do restaurante para retirar seu pedido.</p>
+              <p><strong>Status:</strong> O entregador está a caminho da loja para retirar seu pedido.</p>
             )}
             {orderStatus === 'delivering' && (
               <p><strong>Status:</strong> Seu pedido está a caminho! Mostre o código de entrega quando o entregador chegar.</p>

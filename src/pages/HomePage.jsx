@@ -14,6 +14,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { usePullToRefresh } from "../hooks/usePullToRefresh";
 import { RestaurantSkeleton as RestaurantSkeletonGrid } from "../components/skeletons/RestaurantSkeleton";
 import SocialDayBanner from "../components/SocialDayBanner";
+import { SEGMENTS } from "../utils/segments";
 
 // ─── Constants ─────────────────────────────────────────────────────────────
 
@@ -35,14 +36,14 @@ const FALLBACK_BANNERS = [
   {
     id: "fb3",
     title: "Novidades do Dia",
-    subtitle: "Descubra restaurantes que você vai amar",
+    subtitle: "Descubra lojas que você vai amar",
     gradient: "from-emerald-500 via-teal-500 to-cyan-500",
     emoji: "✨",
   },
   {
     id: "fb4",
     title: "Peça com Facilidade",
-    subtitle: "Mais de 50 restaurantes disponíveis",
+    subtitle: "Tudo o que você precisa, pertinho de você",
     gradient: "from-blue-600 via-blue-500 to-sky-400",
     emoji: "🛵",
   },
@@ -219,16 +220,8 @@ function BannerCarousel({ banners }) {
 }
 
 // Segmentos (verticais) — eixo de expansão. Só aparecem no topo quando houver
-// 2+ segmentos com parceiro (hoje, só restaurante → a barra nem aparece).
-const SEGMENTS = [
-  { value: "restaurante",  emoji: "🍽️", label: "Restaurantes" },
-  { value: "farmacia",     emoji: "💊", label: "Farmácia" },
-  { value: "mercado",      emoji: "🛒", label: "Mercado" },
-  { value: "padaria",      emoji: "🥖", label: "Padaria" },
-  { value: "pet",          emoji: "🐾", label: "Pet" },
-  { value: "conveniencia", emoji: "🏪", label: "Conveniência" },
-  { value: "bebidas",      emoji: "🍺", label: "Bebidas" },
-];
+// 2+ segmentos com parceiro. A lista vive em utils/segments.js porque o card da
+// loja precisa do MESMO rótulo (senão os dois divergem).
 
 function SegmentChips({ segments, selected, onSelect }) {
   const opts = [{ value: "Todos", emoji: "🏠", label: "Todos" }, ...segments];
@@ -304,7 +297,7 @@ function SectionHeader({ title, subtitle, linkTo, linkLabel }) {
 }
 
 function FavoriteCard({ restaurant }) {
-  const name = restaurant.restaurant_name || restaurant.name || "Restaurante";
+  const name = restaurant.restaurant_name || restaurant.name || "Loja";
   const initial = name[0]?.toUpperCase() || "R";
   const imageUrl = restaurant.logo_url;
   const rating = parseFloat(restaurant.rating ?? 0).toFixed(1);
@@ -667,7 +660,7 @@ export function HomePage() {
               locationLoading
                 ? "Obtendo sua localização..."
                 : locationError
-                ? "Exibindo todos os restaurantes disponíveis"
+                ? "Exibindo todas as lojas disponíveis"
                 // NAO prometer prazo aqui: nao existe estimativa de entrega no
                 // sistema, e o texto fixo "Entrega em ate 30 min" era so uma
                 // frase escrita a mao. Este subtitulo descreve o que a tela de
@@ -734,7 +727,7 @@ export function HomePage() {
           >
             <SectionHeader
               title="Seus Favoritos"
-              subtitle="Restaurantes que você curtiu"
+              subtitle="Lojas que você curtiu"
               linkTo="/"
             />
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">

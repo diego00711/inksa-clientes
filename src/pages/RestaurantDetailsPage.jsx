@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { ChevronLeft, Star, Loader2, MapPin, Clock, Phone, AlertCircle, Plus, Minus } from "lucide-react";
 import { useCart } from '../context/CartContext';
 import RestaurantService from '../services/restaurantService';
+import StoreReviews from '../components/StoreReviews';
 
 export function RestaurantDetailsPage() {
   const { id } = useParams();
@@ -65,7 +66,7 @@ export function RestaurantDetailsPage() {
     return (
       <div className="flex flex-col justify-center items-center h-screen space-y-4">
         <Loader2 className="h-12 w-12 animate-spin text-orange-500" />
-        <p className="text-gray-600">Carregando restaurante...</p>
+        <p className="text-gray-600">Carregando loja...</p>
       </div>
     );
   }
@@ -89,8 +90,8 @@ export function RestaurantDetailsPage() {
     return (
       <div className="text-center py-20">
         <div className="bg-gray-50 p-8 rounded-xl max-w-md mx-auto">
-          <h1 className="text-2xl font-bold text-gray-800 mb-4">Restaurante não encontrado</h1>
-          <p className="text-gray-600 mb-6">O restaurante que você procura não existe ou foi removido.</p>
+          <h1 className="text-2xl font-bold text-gray-800 mb-4">Loja não encontrada</h1>
+          <p className="text-gray-600 mb-6">A loja que você procura não existe ou foi removida.</p>
           <Link to="/" className="bg-orange-500 text-white px-6 py-3 rounded-lg hover:bg-orange-600 transition-colors">
             Voltar à página inicial
           </Link>
@@ -188,6 +189,11 @@ export function RestaurantDetailsPage() {
             )}
           </div>
         </div>
+
+        {/* Reputação da loja — o cliente decide ANTES de montar o carrinho.
+            Resumo aqui (nota + distribuição + 3 comentários) e "Ver todas" leva
+            pra página cheia. */}
+        <StoreReviews restaurantId={id} compact />
 
         {/* Cardápio */}
         <div className="bg-white rounded-2xl shadow-sm p-4 sm:p-6">

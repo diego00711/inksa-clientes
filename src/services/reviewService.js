@@ -5,6 +5,18 @@ import { CLIENT_API_URL, createAuthHeaders, processResponse } from './api';
 import { apiFetch } from './apiClient.js';
 
 /**
+ * Avaliações PÚBLICAS de uma loja — o cliente lê antes de pedir.
+ * Endpoint aberto (sem login): quem ainda não entrou também vê a reputação.
+ * Retorna { reviews, average_rating, total_reviews, distribution, has_more }.
+ */
+export async function getStoreReviews(restaurantId, { limit = 20, offset = 0 } = {}) {
+  const url = `${CLIENT_API_URL}/api/review/restaurants/${restaurantId}/reviews?limit=${limit}&offset=${offset}`;
+  const response = await fetch(url);
+  if (!response.ok) throw new Error('Não foi possível carregar as avaliações.');
+  return response.json();
+}
+
+/**
  * Busca as avaliações que o cliente logado recebeu.
  * @returns {Promise<object>} Um objeto contendo a lista de avaliações, a média e o total.
  */

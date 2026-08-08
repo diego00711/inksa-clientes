@@ -152,7 +152,7 @@ export function CartPage() {
       setFeeError(null);
       try {
         const restaurantId = cartItems[0]?.restaurant_id;
-        if (!restaurantId) { setFeeError("ID do restaurante não encontrado."); setDeliveryFee(null); return; }
+        if (!restaurantId) { setFeeError("ID da loja não encontrado."); setDeliveryFee(null); return; }
         const feeData = await calculateDeliveryFee({
           restaurant_id: restaurantId,
           client_latitude: deliveryLat,
@@ -224,11 +224,11 @@ export function CartPage() {
     }
     if (cartItems.length === 0) { addToast('warning', 'Seu carrinho está vazio!'); return; }
     if (restauranteFechado) {
-      addToast('warning', 'Este restaurante está fechado e não está aceitando pedidos no momento.');
+      addToast('warning', 'Esta loja está fechada e não está aceitando pedidos no momento.');
       return;
     }
     const restaurantIds = [...new Set(cartItems.map(item => item.restaurant_id))];
-    if (restaurantIds.length > 1) { addToast('warning', 'Apenas um restaurante por pedido.'); return; }
+    if (restaurantIds.length > 1) { addToast('warning', 'Apenas uma loja por pedido.'); return; }
     if (deliveryFee === null || isCalculatingFee || feeError) {
       addToast('error', 'Aguarde o cálculo do frete antes de finalizar.'); return;
     }
@@ -397,7 +397,7 @@ export function CartPage() {
           <ShoppingCart className="mx-auto h-24 w-24 text-gray-300" />
           <h2 className="mt-6 text-xl font-semibold">Seu carrinho está vazio</h2>
           <p className="mt-2 text-gray-500">Adicione itens para continuar.</p>
-          <Button asChild className="mt-6"><Link to="/">Ver restaurantes</Link></Button>
+          <Button asChild className="mt-6"><Link to="/">Ver lojas</Link></Button>
         </div>
       ) : (
         <div className="bg-white p-4 sm:p-8 rounded-lg shadow-md">
@@ -599,7 +599,7 @@ export function CartPage() {
           {restauranteFechado && (
             <div className="mt-6 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 flex items-center gap-2">
               <span className="text-lg">🔒</span>
-              <span>Este restaurante está <strong>fechado</strong> agora e não está aceitando pedidos. Você pode montar o carrinho e finalizar quando ele reabrir.</span>
+              <span>Esta loja está <strong>fechada</strong> agora e não está aceitando pedidos. Você pode montar o carrinho e finalizar quando ela reabrir.</span>
             </div>
           )}
 
@@ -618,7 +618,7 @@ export function CartPage() {
               {isProcessingOrder ? (
                 <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Processando...</>
               ) : restauranteFechado ? (
-                'Restaurante fechado'
+                'Loja fechada'
               ) : paymentMethod === 'cash' ? (
                 '💵 Confirmar Pedido'
               ) : (

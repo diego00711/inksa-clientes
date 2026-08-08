@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Star, MapPin, Clock, Heart, Info } from "lucide-react";
 import { useToast } from "../context/ToastContext";
+import { segmentLabel } from "../utils/segments";
 
 const FAVORITES_KEY = 'inksa.favorites';
 
@@ -22,7 +23,13 @@ export function RestaurantCard({ restaurant }) {
   const deliveryFee = restaurant.delivery_fee ?? 0;
   const ratingValue = restaurant.rating ?? 0;
   const deliveryTime = restaurant.delivery_time;
-  const category = restaurant.category ?? "Restaurante";
+  // Rótulo do card: o TIPO escolhido pela loja (cozinha/categoria do segmento) e,
+  // se ela não tiver tipo, o nome do SEGMENTO. Antes era `category` (campo antigo
+  // de texto livre, hoje quase sempre vazio) com "Restaurante" fixo no fallback —
+  // então farmácia, pet e mercado apareciam todos como "Restaurante".
+  const primeiroTipo = (restaurant.cuisine_type || '')
+    .split(',').map((s) => s.trim()).filter(Boolean)[0];
+  const category = primeiroTipo || segmentLabel(restaurant.segment);
   const isOpen = restaurant.is_open;
   const deliveryType = restaurant.delivery_type;
   const distance = restaurant.distance_km;

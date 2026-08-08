@@ -105,7 +105,7 @@ export default function LiveTrackingMap({ driver, restaurant, destination }) {
 
         {restaurant && (
           <Marker position={[restaurant.lat, restaurant.lng]} icon={REST_ICON}>
-            <Popup>Restaurante</Popup>
+            <Popup>Loja</Popup>
           </Marker>
         )}
         {destination && (

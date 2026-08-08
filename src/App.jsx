@@ -18,6 +18,7 @@ import SupportButton from "./components/SupportButton";
 // --- Lazy-loaded pages ---
 const HomePage = lazy(() => import("./pages/HomePage").then(m => ({ default: m.HomePage })));
 const RestaurantDetailsPage = lazy(() => import("./pages/RestaurantDetailsPage").then(m => ({ default: m.RestaurantDetailsPage })));
+const StoreReviewsPage = lazy(() => import("./pages/StoreReviewsPage"));
 const LoginPage = lazy(() => import("./pages/LoginPage").then(m => ({ default: m.LoginPage })));
 const RegisterPage = lazy(() => import("./pages/RegisterPage"));
 const ForgotPasswordPage = lazy(() => import("./pages/ForgotPasswordPage"));
@@ -170,6 +171,8 @@ function AppContent() {
               <Route element={<ProtectedRoute><Layout /></ProtectedRoute>}>
                 <Route path="/" element={<HomePage />} />
                 <Route path="restaurantes/:id" element={<RestaurantDetailsPage />} />
+                {/* Avaliações da loja — pública, o cliente lê antes de pedir. */}
+                <Route path="restaurantes/:id/avaliacoes" element={<StoreReviewsPage />} />
                 <Route path="carrinho" element={<CartPage />} />
                 <Route path="perfil" element={<ProfilePage />} />
                 <Route path="meus-pedidos" element={<MyOrdersPage />} />

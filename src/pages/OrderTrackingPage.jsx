@@ -25,8 +25,8 @@ function parseCoord(...candidates) {
 
 // ─── Stage definitions ───────────────────────────────────────────────────────
 const STAGES = [
-  { key: "pending",   label: "Pedido recebido",       emoji: "✅", icon: CheckCircle, msg: "Restaurante recebeu seu pedido." },
-  { key: "preparing", label: "Restaurante preparando", emoji: "🍳", icon: ChefHat,     msg: "A cozinha está no trabalho!" },
+  { key: "pending",   label: "Pedido recebido",       emoji: "✅", icon: CheckCircle, msg: "A loja recebeu seu pedido." },
+  { key: "preparing", label: "Loja preparando", emoji: "🍳", icon: ChefHat,     msg: "A cozinha está no trabalho!" },
   { key: "ready",     label: "Pedido pronto",          emoji: "📦", icon: Package,     msg: "Pronto! Aguardando um entregador retirar." },
   { key: "delivering",label: "Saiu para entrega",      emoji: "🛵", icon: Bike,        msg: "Seu pedido está a caminho de você!" },
   { key: "delivered", label: "Entregue!",              emoji: "🎉", icon: MapPin,      msg: "Aproveite sua refeição! 😊" },
@@ -141,7 +141,7 @@ function TrackMap({ stage }) {
       </div>
 
       {/* Restaurant marker */}
-      <div className="absolute bottom-8 left-5 text-2xl" title="Restaurante">🏪</div>
+      <div className="absolute bottom-8 left-5 text-2xl" title="Loja">🏪</div>
 
       {/* Driver emoji animating */}
       <div
@@ -155,7 +155,7 @@ function TrackMap({ stage }) {
       <div className="absolute bottom-8 right-5 text-2xl" title="Você">📍</div>
 
       {/* Labels */}
-      <div className="absolute top-3 left-5 text-xs font-bold text-gray-600 bg-white/80 px-2 py-0.5 rounded-full">Restaurante</div>
+      <div className="absolute top-3 left-5 text-xs font-bold text-gray-600 bg-white/80 px-2 py-0.5 rounded-full">Loja</div>
       <div className="absolute top-3 right-5 text-xs font-bold text-gray-600 bg-white/80 px-2 py-0.5 rounded-full">Você</div>
     </div>
   );
@@ -458,7 +458,7 @@ export function OrderTrackingPage() {
       ? 'Tivemos um problema ao entregar seu pedido. Nossa equipe está cuidando do caso.'
       : isPaymentIssue
         ? 'O pagamento não foi confirmado, então o pedido foi cancelado.'
-        : 'O restaurante não pôde aceitar seu pedido no momento. Sentimos muito pelo transtorno.';
+        : 'A loja não pôde aceitar seu pedido no momento. Sentimos muito pelo transtorno.';
     const emoji = isDeliveryFailed ? '⚠️' : '🚫';
     return (
       <div className="min-h-screen bg-gray-50">
