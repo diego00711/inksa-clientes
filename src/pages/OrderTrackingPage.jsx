@@ -278,8 +278,15 @@ export function OrderTrackingPage() {
   // acende o badge do botão "Falar com entregador". Usa o endpoint autenticado
   // (o realtime do Supabase não entrega o chat aqui).
   const lastChatIdRef = useRef(null);
+  // Marca que a linha de base já foi definida. Antes usávamos só o id da última
+  // mensagem: com a conversa VAZIA saíamos antes de definir a base, então a
+  // PRIMEIRA mensagem do entregador era tratada como "base" e não acendia o
+  // aviso — só a segunda acendia. Com esta flag a base é definida na primeira
+  // resposta mesmo sem mensagem nenhuma, e a 1ª mensagem já avisa.
+  const baselineDoneRef = useRef(false);
   useEffect(() => {
     lastChatIdRef.current = null;
+    baselineDoneRef.current = false;
     if (!orderId || !order?.delivery_id) return;
     let alive = true;
     const check = async () => {
@@ -288,9 +295,13 @@ export function OrderTrackingPage() {
         if (!alive || !res.ok) return;
         const data = await res.json();
         const list = Array.isArray(data) ? data : (data?.messages || data?.data || []);
-        if (!list.length) return;
-        const last = list[list.length - 1];
-        if (lastChatIdRef.current === null) { lastChatIdRef.current = last.id; return; }
+        const last = list.length ? list[list.length - 1] : null;
+        if (!baselineDoneRef.current) {
+          baselineDoneRef.current = true;
+          lastChatIdRef.current = last?.id ?? null;
+          return;
+        }
+        if (!last) return;
         if (last.id !== lastChatIdRef.current) {
           lastChatIdRef.current = last.id;
           const fromDriver = (last.sender_type || last.sender) === 'delivery';
