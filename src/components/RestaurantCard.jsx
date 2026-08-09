@@ -4,7 +4,7 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
-import { Star, MapPin, Clock, Heart, Info } from "lucide-react";
+import { Star, MapPin, Clock, Heart, Info, Ticket } from "lucide-react";
 import { useToast } from "../context/ToastContext";
 import { segmentLabel } from "../utils/segments";
 
@@ -124,6 +124,15 @@ export function RestaurantCard({ restaurant }) {
           <Badge className="absolute top-3 left-3 bg-white/95 backdrop-blur-sm text-orange-600 font-semibold border border-orange-200 px-3 py-1 text-xs rounded-full shadow-md">
             {category}
           </Badge>
+
+          {/* Selo de promoção: o cupom do parceiro só traz pedido se o cliente
+              souber que existe antes de abrir a loja. */}
+          {restaurant.promo_label && (
+            <Badge className="absolute bottom-3 left-3 bg-orange-500 text-white font-bold border-orange-600 px-3 py-1 text-xs rounded-full shadow-lg flex items-center gap-1">
+              <Ticket className="w-3 h-3" />
+              {restaurant.promo_label}
+            </Badge>
+          )}
 
           {/* Botão de Favorito */}
           <button

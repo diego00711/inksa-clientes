@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight, Star, Loader2, MapPin, Clock, Phone, AlertCircle, Plus, Minus } from "lucide-react";
 import { useCart } from '../context/CartContext';
 import RestaurantService from '../services/restaurantService';
+import StoreCoupons from '../components/StoreCoupons';
 
 export function RestaurantDetailsPage() {
   const { id } = useParams();
@@ -196,6 +197,10 @@ export function RestaurantDetailsPage() {
             )}
           </div>
         </div>
+
+        {/* Cupons da loja — antes do cardápio, pra decidir o pedido já sabendo
+            que tem desconto. */}
+        <StoreCoupons coupons={restaurant.coupons} />
 
         {/* Cardápio */}
         <div className="bg-white rounded-2xl shadow-sm p-4 sm:p-6">

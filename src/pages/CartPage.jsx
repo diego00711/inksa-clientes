@@ -14,6 +14,7 @@ import { PaymentMethodSelector } from '../components/PaymentMethodSelector';
 import CardPaymentModal from '../components/CardPaymentModal';
 import PixPaymentModal from '../components/PixPaymentModal';
 import { CLIENT_API_URL } from '../services/api';
+import { PENDING_COUPON_KEY } from '../components/StoreCoupons';
 
 const MP_PUBLIC_KEY = import.meta.env.VITE_MERCADOPAGO_PUBLIC_KEY;
 
@@ -46,8 +47,15 @@ export function CartPage() {
   const [needsChange, setNeedsChange] = useState(false);
   const [changeFor, setChangeFor] = useState('');
 
-  // Coupon state
-  const [couponCode, setCouponCode] = useState('');
+  // Coupon state — se o cliente clicou "Usar" num cupom na página da loja, o
+  // código já vem preenchido aqui (ele não precisa decorar nem voltar lá).
+  const [couponCode, setCouponCode] = useState(() => {
+    try {
+      return localStorage.getItem(PENDING_COUPON_KEY) || '';
+    } catch {
+      return '';
+    }
+  });
   const [couponData, setCouponData] = useState(null); // {valid, discount_amount, message}
   const [couponLoading, setCouponLoading] = useState(false);
 

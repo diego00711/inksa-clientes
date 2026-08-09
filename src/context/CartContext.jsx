@@ -60,6 +60,9 @@ export const CartProvider = ({ children }) => {
 
   const clearCart = useCallback(() => {
     setCartItems([]);
+    // Cupom guardado da página da loja morre junto com o carrinho — senão ele
+    // reapareceria preenchido no próximo pedido, talvez de outra loja.
+    try { localStorage.removeItem('inksa.pending_coupon'); } catch { /* sem storage */ }
   }, []);
 
   const totalItemsInCart = cartItems.reduce((total, item) => total + (item.quantity || 0), 0);

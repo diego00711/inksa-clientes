@@ -599,7 +599,9 @@ export function OrderTrackingPage() {
               {String(order.delivery_code).toUpperCase()}
             </p>
             <p className="text-xs opacity-90 mt-1">
-              Mostre este código ao entregador para confirmar o recebimento.
+              {/* Pode ser entregador Inksa ou o motoboy da própria loja — o
+                  código confirma o recebimento nos dois casos. */}
+              Mostre este código a quem entregar o pedido para confirmar o recebimento.
             </p>
           </div>
         )}
