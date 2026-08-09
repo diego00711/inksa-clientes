@@ -57,6 +57,10 @@ const FAVORITES_KEY = "inksa.favorites";
 // segundo descartava TODO restaurante (!undefined é true), deixando o cliente
 // com a tela vazia. Quando existir promoção de verdade no banco, o 🔥 volta.
 const QUICK_FILTERS = [
+  // O 🔥 voltou: agora existe promoção de verdade no banco. A listagem devolve
+  // has_coupon/promo_label (melhor cupom ativo da loja), então dá pra filtrar
+  // sem inventar coluna — foi o que derrubou a versão antiga deste filtro.
+  { key: 'promo',        label: 'Com promoção',   emoji: '🔥' },
   { key: 'top_rated',    label: 'Mais avaliados', emoji: '🏆' },
   { key: 'nearest',      label: 'Mais próximos',   emoji: '📍' },
   { key: 'new',          label: 'Novidades',        emoji: '⭐' },
@@ -497,6 +501,8 @@ export function HomePage() {
         const created = r.created_at ? new Date(r.created_at) : null;
         if (!created || created < thirtyDaysAgo) return false;
       }
+      // Só lojas com cupom ativo agora (o mesmo que gera o selo no card).
+      if (quickFilters.includes('promo') && !r.has_coupon) return false;
       return true;
     });
 

@@ -86,16 +86,26 @@ export const processCardPayment = async (payload) => {
   return processResponse(response);
 };
 
-/** ✅ Pedidos pendentes de avaliação do CLIENTE */
+/** Pedidos pendentes de avaliação do CLIENTE.
+ *
+ * Apontava para /api/reviews/orders/pending-reviews, que NUNCA existiu no
+ * backend (as rotas de avaliação vivem em /api/review, singular, com outros
+ * caminhos). O 404 virava lista vazia e a tela dizia "Nenhum pedido para
+ * avaliar" mesmo com pedidos entregues esperando nota.
+ *
+ * O endpoint certo devolve um ARRAY direto de
+ * { id, restaurant_id, restaurant_name, deliveryman_id, deliveryman_name, completed_at }.
+ */
 export const getOrdersPendingClientReview = async (signal) => {
-  const url = `${CLIENT_API_URL}/api/reviews/orders/pending-reviews`;
+  const url = `${CLIENT_API_URL}/api/orders/pending-client-review`;
   const response = await apiFetch(url, {
     method: 'GET',
     headers: createAuthHeaders(),
     signal,
   });
   const data = await processResponse(response);
-  return data?.pending_reviews ?? [];
+  if (Array.isArray(data)) return data;
+  return data?.pending_reviews ?? data?.orders ?? [];
 };
 
 /** ✅ Cria avaliação unificada (restaurante + entregador) */
