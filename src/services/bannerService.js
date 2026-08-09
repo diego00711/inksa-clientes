@@ -31,10 +31,17 @@ class BannerService {
 
   // ========== MÉTODOS PÚBLICOS ==========
 
-  // Listar banners (público para clientes, completo para admin)
-  async getBanners() {
+  // Listar banners (público para clientes, completo para admin).
+  // Manda a localização do cliente quando houver: o backend usa isso pra não
+  // mostrar banner de outra cidade (um parceiro de Lages não aparece em SP).
+  // Sem localização, o cliente recebe só os banners de alcance nacional.
+  async getBanners({ lat, lng } = {}) {
     try {
-      const response = await apiFetch(this.baseURL, {
+      const temLocal = Number.isFinite(Number(lat)) && Number.isFinite(Number(lng));
+      const url = temLocal
+        ? `${this.baseURL}?lat=${encodeURIComponent(lat)}&lng=${encodeURIComponent(lng)}`
+        : this.baseURL;
+      const response = await apiFetch(url, {
         method: 'GET',
         headers: this.getHeaders(false), // Não exige auth para clientes
       });

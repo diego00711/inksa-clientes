@@ -3,10 +3,9 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
-import { ChevronLeft, Star, Loader2, MapPin, Clock, Phone, AlertCircle, Plus, Minus } from "lucide-react";
+import { ChevronLeft, ChevronRight, Star, Loader2, MapPin, Clock, Phone, AlertCircle, Plus, Minus } from "lucide-react";
 import { useCart } from '../context/CartContext';
 import RestaurantService from '../services/restaurantService';
-import StoreReviews from '../components/StoreReviews';
 
 export function RestaurantDetailsPage() {
   const { id } = useParams();
@@ -146,10 +145,18 @@ export function RestaurantDetailsPage() {
                     {restaurant.category}
                   </span>
                 )}
-                <div className="flex items-center gap-1">
+                {/* A nota é o atalho pras avaliações: toca aqui e abre a página
+                    cheia. Antes o bloco de avaliações ficava no meio da página
+                    e poluía o cardápio. */}
+                <Link
+                  to={`/restaurantes/${id}/avaliacoes`}
+                  className="flex items-center gap-1 bg-white/20 backdrop-blur-sm px-3 py-1 rounded-full hover:bg-white/30 transition-colors"
+                  aria-label="Ver avaliações da loja"
+                >
                   <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
                   <span className="font-medium">{parseFloat(ratingValue).toFixed(1)}</span>
-                </div>
+                  <ChevronRight className="w-3.5 h-3.5 opacity-80" />
+                </Link>
               </div>
             </div>
           </div>
@@ -189,11 +196,6 @@ export function RestaurantDetailsPage() {
             )}
           </div>
         </div>
-
-        {/* Reputação da loja — o cliente decide ANTES de montar o carrinho.
-            Resumo aqui (nota + distribuição + 3 comentários) e "Ver todas" leva
-            pra página cheia. */}
-        <StoreReviews restaurantId={id} compact />
 
         {/* Cardápio */}
         <div className="bg-white rounded-2xl shadow-sm p-4 sm:p-6">

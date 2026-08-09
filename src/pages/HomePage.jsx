@@ -361,12 +361,14 @@ export function HomePage() {
     }
   }, [location, refreshFromAddress]);
 
-  // Fetch banners
+  // Fetch banners — refaz quando a localização do cliente muda, porque o
+  // backend filtra banner por alcance geográfico (banner de Lages não aparece
+  // pra quem está em São Paulo).
   useEffect(() => {
-    BannerService.getBanners()
+    BannerService.getBanners({ lat: location?.lat, lng: location?.lng })
       .then((data) => setBanners(Array.isArray(data) && data.length ? data : FALLBACK_BANNERS))
       .catch(() => setBanners(FALLBACK_BANNERS));
-  }, []);
+  }, [location?.lat, location?.lng]);
 
   const toggleQuickFilter = useCallback((key) => {
     setQuickFilters(prev =>
