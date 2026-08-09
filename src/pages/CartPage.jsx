@@ -205,7 +205,15 @@ export function CartPage() {
       const res = await fetch(`${CLIENT_API_URL}/api/coupons/validate`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ code: couponCode.trim(), order_total: subTotal, delivery_fee: safeFee }),
+        // A loja do carrinho vai junto: cupom criado por um parceiro só vale na
+        // loja dele. Sem isso o cliente veria "válido" aqui e levaria a recusa
+        // só no fechamento do pedido.
+        body: JSON.stringify({
+          code: couponCode.trim(),
+          order_total: subTotal,
+          delivery_fee: safeFee,
+          restaurant_id: cartItems[0]?.restaurant_id || null,
+        }),
       });
       const data = await res.json();
       setCouponData(data);
