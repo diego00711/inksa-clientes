@@ -25,6 +25,14 @@ export const calculateDeliveryFee = async (deliveryData) => {
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
     const data = await processResponse(response);
 
+    // Fora da área da loja de entrega própria: NÃO pode virar "R$ 5 padrão".
+    // Este endpoint tem um fallback generoso pra nunca travar o carrinho por
+    // falha de rede — mas aqui a recusa é intencional, e engolir ela deixaria o
+    // cliente fechar um pedido que a loja não tem como entregar.
+    if (data?.error === 'fora_da_area') {
+      return { status: 'error', error: 'fora_da_area', message: data.message };
+    }
+
     let deliveryFee = 5.0;
     if (data?.status === 'success' && typeof data?.data?.delivery_fee === 'number') {
       deliveryFee = data.data.delivery_fee;

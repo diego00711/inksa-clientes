@@ -166,6 +166,14 @@ export function CartPage() {
           client_latitude: deliveryLat,
           client_longitude: deliveryLng,
         });
+        // Loja de entrega própria que não alcança este endereço: para aqui.
+        // deliveryFee fica null, e o botão de finalizar já é bloqueado por isso.
+        if (feeData?.error === 'fora_da_area') {
+          setFeeError(feeData.message || 'Esta loja não entrega no seu endereço.');
+          setDeliveryFee(null);
+          setDeliveryDistance(0);
+          return;
+        }
         let finalFee = 0, distance = 0;
         if (feeData?.status === 'success' && feeData?.data) {
           finalFee = feeData.data.delivery_fee;
