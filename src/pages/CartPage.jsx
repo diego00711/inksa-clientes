@@ -174,22 +174,21 @@ export function CartPage() {
           setDeliveryDistance(0);
           return;
         }
-        let finalFee = 0, distance = 0;
-        if (feeData?.status === 'success' && feeData?.data) {
-          finalFee = feeData.data.delivery_fee;
-          distance = feeData.data.distance_km || 0;
-        } else if (typeof feeData?.delivery_fee === 'number') {
-          finalFee = feeData.delivery_fee;
-          distance = feeData.distance_km || 0;
-        } else if (typeof feeData === 'number') {
-          finalFee = feeData;
+        // Qualquer coisa que não seja um cálculo bom bloqueia o checkout. Antes
+        // o serviço devolvia "sucesso" com R$ 5 fixo em cima de falha, e o
+        // pedido fechava com o frete errado sem ninguém perceber.
+        if (feeData?.status !== 'success' || !feeData?.data) {
+          setFeeError(feeData?.message || 'Não foi possível calcular o frete.');
+          setDeliveryFee(null);
+          setDeliveryDistance(0);
+          return;
         }
-        setDeliveryFee(Number(finalFee) || 0);
-        setDeliveryDistance(Number(distance) || 0);
+        setDeliveryFee(Number(feeData.data.delivery_fee) || 0);
+        setDeliveryDistance(Number(feeData.data.delivery_distance_km) || 0);
       } catch {
         addToast('error', "Não foi possível calcular o frete.");
         setFeeError("Não foi possível calcular o frete.");
-        setDeliveryFee(5.00);
+        setDeliveryFee(null);
       } finally {
         setIsCalculatingFee(false);
       }

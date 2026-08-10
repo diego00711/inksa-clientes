@@ -22,36 +22,43 @@ export const calculateDeliveryFee = async (deliveryData) => {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(deliveryData),
     });
-    if (!response.ok) throw new Error(`HTTP ${response.status}`);
-    const data = await processResponse(response);
+    let data = null;
+    try { data = await response.json(); } catch { data = null; }
 
-    // Fora da área da loja de entrega própria: NÃO pode virar "R$ 5 padrão".
-    // Este endpoint tem um fallback generoso pra nunca travar o carrinho por
-    // falha de rede — mas aqui a recusa é intencional, e engolir ela deixaria o
-    // cliente fechar um pedido que a loja não tem como entregar.
+    // Fora da área da loja de entrega própria: recusa intencional (vem com
+    // HTTP 200), tratada à parte pelo carrinho.
     if (data?.error === 'fora_da_area') {
       return { status: 'error', error: 'fora_da_area', message: data.message };
     }
+    if (!response.ok) throw new Error(data?.error || `HTTP ${response.status}`);
 
-    let deliveryFee = 5.0;
-    if (data?.status === 'success' && typeof data?.data?.delivery_fee === 'number') {
-      deliveryFee = data.data.delivery_fee;
-    } else if (typeof data?.delivery_fee === 'number') {
-      deliveryFee = data.delivery_fee;
-    }
+    // NUNCA inventar um preço aqui. O "R$ 5 padrão" que existia neste ponto
+    // devolvia status:'success' por cima de qualquer falha — o carrinho
+    // acreditava, mostrava R$ 5,00 e deixava fechar o pedido com o frete
+    // errado, sem nenhum aviso. Era a origem do frete R$ 5 fixo.
+    const raw = (data?.status === 'success' ? data.data : data) || {};
+    const fee = Number(raw.delivery_fee);
+    if (!Number.isFinite(fee)) throw new Error('Resposta sem valor de frete');
 
     return {
       status: 'success',
       data: {
-        delivery_fee: Number(deliveryFee) || 5.0,
-        message: data?.data?.message || data?.message || 'Frete calculado com sucesso',
+        delivery_fee: fee,
+        // O backend devolve `delivery_distance_km`. Este serviço não repassava
+        // o campo e o carrinho lia `distance_km` — resultado: TODO pedido era
+        // gravado com 0 km, e o repasse do entregador saía calculado sobre
+        // distância zero. Aceita os dois nomes por segurança.
+        delivery_distance_km: Number(raw.delivery_distance_km ?? raw.distance_km) || 0,
+        delivery_type: raw.delivery_type || null,
+        message: raw.message || 'Frete calculado com sucesso',
       },
     };
   } catch (err) {
     console.error('❌ Erro ao calcular frete:', err);
     return {
-      status: 'success',
-      data: { delivery_fee: 5.0, message: 'Taxa padrão aplicada (erro na conexão)' },
+      status: 'error',
+      error: 'calculo_falhou',
+      message: 'Não foi possível calcular o frete. Tente novamente.',
     };
   }
 };
