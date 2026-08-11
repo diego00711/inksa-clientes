@@ -63,6 +63,13 @@ export function CartPage() {
   // (modal de detalhes + comanda impressa). O backend já grava em orders.notes.
   const [notes, setNotes] = useState('');
 
+  // CPF pro pagamento online (exigência do PIX). Só entra em cena se o perfil
+  // ainda não tem — o backend salva no primeiro uso e nunca mais pergunta.
+  const [pedindoCpf, setPedindoCpf] = useState(false);
+  const [cpfInput, setCpfInput] = useState('');
+  const cpfDigitos = cpfInput.replace(/\D/g, '');
+  const cpfSalvo = !!(clientProfile?.cpf || '').replace(/\D/g, '');
+
   // Cash order confirmation state
   const [cashOrderConfirmed, setCashOrderConfirmed] = useState(false);
   const [confirmedTotal, setConfirmedTotal] = useState(0);
@@ -282,6 +289,14 @@ export function CartPage() {
       }
     }
 
+    // CPF só é exigido no pagamento ONLINE (regra do PIX/cartão). Quem paga em
+    // dinheiro nunca vê esse campo — por isso a pergunta fica aqui no checkout
+    // e não no cadastro, que é a porta de entrada e não pode ganhar fricção.
+    if (paymentMethod !== 'cash' && !cpfSalvo && !cpfDigitos) {
+      setPedindoCpf(true);
+      return;
+    }
+
     setIsProcessingOrder(true);
     try {
       const restaurantId = restaurantIds[0];
@@ -307,6 +322,9 @@ export function CartPage() {
         delivery_distance_km: deliveryDistance || 0,
         notes: notes.trim(),
         cliente_email: user.email,
+        // Vai só quando o cliente acabou de digitar; o backend guarda no perfil
+        // e nas próximas compras nem pergunta.
+        ...(cpfDigitos ? { cpf: cpfDigitos } : {}),
         ...(couponData?.valid && couponCode.trim() ? { coupon_code: couponCode.trim() } : {}),
       };
 
@@ -665,6 +683,50 @@ export function CartPage() {
                 'Finalizar Pedido e Pagar'
               )}
             </Button>
+          </div>
+        </div>
+      )}
+
+      {/* CPF pro pagamento online. Aparece UMA vez: o backend salva no perfil
+          e nas próximas compras nem pergunta. Quem paga em dinheiro nunca vê. */}
+      {pedindoCpf && (
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50 p-4">
+          <div className="w-full max-w-sm rounded-2xl bg-white p-5 shadow-xl">
+            <h3 className="text-lg font-bold text-gray-800">Falta só o seu CPF</h3>
+            <p className="mt-1 text-sm text-gray-600">
+              O banco exige o CPF para gerar o PIX e a cobrança no cartão.
+              Pedimos uma vez só.
+            </p>
+            <input
+              type="tel"
+              inputMode="numeric"
+              autoFocus
+              value={cpfInput}
+              onChange={(e) => setCpfInput(e.target.value.replace(/\D/g, '').slice(0, 11))}
+              placeholder="Somente números"
+              className="mt-4 w-full rounded-xl border border-gray-300 px-4 py-3 text-lg tracking-wider focus:border-orange-500 focus:outline-none"
+            />
+            <div className="mt-4 flex gap-2">
+              <button
+                onClick={() => { setPedindoCpf(false); setCpfInput(''); }}
+                className="flex-1 rounded-xl border border-gray-300 py-3 font-semibold text-gray-700"
+              >
+                Cancelar
+              </button>
+              <button
+                disabled={cpfDigitos.length !== 11}
+                onClick={() => { setPedindoCpf(false); handleFinalizarPedido(); }}
+                className="flex-1 rounded-xl bg-orange-500 py-3 font-semibold text-white disabled:opacity-50"
+              >
+                Continuar
+              </button>
+            </div>
+            <button
+              onClick={() => { setPedindoCpf(false); setCpfInput(''); setPaymentMethod('cash'); }}
+              className="mt-3 w-full text-sm font-medium text-gray-500 underline"
+            >
+              Prefiro pagar em dinheiro na entrega
+            </button>
           </div>
         </div>
       )}
