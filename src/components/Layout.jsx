@@ -1,8 +1,11 @@
+import { useEffect, useRef } from "react";
 import { Outlet, NavLink } from "react-router-dom";
 import { Header } from "./Header";
 import { Home, Receipt, ShoppingCart, User } from "lucide-react";
 import { useCart } from "../context/CartContext";
 import { useAuth } from "../context/AuthContext";
+import { CLIENT_API_URL, createAuthHeaders } from "../services/api";
+import { apiFetch } from "../services/apiClient.js";
 
 function BottomNav() {
   const { totalItemsInCart } = useCart();
@@ -48,7 +51,41 @@ function BottomNav() {
   );
 }
 
+// Presença + foto do carrinho. O carrinho vive no localStorage, então sem isto
+// o servidor nunca fica sabendo que alguém montou um pedido e desistiu — e
+// abandono por atrito no checkout (frete que não calcula, pagamento recusado)
+// vira invisível, porque cliente que desiste não reclama, só some.
+function usePresencaCliente() {
+  const { cartItems } = useCart();
+  const { isAuthenticated } = useAuth();
+  const carrinhoRef = useRef(cartItems);
+  useEffect(() => { carrinhoRef.current = cartItems; }, [cartItems]);
+
+  useEffect(() => {
+    if (!isAuthenticated) return undefined;
+    const ping = () => {
+      const itens = carrinhoRef.current || [];
+      const qtd = itens.reduce((t, i) => t + (i.quantity || 0), 0);
+      const valor = itens.reduce((t, i) => t + (Number(i.price) || 0) * (i.quantity || 0), 0);
+      apiFetch(`${CLIENT_API_URL}/api/client/heartbeat`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...createAuthHeaders() },
+        body: JSON.stringify({ cart_items: qtd, cart_value: Number(valor.toFixed(2)) }),
+      }).catch(() => {});   // best-effort: nunca atrapalha o app
+    };
+    ping();
+    const id = setInterval(ping, 2 * 60 * 1000);
+    const onVisible = () => { if (document.visibilityState === 'visible') ping(); };
+    document.addEventListener('visibilitychange', onVisible);
+    return () => {
+      clearInterval(id);
+      document.removeEventListener('visibilitychange', onVisible);
+    };
+  }, [isAuthenticated]);
+}
+
 export function Layout() {
+  usePresencaCliente();
   return (
     <div className="bg-orange-50 min-h-screen">
       <Header />
