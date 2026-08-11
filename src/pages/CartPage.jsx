@@ -97,8 +97,16 @@ export function CartPage() {
 
   // Coordenadas e endereço de entrega: LOCALIZAÇÃO ATUAL (GPS) tem prioridade;
   // senão, endereço salvo selecionado; senão, endereço principal do perfil.
-  const deliveryLat = currentLoc?.lat ?? selectedAddress?.latitude ?? clientProfile?.latitude ?? clientProfile?.lat ?? 0;
-  const deliveryLng = currentLoc?.lng ?? selectedAddress?.longitude ?? clientProfile?.longitude ?? clientProfile?.lng ?? 0;
+  // NULL quando não há coordenada, nunca 0. `client_profiles` NÃO tem coluna de
+  // latitude/longitude (só `client_addresses`), então o fallback pro perfil era
+  // sempre undefined e o valor final virava 0 — que o backend lê como falsy e
+  // responde 400 "coordenadas obrigatórias". Com o antigo fallback de R$ 5 isso
+  // passava batido; agora vira erro visível, então precisa ser um erro que
+  // explica o que fazer.
+  const deliveryLat = currentLoc?.lat ?? selectedAddress?.latitude ?? null;
+  const deliveryLng = currentLoc?.lng ?? selectedAddress?.longitude ?? null;
+  const semCoordenada = deliveryLat == null || deliveryLng == null
+    || Number(deliveryLat) === 0 || Number(deliveryLng) === 0;
   const deliveryAddressStr = currentLoc?.address
     ?? (selectedAddress
       ? formatAddress(selectedAddress)
@@ -156,6 +164,15 @@ export function CartPage() {
   useEffect(() => {
     const fetchDeliveryFee = async () => {
       if (cartItems.length === 0) { setDeliveryFee(0); return; }
+      // Sem coordenada nem adianta chamar: o backend responde 400 e o cliente
+      // lê um "erro" genérico sem saber o que fazer. Melhor dizer a ele.
+      if (semCoordenada) {
+        setFeeError('Escolha um endereço de entrega para calcular o frete.');
+        setDeliveryFee(null);
+        setDeliveryDistance(0);
+        setIsCalculatingFee(false);
+        return;
+      }
       setIsCalculatingFee(true);
       setFeeError(null);
       try {
@@ -194,7 +211,7 @@ export function CartPage() {
       }
     };
     fetchDeliveryFee();
-  }, [cartItems, addToast, deliveryLat, deliveryLng]);
+  }, [cartItems, addToast, deliveryLat, deliveryLng, semCoordenada]);
 
   const safeFee = Number(deliveryFee) || 0;
   const couponDiscount = (couponData?.valid && Number(couponData?.discount_amount) > 0)
