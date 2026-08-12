@@ -6,6 +6,7 @@ import { useCart } from "../context/CartContext";
 import { useAuth } from "../context/AuthContext";
 import { CLIENT_API_URL, createAuthHeaders } from "../services/api";
 import { apiFetch } from "../services/apiClient.js";
+import { NotificationPrompt } from "./NotificationPrompt";
 
 function BottomNav() {
   const { totalItemsInCart } = useCart();
@@ -90,6 +91,7 @@ export function Layout() {
     <div className="bg-orange-50 min-h-screen">
       <Header />
       <main className="w-full max-w-screen-2xl mx-auto pb-[calc(72px+env(safe-area-inset-bottom))] sm:pb-0">
+        <NotificationPrompt />
         <Outlet />
       </main>
       <BottomNav />
