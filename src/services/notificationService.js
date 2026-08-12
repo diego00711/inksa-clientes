@@ -19,6 +19,32 @@ const FCM_VAPID_KEY = "BOUov-X15lwK9B-Hd7er7rhnPZCzYxunkqEeeTo71A8gOxuCCQIEh_MQW
  * Retorna null silenciosamente em qualquer falha — nunca quebra o fluxo de login.
  */
 /**
+ * Espera o service worker recém-registrado ficar ATIVO.
+ *
+ * getToken() chama pushManager.subscribe na registration; com o worker ainda
+ * em 'installing' a inscrição falha de um jeito genérico. Timeout de 10s para
+ * não travar a tela caso o SW nunca ative.
+ */
+function esperarAtivar(registration, limiteMs = 10000) {
+  if (registration.active) return Promise.resolve(registration);
+  const sw = registration.installing || registration.waiting;
+  if (!sw) return Promise.resolve(registration);
+  return new Promise((resolve, reject) => {
+    const relogio = setTimeout(
+      () => reject(new Error('o service worker não ativou em 10s')),
+      limiteMs,
+    );
+    sw.addEventListener('statechange', () => {
+      if (sw.state === 'activated') { clearTimeout(relogio); resolve(registration); }
+      if (sw.state === 'redundant') {
+        clearTimeout(relogio);
+        reject(new Error('o service worker virou redundante (outro SW tomou o escopo)'));
+      }
+    });
+  });
+}
+
+/**
  * Obtém o token FCM devolvendo {token, erro}.
  *
  * O `catch` daqui antes devolvia só `null` — e a mensagem do Firebase, que diz
@@ -54,10 +80,22 @@ export async function obterTokenFCM() {
     // REGISTRO EXPLÍCITO do service worker. Deixar o Firebase registrar
     // sozinho falha silenciosamente no iOS: ele procura /firebase-messaging-sw.js
     // e não espera o SW ficar pronto. Passar a registration resolve a corrida.
+    //
+    // ESCOPO SEPARADO, e isso é essencial: o app já registra /sw.js (PWA) no
+    // escopo '/' a cada load, em main.jsx. Dois SCRIPTS diferentes no MESMO
+    // escopo não coexistem — o último registro substitui o anterior. Registrar
+    // o FCM em '/' derrubaria o PWA, e o próximo load derrubaria o FCM de
+    // volta, num revezamento em que o push nunca sobrevive. Este é o escopo
+    // que o próprio Firebase usa internamente.
     let registration;
     try {
-      registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js', { scope: '/' });
-      await navigator.serviceWorker.ready;
+      registration = await navigator.serviceWorker.register(
+        '/firebase-messaging-sw.js',
+        { scope: '/firebase-cloud-messaging-push-scope' },
+      );
+      // navigator.serviceWorker.ready NÃO serve aqui: ele resolve com o SW que
+      // controla ESTA página (o do PWA), não com este. Espera o certo.
+      await esperarAtivar(registration);
     } catch (swErr) {
       return { token: null, erro: `Service worker não registrou: ${swErr?.message || swErr}` };
     }
