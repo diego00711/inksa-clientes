@@ -1,5 +1,16 @@
 // src/services/notificationService.js
 //
+// DOIS CAMINHOS, um arquivo. O mesmo bundle roda no navegador/PWA e dentro do
+// APK (o Capacitor carrega o site publicado via server.url), então a escolha
+// tem que ser em tempo de execução:
+//
+//   • navegador/PWA  -> Web Push (Firebase JS SDK + VAPID + service worker)
+//   • APK instalado  -> @capacitor/push-notifications (FCM nativo)
+//
+// Não é preferência: o WebView do Android NÃO implementa a Notification API.
+// No app instalado o caminho web falha sempre, e falhava calado.
+import { Capacitor } from '@capacitor/core';
+//
 // IMPORTANTE: Diego precisa preencher FIREBASE_CONFIG com as credenciais do projeto Firebase.
 // Acesse console.firebase.google.com → seu projeto → Configurações → Adicionar app web
 const FIREBASE_CONFIG = {
@@ -21,6 +32,124 @@ const FCM_VAPID_KEY = "BOUov-X15lwK9B-Hd7er7rhnPZCzYxunkqEeTo71A8gOxuCCQlEh_MQWN
  * Solicita permissão de notificação e obtém o FCM token.
  * Retorna null silenciosamente em qualquer falha — nunca quebra o fluxo de login.
  */
+/** Roda dentro do APK/IPA (Capacitor), e não no navegador. */
+export function ehAppNativo() {
+  try {
+    return Capacitor.isNativePlatform();
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Token FCM pelo caminho NATIVO (@capacitor/push-notifications).
+ *
+ * Aqui não existe chave VAPID nem service worker: o token vem do próprio FCM
+ * do Android, e o que amarra o app ao projeto Firebase é o
+ * `android/app/google-services.json`. Sem esse arquivo no APK, o
+ * `register()` dispara `registrationError` — ou simplesmente nunca responde,
+ * daí o timeout com mensagem própria.
+ *
+ * O token chega por EVENTO, não por retorno da chamada. Por isso o
+ * register() é envolvido numa promessa com os dois listeners e um relógio:
+ * sem o timeout, um google-services.json ausente deixaria a tela girando pra
+ * sempre — que é a versão silenciosa do mesmo erro.
+ */
+async function obterTokenNativo() {
+  let PushNotifications;
+  try {
+    ({ PushNotifications } = await import('@capacitor/push-notifications'));
+  } catch (e) {
+    return { token: null, erro: `Plugin de push ausente neste APK: ${e?.message || e}` };
+  }
+
+  try {
+    let perm = await PushNotifications.checkPermissions();
+    // Android 13+ exige permissão em tempo de execução (POST_NOTIFICATIONS).
+    if (perm.receive !== 'granted') {
+      perm = await PushNotifications.requestPermissions();
+    }
+    if (perm.receive !== 'granted') {
+      return { token: null, erro: `Permissão ${perm.receive}.` };
+    }
+  } catch (e) {
+    return { token: null, erro: `Falha ao pedir permissão: ${e?.message || e}` };
+  }
+
+  let resolver;
+  const espera = new Promise((r) => { resolver = r; });
+  const inscricoes = [];
+  let respondido = false;
+
+  const finalizar = (resultado) => {
+    if (respondido) return;
+    respondido = true;
+    clearTimeout(relogio);
+    inscricoes.forEach((h) => { try { h.remove(); } catch { /* já removido */ } });
+    resolver(resultado);
+  };
+
+  const relogio = setTimeout(() => finalizar({
+    token: null,
+    erro: 'o FCM não respondeu em 15s — normalmente é google-services.json ausente no APK.',
+  }), 15000);
+
+  try {
+    inscricoes.push(await PushNotifications.addListener(
+      'registration', (t) => finalizar({ token: t?.value || null, erro: t?.value ? null : 'registro sem token.' }),
+    ));
+    inscricoes.push(await PushNotifications.addListener(
+      'registrationError', (e) => finalizar({ token: null, erro: `registro nativo falhou: ${e?.error || JSON.stringify(e)}` }),
+    ));
+    await PushNotifications.register();
+  } catch (e) {
+    finalizar({ token: null, erro: e?.message || String(e) });
+  }
+
+  return espera;
+}
+
+/**
+ * Estado da permissão no app instalado: 'granted' | 'denied' | 'prompt' | null.
+ *
+ * Só pode ser consultado de forma assíncrona (é uma chamada ao Android), ao
+ * contrário do `Notification.permission` do navegador. A tela precisa disso
+ * pra não mostrar "Não disponível neste app" dentro do próprio app.
+ */
+export async function estadoPermissaoNativa() {
+  if (!ehAppNativo()) return null;
+  try {
+    const { PushNotifications } = await import('@capacitor/push-notifications');
+    const p = await PushNotifications.checkPermissions();
+    return p?.receive || null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Tocar na notificação leva pra tela do pedido, não pra home.
+ *
+ * Equivalente nativo do `notificationclick` do firebase-messaging-sw.js. Sem
+ * isto o push funciona mas entrega a pessoa na home, e ela procura sozinha o
+ * pedido que motivou o aviso.
+ */
+let listenersDeAcaoProntos = false;
+export async function configurarAcoesDePush(navegarPara) {
+  if (!ehAppNativo() || listenersDeAcaoProntos) return;
+  try {
+    const { PushNotifications } = await import('@capacitor/push-notifications');
+    await PushNotifications.addListener('pushNotificationActionPerformed', (acao) => {
+      const d = acao?.notification?.data || {};
+      const destino = d.url || (d.order_id ? `/pedido/${d.order_id}/acompanhar` : '/');
+      try { navegarPara(destino); } catch { window.location.href = destino; }
+    });
+    listenersDeAcaoProntos = true;
+  } catch (e) {
+    console.warn('Push: não consegui registrar o listener de toque:', e);
+  }
+}
+
 /**
  * Confere o FORMATO da chave VAPID antes de usar. Devolve null se está boa,
  * ou a descrição do defeito.
@@ -84,6 +213,10 @@ function esperarAtivar(registration, limiteMs = 10000) {
  * "não gerou o token" é um beco sem saída pra quem tenta corrigir.
  */
 export async function obterTokenFCM() {
+  // No APK instalado o caminho web NUNCA funciona — o WebView não tem a
+  // Notification API. Desviar aqui, antes de qualquer checagem de navegador.
+  if (ehAppNativo()) return obterTokenNativo();
+
   if (!('Notification' in window) || !('serviceWorker' in navigator)) {
     return { token: null, erro: 'Este navegador não expõe a API de notificação.' };
   }

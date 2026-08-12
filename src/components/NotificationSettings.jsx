@@ -1,7 +1,12 @@
 import { useEffect, useState } from 'react';
 import { Bell, BellOff, CheckCircle2, AlertTriangle, Share } from 'lucide-react';
 import { CLIENT_API_URL, createAuthHeaders } from '../services/api';
-import { obterTokenFCM, saveFcmToken } from '../services/notificationService';
+import {
+  obterTokenFCM,
+  saveFcmToken,
+  ehAppNativo,
+  estadoPermissaoNativa,
+} from '../services/notificationService';
 
 /**
  * Estado das notificações, com o MOTIVO quando não dá pra ativar.
@@ -29,6 +34,14 @@ function naTelaDeInicio() {
 function diagnosticar() {
   if (typeof window === 'undefined') {
     return { estado: 'indisponivel', titulo: 'Indisponível', texto: '' };
+  }
+
+  // APP INSTALADO: o WebView não tem a Notification API, então todo o
+  // diagnóstico abaixo daria "Não disponível neste app" — dentro do próprio
+  // app, mandando a pessoa abrir no Chrome. Aqui quem responde é o Android, e
+  // a resposta é assíncrona: fica 'checando' até o efeito de montagem voltar.
+  if (ehAppNativo()) {
+    return { estado: 'checando', titulo: 'Verificando…', texto: 'Consultando as permissões do aparelho.' };
   }
 
   // A ausência da Notification API tem DUAS causas bem diferentes, e mandar a
@@ -95,6 +108,33 @@ export function NotificationSettings() {
   const [msg, setMsg] = useState(null);
   // null = sem falha conhecida · string = motivo da falha de registro
   const [falhaRegistro, setFalhaRegistro] = useState(null);
+
+  // App instalado: resolve o 'checando' perguntando a permissão ao Android.
+  useEffect(() => {
+    if (!ehAppNativo()) return undefined;
+    let vivo = true;
+    (async () => {
+      const p = await estadoPermissaoNativa();
+      if (!vivo) return;
+      if (p === 'granted') {
+        setDiag({ estado: 'ativo', titulo: 'Avisos ativados', texto: 'Você recebe o andamento dos seus pedidos.' });
+      } else if (p === 'denied') {
+        setDiag({
+          estado: 'bloqueado',
+          titulo: 'Avisos bloqueados',
+          texto: 'Você negou a permissão. Para reativar: Ajustes do Android → Apps → Inksa Cliente → '
+               + 'Notificações → permitir. Depois volte aqui.',
+        });
+      } else {
+        setDiag({
+          estado: 'pedir',
+          titulo: 'Avisos desativados',
+          texto: 'Ative para saber quando a loja aceitar seu pedido, quando sair para entrega e quando estiver chegando.',
+        });
+      }
+    })();
+    return () => { vivo = false; };
+  }, []);
 
   // Já autorizado: registra no servidor e MOSTRA o resultado.
   //
@@ -170,14 +210,14 @@ export function NotificationSettings() {
     ? { caixa: 'border-blue-200 bg-blue-50', icone: 'text-blue-600', titulo: 'text-blue-900', texto: 'text-blue-800' }
     : visual.estado === 'bloqueado'
     ? { caixa: 'border-amber-200 bg-amber-50', icone: 'text-amber-600', titulo: 'text-amber-900', texto: 'text-amber-800' }
-    : visual.estado === 'indisponivel'
+    : visual.estado === 'indisponivel' || visual.estado === 'checando'
     ? { caixa: 'border-gray-200 bg-gray-50', icone: 'text-gray-500', titulo: 'text-gray-800', texto: 'text-gray-600' }
     : { caixa: 'border-orange-200 bg-orange-50', icone: 'text-orange-600', titulo: 'text-orange-900', texto: 'text-orange-800' };
 
   const Icone = visual.estado === 'ativo' ? CheckCircle2
     : visual.estado === 'ios' ? Share
     : visual.estado === 'bloqueado' ? AlertTriangle
-    : visual.estado === 'indisponivel' ? BellOff : Bell;
+    : visual.estado === 'indisponivel' || visual.estado === 'checando' ? BellOff : Bell;
 
   const mostrarBotao = diag.estado === 'pedir' || registroFalhou;
 

@@ -43,4 +43,9 @@
          app instalado não pega (no navegador funciona). Precisa de AAB novo. -->
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <!-- Push: o @capacitor/push-notifications PEDE esta permissão em tempo de
+         execução (Android 13+), mas NÃO a declara no manifesto dele — conferi.
+         Sem esta linha o pedido é negado na hora, sem nem mostrar o diálogo,
+         e o app conclui "usuário recusou" sem que ninguém tenha recusado. -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 </manifest>

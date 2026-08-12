@@ -14,6 +14,7 @@ import FirstOrderCelebration from "./components/onboarding/FirstOrderCelebration
 import GlobalError from "./components/GlobalError";
 import WakingUpScreen from "./components/WakingUpScreen";
 import SupportButton from "./components/SupportButton";
+import { configurarAcoesDePush } from "./services/notificationService";
 
 // --- Lazy-loaded pages ---
 const HomePage = lazy(() => import("./pages/HomePage").then(m => ({ default: m.HomePage })));
@@ -53,6 +54,19 @@ function AuthUnauthorizedHandler() {
     return () => window.removeEventListener('auth:unauthorized', handleUnauthorized);
   }, [addToast, navigate]);
 
+  return null;
+}
+
+/**
+ * Liga o toque na notificação ao roteador (só no app instalado).
+ *
+ * No navegador quem faz isso é o `notificationclick` do
+ * firebase-messaging-sw.js; no APK é um listener do plugin, e sem ele o push
+ * abre a home e a pessoa procura sozinha o pedido que gerou o aviso.
+ */
+function PushAcoesHandler() {
+  const navigate = useNavigate();
+  useEffect(() => { configurarAcoesDePush(navigate); }, [navigate]);
   return null;
 }
 
@@ -153,6 +167,7 @@ function AppContent() {
       {serverReady && (
         <>
           <AuthUnauthorizedHandler />
+          <PushAcoesHandler />
           <OnlineStatusHandler />
           <PaymentReturnHandler />
           <GlobalError />
