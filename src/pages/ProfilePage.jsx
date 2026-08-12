@@ -12,6 +12,7 @@ import ClientService from '../services/clientService';
 import { useToast } from "../context/ToastContext";
 import { useAuth } from '../context/AuthContext';
 import AddressBook from '../components/AddressBook';
+import { NotificationSettings } from '../components/NotificationSettings';
 
 export function ProfilePage() {
   const { addToast } = useToast();
@@ -259,6 +260,11 @@ export function ProfilePage() {
             </div>
           </div>
         </div>
+
+        {/* Notificações: estado sempre visível, com o MOTIVO quando não dá pra
+            ativar. O banner solto tinha 5 saídas silenciosas e nenhuma dizia
+            nada — impossível de diagnosticar no celular. */}
+        <NotificationSettings />
 
         {/* --- SECÇÃO DE ENDEREÇO PRINCIPAL (legado, mantido p/ compatibilidade) --- */}
         <div className="border-t pt-8">
