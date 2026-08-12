@@ -113,8 +113,12 @@ export function NotificationSettings() {
     try {
       const token = await requestNotificationPermission();
       if (token) {
-        await saveFcmToken(token, CLIENT_API_URL, createAuthHeaders());
-        setMsg({ ok: true, txt: 'Pronto! Avisos ativados.' });
+        // O resultado do salvamento MANDA na mensagem. Antes a tela dizia
+        // "Pronto!" sem olhar a resposta do servidor — e o banco ficava vazio.
+        const r = await saveFcmToken(token, CLIENT_API_URL, createAuthHeaders());
+        setMsg(r?.ok
+          ? { ok: true, txt: 'Pronto! Avisos ativados.' }
+          : { ok: false, txt: `Não conseguimos salvar: ${r?.motivo || 'erro desconhecido'}` });
       } else {
         // Sem token com permissão concedida = Firebase falhou. Dizer isso é
         // melhor que fingir sucesso.

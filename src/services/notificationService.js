@@ -52,14 +52,33 @@ export async function requestNotificationPermission() {
  * Falhas são silenciosas — nunca quebram o fluxo de autenticação.
  */
 export async function saveFcmToken(token, apiBaseUrl, authHeaders) {
-  if (!token) return;
+  if (!token) return { ok: false, motivo: 'Token não gerado.' };
   try {
-    await fetch(`${apiBaseUrl}/api/profile/fcm-token`, {
+    const r = await fetch(`${apiBaseUrl}/api/profile/fcm-token`, {
       method: 'PATCH',
       headers: { ...authHeaders, 'Content-Type': 'application/json' },
       body: JSON.stringify({ fcm_token: token, user_type: 'client' }),
     });
+
+    // Antes esta função IGNORAVA a resposta: 401, 404 e 500 passavam como
+    // sucesso e a tela dizia "Pronto! Avisos ativados" com o banco vazio.
+    // Erro que se disfarça de sucesso é pior que erro — some da lista de
+    // problemas sem nunca ter sido resolvido.
+    let corpo = null;
+    try { corpo = await r.json(); } catch { /* sem corpo */ }
+
+    if (!r.ok) {
+      const detalhe = corpo?.error || corpo?.message || `HTTP ${r.status}`;
+      console.warn('FCM save token falhou:', r.status, detalhe);
+      return { ok: false, status: r.status, motivo: detalhe };
+    }
+    // A rota devolve 200 com success:false quando a coluna não existe.
+    if (corpo && corpo.success === false) {
+      return { ok: false, status: 200, motivo: corpo.warning || 'Servidor recusou o token.' };
+    }
+    return { ok: true };
   } catch (e) {
     console.warn('FCM save token error:', e);
+    return { ok: false, motivo: 'Sem conexão com o servidor.' };
   }
 }
