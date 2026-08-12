@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Bell, BellOff, CheckCircle2, AlertTriangle, Share } from 'lucide-react';
 import { CLIENT_API_URL, createAuthHeaders } from '../services/api';
-import { requestNotificationPermission, saveFcmToken } from '../services/notificationService';
+import { obterTokenFCM, saveFcmToken } from '../services/notificationService';
 
 /**
  * Estado das notificações, com o MOTIVO quando não dá pra ativar.
@@ -108,9 +108,9 @@ export function NotificationSettings() {
     let vivo = true;
     (async () => {
       try {
-        const token = await requestNotificationPermission();
+        const { token, erro } = await obterTokenFCM();
         if (!token) {
-          if (vivo) setFalhaRegistro('O Firebase não gerou o token neste aparelho.');
+          if (vivo) setFalhaRegistro(erro || 'O Firebase não gerou o token neste aparelho.');
           return;
         }
         const r = await saveFcmToken(token, CLIENT_API_URL, createAuthHeaders());
@@ -126,7 +126,9 @@ export function NotificationSettings() {
     setOcupado(true);
     setMsg(null);
     try {
-      const token = await requestNotificationPermission();
+      // Usa obterTokenFCM (não o wrapper antigo): aqui o MOTIVO da falha
+      // importa mais que em qualquer outro lugar — é o clique da pessoa.
+      const { token, erro } = await obterTokenFCM();
       if (token) {
         // O resultado do salvamento MANDA na mensagem. Antes a tela dizia
         // "Pronto!" sem olhar a resposta do servidor — e o banco ficava vazio.
@@ -136,9 +138,7 @@ export function NotificationSettings() {
           ? { ok: true, txt: 'Pronto! Avisos ativados.' }
           : { ok: false, txt: `Não conseguimos salvar: ${r?.motivo || 'erro desconhecido'}` });
       } else {
-        const motivo = Notification.permission === 'granted'
-          ? 'O Firebase não gerou o token neste aparelho.'
-          : 'Permissão não concedida.';
+        const motivo = erro || 'O Firebase não gerou o token neste aparelho.';
         setFalhaRegistro(motivo);
         setMsg({ ok: false, txt: motivo });
       }

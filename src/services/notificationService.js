@@ -18,33 +18,73 @@ const FCM_VAPID_KEY = "BOUov-X15lwK9B-Hd7er7rhnPZCzYxunkqEeeTo71A8gOxuCCQIEh_MQW
  * Solicita permissão de notificação e obtém o FCM token.
  * Retorna null silenciosamente em qualquer falha — nunca quebra o fluxo de login.
  */
-export async function requestNotificationPermission() {
-  // 1. Verifica se browser suporta Notifications e ServiceWorker
-  if (!('Notification' in window) || !('serviceWorker' in navigator)) return null;
+/**
+ * Obtém o token FCM devolvendo {token, erro}.
+ *
+ * O `catch` daqui antes devolvia só `null` — e a mensagem do Firebase, que diz
+ * EXATAMENTE o que falhou (chave VAPID inválida, service worker não
+ * registrado, domínio não autorizado no projeto), era jogada fora. Sem ela,
+ * "não gerou o token" é um beco sem saída pra quem tenta corrigir.
+ */
+export async function obterTokenFCM() {
+  if (!('Notification' in window) || !('serviceWorker' in navigator)) {
+    return { token: null, erro: 'Este navegador não expõe a API de notificação.' };
+  }
 
-  // 2. Pede permissão ao usuário
   const permission = await Notification.requestPermission();
-  if (permission !== 'granted') return null;
+  if (permission !== 'granted') {
+    return { token: null, erro: `Permissão ${permission}.` };
+  }
 
-  // 3. Se FIREBASE_CONFIG não estiver preenchido, avisa no console e retorna null graciosamente
   if (!FIREBASE_CONFIG.apiKey) {
-    console.warn('FCM: FIREBASE_CONFIG não configurado. Preencha src/services/notificationService.js');
-    return null;
+    return { token: null, erro: 'FIREBASE_CONFIG não preenchido no app.' };
   }
 
   try {
-    // 4. Importa Firebase dinamicamente para não quebrar se não configurado
-    const { initializeApp } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js');
-    const { getMessaging, getToken } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-messaging.js');
+    const { initializeApp, getApps } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js');
+    const { getMessaging, getToken, isSupported } =
+      await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-messaging.js');
 
-    const app = initializeApp(FIREBASE_CONFIG);
+    // O próprio Firebase sabe dizer se o ambiente serve. No iOS fora da Tela
+    // de Início isso é false — melhor perguntar que descobrir por exceção.
+    if (typeof isSupported === 'function' && !(await isSupported())) {
+      return { token: null, erro: 'O Firebase não suporta notificações neste navegador/modo.' };
+    }
+
+    // REGISTRO EXPLÍCITO do service worker. Deixar o Firebase registrar
+    // sozinho falha silenciosamente no iOS: ele procura /firebase-messaging-sw.js
+    // e não espera o SW ficar pronto. Passar a registration resolve a corrida.
+    let registration;
+    try {
+      registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js', { scope: '/' });
+      await navigator.serviceWorker.ready;
+    } catch (swErr) {
+      return { token: null, erro: `Service worker não registrou: ${swErr?.message || swErr}` };
+    }
+
+    // initializeApp duas vezes lança; reaproveita se já existe.
+    const app = (getApps && getApps().length) ? getApps()[0] : initializeApp(FIREBASE_CONFIG);
     const messaging = getMessaging(app);
-    const token = await getToken(messaging, { vapidKey: FCM_VAPID_KEY });
-    return token || null;
+    const token = await getToken(messaging, {
+      vapidKey: FCM_VAPID_KEY,
+      serviceWorkerRegistration: registration,
+    });
+
+    if (!token) return { token: null, erro: 'O Firebase respondeu sem token.' };
+    return { token, erro: null };
   } catch (e) {
+    // `code` do Firebase (ex.: messaging/token-subscribe-failed) é o que
+    // realmente identifica o problema — vai junto.
+    const detalhe = [e?.code, e?.message].filter(Boolean).join(' — ') || String(e);
     console.warn('FCM token error:', e);
-    return null;
+    return { token: null, erro: detalhe };
   }
+}
+
+/** Compatibilidade: os chamadores antigos esperam o token ou null. */
+export async function requestNotificationPermission() {
+  const { token } = await obterTokenFCM();
+  return token || null;
 }
 
 /**
