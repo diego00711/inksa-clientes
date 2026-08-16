@@ -17,6 +17,10 @@ export function LocationProvider({ children }) {
   const [source, setSource] = useState(null); // 'address' | 'gps'
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(true);
+  // null = ainda não sabemos (não perguntamos ou não deu tempo).
+  // Quem lê isto para COBRAR endereço precisa saber a diferença entre
+  // "não tem" e "ainda não sei" — senão cobra de quem já cadastrou.
+  const [temEnderecoSalvo, setTemEnderecoSalvo] = useState(null);
 
   // Fallback: endereço padrão salvo do cliente
   const loadDefaultAddress = useCallback(async () => {
@@ -24,6 +28,7 @@ export function LocationProvider({ children }) {
     if (!localStorage.getItem(AUTH_TOKEN_KEY)) return null;
     try {
       const list = await AddressService.list();
+      setTemEnderecoSalvo(Array.isArray(list) && list.length > 0);
       if (!Array.isArray(list) || list.length === 0) return null;
       // A API já ordena is_default primeiro
       const def = list.find((a) => a.is_default) || list[0];
@@ -99,7 +104,7 @@ export function LocationProvider({ children }) {
     return coords;
   }, [loadDefaultAddress]);
 
-  const value = { location, source, error, loading, refreshFromAddress };
+  const value = { location, source, error, loading, temEnderecoSalvo, refreshFromAddress };
 
   return (
     <LocationContext.Provider value={value}>

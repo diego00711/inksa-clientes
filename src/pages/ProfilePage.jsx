@@ -98,6 +98,16 @@ export function ProfilePage() {
     loadProfile();
   }, [addToast]);
 
+  // Quem chega por /perfil#enderecos veio do card "Complete seu cadastro"
+  // clicando em "Cadastrar endereço". O React Router não rola pra âncora
+  // sozinho, e a seção fica no fim da página — sem isto a pessoa cai no topo
+  // e tem que procurar o que foi mandada fazer. Só depois do perfil carregar,
+  // senão o elemento ainda não existe.
+  useEffect(() => {
+    if (isLoading || window.location.hash !== '#enderecos') return;
+    document.getElementById('enderecos')?.scrollIntoView({ behavior: 'smooth' });
+  }, [isLoading]);
+
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
@@ -385,8 +395,13 @@ export function ProfilePage() {
         )}
       </form>
 
-      {/* --- ENDEREÇOS SALVOS (múltiplos, com mapa) --- */}
-      <AddressBook />
+      {/* --- ENDEREÇOS SALVOS (múltiplos, com mapa) ---
+          O id existe pro card "Complete seu cadastro" mandar direto pra cá:
+          a seção fica no fim da página, e cair no topo do perfil faria a
+          pessoa procurar o que ela foi mandada fazer. */}
+      <div id="enderecos" className="scroll-mt-24">
+        <AddressBook />
+      </div>
     </div>
   );
 }

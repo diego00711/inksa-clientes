@@ -7,6 +7,7 @@ import { useAuth } from "../context/AuthContext";
 import { CLIENT_API_URL, createAuthHeaders } from "../services/api";
 import { apiFetch } from "../services/apiClient.js";
 import { NotificationPrompt } from "./NotificationPrompt";
+import { CompleteCadastro } from "./CompleteCadastro";
 
 function BottomNav() {
   const { totalItemsInCart } = useCart();
@@ -92,6 +93,7 @@ export function Layout() {
       <Header />
       <main className="w-full max-w-screen-2xl mx-auto pb-[calc(72px+env(safe-area-inset-bottom))] sm:pb-0">
         <NotificationPrompt />
+        <CompleteCadastro />
         <Outlet />
       </main>
       <BottomNav />
