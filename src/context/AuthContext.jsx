@@ -3,7 +3,7 @@
 import { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import authService from '../services/authService';
 import clientService from '../services/clientService';
-import { requestNotificationPermission, saveFcmToken } from '../services/notificationService';
+import { requestNotificationPermission, obterTokenFCM, saveFcmToken } from '../services/notificationService';
 import { CLIENT_API_URL, createAuthHeaders } from '../services/api';
 import { isTokenExpired } from '../services/apiClient';
 
@@ -61,6 +61,33 @@ export const AuthProvider = ({ children }) => {
   useEffect(() => {
     fetchAndSetUser();
   }, [fetchAndSetUser]);
+
+  // Registra o aparelho pra push também na RETOMADA de sessão, não só no
+  // login. Quem já estava logado nunca passava pelo login() de novo — daí 1
+  // token em 22 clientes. Idempotente: reenviar o mesmo token não faz mal.
+  //
+  // Onde a permissão ainda não foi concedida, o navegador ignora o pedido sem
+  // gesto do usuário; esse caso continua sendo do painel em Perfil, que tem
+  // botão. Aqui a gente resgata quem JÁ autorizou e mesmo assim não constava.
+  useEffect(() => {
+    if (!user) return;
+    let vivo = true;
+    (async () => {
+      try {
+        const { token, erro } = await obterTokenFCM();
+        if (!vivo) return;
+        if (!token) {
+          console.warn('Push: token não gerado —', erro);
+          return;
+        }
+        const r = await saveFcmToken(token, CLIENT_API_URL, createAuthHeaders());
+        if (!r?.ok) console.warn('Push: servidor não salvou o token —', r?.motivo);
+      } catch (e) {
+        console.warn('Push: falha ao registrar (não bloqueia o app):', e);
+      }
+    })();
+    return () => { vivo = false; };
+  }, [user]);
 
   // Verifica periodicamente se o token expirou (a cada 30s). Se sim, desloga.
   useEffect(() => {
