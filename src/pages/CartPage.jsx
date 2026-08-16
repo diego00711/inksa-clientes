@@ -216,6 +216,14 @@ export function CartPage() {
           restaurant_id: restaurantId,
           client_latitude: deliveryLat,
           client_longitude: deliveryLng,
+          // Só id e quantidade: o servidor busca o PESO no catálogo. Mandar o
+          // peso daqui seria deixar o cliente escolher o próprio frete.
+          // Sem isso, pedido de 60kg de ração seria cotado como se coubesse
+          // numa moto.
+          items: cartItems.map((i) => ({
+            menu_item_id: i.id ?? i.menu_item_id,
+            quantity: i.quantity ?? 1,
+          })),
         });
         // Loja de entrega própria que não alcança este endereço: para aqui.
         // deliveryFee fica null, e o botão de finalizar já é bloqueado por isso.
