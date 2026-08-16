@@ -40,6 +40,11 @@ export function CartPage() {
   // Localização atual (GPS): pro cliente pedir de onde está, mesmo sem endereço
   // salvo ali (ex.: está em outra cidade). Quando setada, tem prioridade.
   const [currentLoc, setCurrentLoc] = useState(null); // {lat, lng, address}
+  // Número e complemento de quem entrega na localização atual. O GPS marca a
+  // RUA; a porta quem diz é a pessoa. Sem isso o entregador chega na calçada
+  // certa sem saber em qual casa tocar — e entrega que não acontece custa o
+  // frete, o tempo dele e o pedido do cliente.
+  const [complementoGps, setComplementoGps] = useState('');
   const [locatingNow, setLocatingNow] = useState(false);
 
   // Payment method state
@@ -114,8 +119,12 @@ export function CartPage() {
   const deliveryLng = currentLoc?.lng ?? selectedAddress?.longitude ?? null;
   const semCoordenada = deliveryLat == null || deliveryLng == null
     || Number(deliveryLat) === 0 || Number(deliveryLng) === 0;
-  const deliveryAddressStr = currentLoc?.address
-    ?? (selectedAddress
+  // Usando a localização atual, o complemento é OBRIGATÓRIO e entra no
+  // endereço que o entregador recebe. Endereço salvo já tem número próprio.
+  const faltaComplemento = !!currentLoc && complementoGps.trim().length < 2;
+  const deliveryAddressStr = currentLoc
+    ? [currentLoc.address, complementoGps.trim()].filter(Boolean).join(' — ')
+    : (selectedAddress
       ? formatAddress(selectedAddress)
       : (clientProfile?.address || clientProfile?.full_address || ''));
 
@@ -143,10 +152,35 @@ export function CartPage() {
           );
         });
       }
+      // Endereço para o ENTREGADOR ler, não para o banco de dados guardar.
+      //
+      // Antes vinha o `display_name` cru do Nominatim — "123, Rua X, Bairro,
+      // Lages, Região Geográfica Imediata de Lages, Santa Catarina, Região
+      // Sul, 88523-480, Brasil". Quem está de moto na chuva não lê isso. E
+      // quando o serviço falhava, o entregador recebia literalmente um par de
+      // coordenadas como endereço.
       let address = `Minha localização (${coords.lat.toFixed(5)}, ${coords.lng.toFixed(5)})`;
       try {
-        const r = await fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${coords.lat}&lon=${coords.lng}`, { headers: { 'Accept-Language': 'pt-BR' } });
-        if (r.ok) { const j = await r.json(); if (j?.display_name) address = j.display_name; }
+        const r = await fetch(
+          `https://nominatim.openstreetmap.org/reverse?format=jsonv2&addressdetails=1&lat=${coords.lat}&lon=${coords.lng}`,
+          { headers: { 'Accept-Language': 'pt-BR' } },
+        );
+        if (r.ok) {
+          const j = await r.json();
+          const a = j?.address || {};
+          const rua = a.road || a.pedestrian || a.footway || a.residential;
+          const bairro = a.suburb || a.neighbourhood || a.village || a.town;
+          const cidade = a.city || a.town || a.municipality;
+          // Monta só o que serve pra chegar: rua (+ número quando o GPS
+          // acertou o prédio), bairro e cidade. Sem estado, CEP e país.
+          const curto = [
+            [rua, a.house_number].filter(Boolean).join(', '),
+            bairro,
+            cidade,
+          ].filter(Boolean).join(' - ');
+          if (curto) address = curto;
+          else if (j?.display_name) address = j.display_name;
+        }
       } catch { /* sem reverse-geocode -> usa as coords */ }
       setCurrentLoc({ ...coords, address });
       setShowAddressList(false);
@@ -631,12 +665,38 @@ export function CartPage() {
                 </div>
                 <button
                   type="button"
-                  onClick={() => setCurrentLoc(null)}
+                  onClick={() => { setCurrentLoc(null); setComplementoGps(''); }}
                   className="text-green-700 hover:text-green-900 shrink-0"
                   aria-label="Voltar a usar endereço salvo"
                 >
                   <X className="w-4 h-4" />
                 </button>
+              </div>
+            )}
+            {/* O GPS acerta a rua, não a porta. Este campo é o que evita o
+                entregador rodando no quarteirão com a comida esfriando. */}
+            {currentLoc && (
+              <div className="mt-2">
+                <label htmlFor="complementoGps" className="block text-xs font-semibold text-gray-700">
+                  Número e complemento <span className="text-red-500">*</span>
+                </label>
+                <input
+                  id="complementoGps"
+                  type="text"
+                  value={complementoGps}
+                  onChange={(e) => setComplementoGps(e.target.value)}
+                  maxLength={120}
+                  placeholder="Ex: 307, casa dos fundos, portão azul"
+                  className="mt-1 w-full rounded-xl border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400"
+                />
+                <p className="mt-1 text-xs text-gray-500">
+                  O GPS mostra a rua certa, mas não diz qual é a sua porta.
+                </p>
+                {faltaComplemento && (
+                  <p className="mt-1 text-xs font-medium text-red-600">
+                    Preencha para o entregador conseguir te achar.
+                  </p>
+                )}
               </div>
             )}
           </div>
@@ -671,7 +731,7 @@ export function CartPage() {
             <Button
               className="flex-1 bg-primary text-primary-foreground hover:bg-primary/90"
               onClick={handleFinalizarPedido}
-              disabled={isProcessingOrder || isCalculatingFee || !!feeError || deliveryFee === null || restauranteFechado}
+              disabled={isProcessingOrder || isCalculatingFee || !!feeError || deliveryFee === null || restauranteFechado || faltaComplemento}
             >
               {isProcessingOrder ? (
                 <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Processando...</>
