@@ -5,6 +5,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { MapPin, Plus, Star, Pencil, Trash2, Loader2, Check, X } from "lucide-react";
 import AddressService, { formatAddress } from "../services/addressService";
+import { CLIENT_API_URL } from "../services/api";
 import AddressMapPicker from "./AddressMapPicker";
 import { useToast } from "../context/ToastContext";
 import { useConfirm } from "./ConfirmProvider.jsx";
@@ -27,19 +28,21 @@ function AddressForm({ initial, onCancel, onSaved }) {
     : null;
 
   const geocodeOnMap = async (logradouro, bairro, cidade, uf) => {
-    // Centraliza o mapa no endereco usando OpenStreetMap Nominatim (gratis, sem API key)
+    // Centraliza o mapa no endereco. Passa pelo NOSSO backend (cache +
+    // User-Agent, que o navegador nao deixa definir) em vez de chamar o
+    // Nominatim direto — e no dia que virar provedor pago, a chave fica la.
     try {
-      const q = encodeURIComponent([logradouro, bairro, cidade, uf, "Brasil"].filter(Boolean).join(", "));
-      const res = await fetch(`https://nominatim.openstreetmap.org/search?q=${q}&format=json&limit=1&countrycodes=br`, {
-        headers: { "Accept-Language": "pt-BR" },
+      const p = new URLSearchParams({
+        street: logradouro || "", neighborhood: bairro || "",
+        city: cidade || "", state: uf || "",
       });
-      const arr = await res.json();
-      if (Array.isArray(arr) && arr[0]) {
-        const lat = Number(arr[0].lat);
-        const lng = Number(arr[0].lon);
-        if (Number.isFinite(lat) && Number.isFinite(lng)) {
-          setForm((p) => ({ ...p, latitude: lat, longitude: lng }));
-        }
+      const res = await fetch(`${CLIENT_API_URL}/api/public/geocode?${p}`);
+      if (!res.ok) return;
+      const j = await res.json();
+      const lat = Number(j?.data?.lat);
+      const lng = Number(j?.data?.lng);
+      if (Number.isFinite(lat) && Number.isFinite(lng)) {
+        setForm((p2) => ({ ...p2, latitude: lat, longitude: lng }));
       }
     } catch {
       // silencioso - usuario ainda pode marcar manualmente no mapa

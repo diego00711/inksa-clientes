@@ -159,27 +159,20 @@ export function CartPage() {
       // Sul, 88523-480, Brasil". Quem está de moto na chuva não lê isso. E
       // quando o serviço falhava, o entregador recebia literalmente um par de
       // coordenadas como endereço.
+      // A geocodificação reversa passa pelo NOSSO backend, não direto no
+      // Nominatim. O serviço deles exige User-Agent identificando quem chama
+      // — coisa que o navegador não deixa definir num fetch —, então a
+      // chamada direta era uso não identificado de um serviço comunitário,
+      // sujeito a bloqueio silencioso. No backend também tem cache, e no dia
+      // em que virar provedor pago a chave não vai no bundle do app.
       let address = `Minha localização (${coords.lat.toFixed(5)}, ${coords.lng.toFixed(5)})`;
       try {
         const r = await fetch(
-          `https://nominatim.openstreetmap.org/reverse?format=jsonv2&addressdetails=1&lat=${coords.lat}&lon=${coords.lng}`,
-          { headers: { 'Accept-Language': 'pt-BR' } },
+          `${CLIENT_API_URL}/api/public/reverse-geocode?lat=${coords.lat}&lng=${coords.lng}`,
         );
         if (r.ok) {
           const j = await r.json();
-          const a = j?.address || {};
-          const rua = a.road || a.pedestrian || a.footway || a.residential;
-          const bairro = a.suburb || a.neighbourhood || a.village || a.town;
-          const cidade = a.city || a.town || a.municipality;
-          // Monta só o que serve pra chegar: rua (+ número quando o GPS
-          // acertou o prédio), bairro e cidade. Sem estado, CEP e país.
-          const curto = [
-            [rua, a.house_number].filter(Boolean).join(', '),
-            bairro,
-            cidade,
-          ].filter(Boolean).join(' - ');
-          if (curto) address = curto;
-          else if (j?.display_name) address = j.display_name;
+          if (j?.data?.endereco) address = j.data.endereco;
         }
       } catch { /* sem reverse-geocode -> usa as coords */ }
       setCurrentLoc({ ...coords, address });
