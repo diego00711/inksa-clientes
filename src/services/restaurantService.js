@@ -43,7 +43,7 @@ const processResponse = async (response) => {
 const RestaurantService = {
   // Lista restaurantes paginados — GET /api/restaurants/ (pública, sem auth)
   // Retorna { items, hasMore }.
-  getAllRestaurants: async (location, { limit = 20, offset = 0, city = '' } = {}) => {
+  getAllRestaurants: async (location, { limit = 20, offset = 0, city = '', state = '' } = {}) => {
     try {
       const params = new URLSearchParams();
       if (location?.latitude && location?.longitude) {
@@ -52,6 +52,7 @@ const RestaurantService = {
       }
       // Cidade escolhida no seletor: o backend filtra por ela e ignora o raio.
       if (city) params.append('city', city);
+      if (state) params.append('state', state);
       params.append('limit', limit);
       params.append('offset', offset);
       const url = `${API_URL}/restaurants?${params.toString()}`;
@@ -66,11 +67,26 @@ const RestaurantService = {
     }
   },
 
-  // Cidades que têm restaurante — GET /api/restaurants/cities (pública). Alimenta
-  // o seletor de cidade do cliente. Fail-soft: erro -> lista vazia.
-  getCities: async () => {
+  // Estados que têm loja vendendo — GET /api/restaurants/states (pública).
+  // Primeiro degrau do seletor. Fail-soft: erro -> lista vazia, e aí o seletor
+  // cai direto em cidades (é o que já acontecia antes de existir estado).
+  getStates: async () => {
     try {
-      const response = await apiFetch(`${API_URL}/restaurants/cities`);
+      const response = await apiFetch(`${API_URL}/restaurants/states`);
+      const data = await processResponse(response);
+      return Array.isArray(data) ? data : (data?.data || []);
+    } catch {
+      return [];
+    }
+  },
+
+  // Cidades que têm restaurante — GET /api/restaurants/cities (pública). Alimenta
+  // o seletor de cidade do cliente. `uf` restringe ao estado escolhido.
+  // Fail-soft: erro -> lista vazia.
+  getCities: async (uf = '') => {
+    try {
+      const qs = uf ? `?state=${encodeURIComponent(uf)}` : '';
+      const response = await apiFetch(`${API_URL}/restaurants/cities${qs}`);
       const data = await processResponse(response);
       return Array.isArray(data) ? data : (data?.data || []);
     } catch {

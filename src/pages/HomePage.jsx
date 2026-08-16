@@ -381,14 +381,56 @@ export function HomePage() {
   }, []);
 
   // Fetch restaurants (paginado, com scroll infinito)
-  // Seletor de cidade: o cliente pode trocar pra ver restaurantes de OUTRA
-  // cidade cadastrada, sem ficar preso ao raio da localização atual.
+  // Seletor de lugar: o cliente pode trocar pra ver lojas de OUTRA cidade,
+  // sem ficar preso ao raio da localização atual.
+  //
+  // DOIS DEGRAUS (Estado → Cidade), pelo mesmo motivo do filtro de segmento:
+  // quando abrir a segunda praça, uma lista única de cidades vira rolagem sem
+  // fim e o cliente de Lages tem que caçar Lages no meio de tudo.
+  //
+  // Com UM estado só o degrau some — cai direto nas cidades. Obrigar a clicar
+  // em "SC" pra depois clicar em "Lages" seria atrito puro enquanto só existe
+  // um estado, que é a situação de hoje e a de mais tempo.
+  const [states, setStates] = useState([]);
   const [cities, setCities] = useState([]);
+  const [selectedState, setSelectedState] = useState('');
   const [selectedCity, setSelectedCity] = useState('');
   const [showCityMenu, setShowCityMenu] = useState(false);
+  // Em qual degrau o menu está. Só importa quando há 2+ estados.
+  const [menuNivel, setMenuNivel] = useState('estado');
+
   useEffect(() => {
-    RestaurantService.getCities().then((cs) => setCities(Array.isArray(cs) ? cs : [])).catch(() => {});
+    RestaurantService.getStates()
+      .then((us) => {
+        const lista = Array.isArray(us) ? us : [];
+        setStates(lista);
+        // Um estado só: já carrega as cidades dele e pula o degrau.
+        setMenuNivel(lista.length > 1 ? 'estado' : 'cidade');
+        return RestaurantService.getCities(lista.length === 1 ? lista[0].uf : '');
+      })
+      .then((cs) => setCities(Array.isArray(cs) ? cs : []))
+      .catch(() => {});
   }, []);
+
+  const escolherEstado = useCallback(async (uf) => {
+    setSelectedState(uf);
+    setSelectedCity('');
+    setMenuNivel('cidade');
+    setCities(await RestaurantService.getCities(uf));
+  }, []);
+
+  const voltarPraEstados = useCallback(() => {
+    setMenuNivel('estado');
+    setSelectedState('');
+  }, []);
+
+  const limparLugar = useCallback(async () => {
+    setSelectedCity('');
+    setSelectedState('');
+    setShowCityMenu(false);
+    setMenuNivel(states.length > 1 ? 'estado' : 'cidade');
+    if (states.length === 1) setCities(await RestaurantService.getCities(states[0].uf));
+  }, [states]);
 
   const PAGE_SIZE = 20;
   const [hasMore, setHasMore] = useState(false);
@@ -398,14 +440,14 @@ export function HomePage() {
   const sentinelRef = useRef(null);
 
   const loadPage = useCallback(async (reset) => {
-    if (!location && !locationError && !selectedCity) return;
+    if (!location && !locationError && !selectedCity && !selectedState) return;
     if (loadingRef.current) return;
     loadingRef.current = true;
     const offset = reset ? 0 : offsetRef.current;
     if (reset) setIsLoading(true); else setLoadingMore(true);
     try {
       const { items, hasMore: more } = await RestaurantService.getAllRestaurants(
-        location, { limit: PAGE_SIZE, offset, city: selectedCity }
+        location, { limit: PAGE_SIZE, offset, city: selectedCity, state: selectedState }
       );
       setAllRestaurants((prev) => {
         const base = reset ? [] : prev;
@@ -422,7 +464,7 @@ export function HomePage() {
       setIsLoading(false);
       setLoadingMore(false);
     }
-  }, [location, locationError, selectedCity]);
+  }, [location, locationError, selectedCity, selectedState]);
 
   const loadRestaurants = useCallback(() => loadPage(true), [loadPage]);
 
@@ -553,7 +595,7 @@ export function HomePage() {
                 className="flex items-center gap-1.5 group"
               >
                 <MapPin className="h-4 w-4 text-orange-500 shrink-0" />
-                <span className="text-sm font-bold text-gray-900 max-w-[120px] truncate">{selectedCity || city}</span>
+                <span className="text-sm font-bold text-gray-900 max-w-[120px] truncate">{selectedCity || (selectedState ? `${selectedState} (todo)` : city)}</span>
                 <svg className={`h-3 w-3 text-gray-400 group-hover:text-orange-500 transition-transform ${showCityMenu ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
                 </svg>
@@ -562,27 +604,78 @@ export function HomePage() {
                 <>
                   <div className="fixed inset-0 z-40" onClick={() => setShowCityMenu(false)} />
                   <div className="absolute left-0 top-full mt-2 z-50 w-56 max-h-72 overflow-y-auto bg-white rounded-xl shadow-xl border border-gray-100 py-1">
-                    <p className="px-3 py-1.5 text-[11px] font-bold text-gray-400 uppercase tracking-wide">Escolha a cidade</p>
                     <button
                       type="button"
-                      onClick={() => { setSelectedCity(''); setShowCityMenu(false); }}
-                      className={`w-full text-left px-3 py-2 text-sm hover:bg-orange-50 flex items-center gap-2 ${!selectedCity ? 'text-orange-600 font-semibold' : 'text-gray-700'}`}
+                      onClick={limparLugar}
+                      className={`w-full text-left px-3 py-2 text-sm hover:bg-orange-50 flex items-center gap-2 ${!selectedCity && !selectedState ? 'text-orange-600 font-semibold' : 'text-gray-700'}`}
                     >
-                      <MapPin className="h-3.5 w-3.5 shrink-0" /> Perto de mim {!selectedCity && '✓'}
+                      <MapPin className="h-3.5 w-3.5 shrink-0" /> Perto de mim {!selectedCity && !selectedState && '✓'}
                     </button>
-                    {cities.length === 0 && (
-                      <p className="px-3 py-2 text-xs text-gray-400">Nenhuma cidade cadastrada ainda.</p>
+
+                    <div className="my-1 border-t border-gray-100" />
+
+                    {menuNivel === 'estado' ? (
+                      <>
+                        <p className="px-3 py-1.5 text-[11px] font-bold text-gray-400 uppercase tracking-wide">Escolha o estado</p>
+                        {states.map((e) => (
+                          <button
+                            key={e.uf}
+                            type="button"
+                            onClick={() => escolherEstado(e.uf)}
+                            className="w-full text-left px-3 py-2 text-sm hover:bg-orange-50 flex items-center justify-between gap-2 text-gray-700"
+                          >
+                            <span className="truncate">{e.uf}</span>
+                            <span className="shrink-0 text-xs text-gray-400">
+                              {e.cidades} {e.cidades === 1 ? 'cidade' : 'cidades'}
+                            </span>
+                          </button>
+                        ))}
+                      </>
+                    ) : (
+                      <>
+                        <div className="flex items-center gap-1 px-3 py-1.5">
+                          {states.length > 1 && (
+                            <button
+                              type="button"
+                              onClick={voltarPraEstados}
+                              className="text-[11px] font-bold text-orange-600 hover:underline"
+                            >
+                              ‹ Estados
+                            </button>
+                          )}
+                          <p className="text-[11px] font-bold text-gray-400 uppercase tracking-wide truncate">
+                            {states.length > 1 ? selectedState : 'Escolha a cidade'}
+                          </p>
+                        </div>
+
+                        {/* Ver o estado inteiro só faz sentido quando ele tem
+                            mais de uma cidade — senão é a mesma lista com
+                            outro nome. */}
+                        {selectedState && (states.find((e) => e.uf === selectedState)?.cidades ?? 0) > 1 && (
+                          <button
+                            type="button"
+                            onClick={() => { setSelectedCity(''); setShowCityMenu(false); }}
+                            className={`w-full text-left px-3 py-2 text-sm hover:bg-orange-50 ${!selectedCity ? 'text-orange-600 font-semibold' : 'text-gray-700'}`}
+                          >
+                            Todo o {selectedState} {!selectedCity && '✓'}
+                          </button>
+                        )}
+
+                        {cities.length === 0 && (
+                          <p className="px-3 py-2 text-xs text-gray-400">Nenhuma cidade cadastrada ainda.</p>
+                        )}
+                        {cities.map((c) => (
+                          <button
+                            key={c}
+                            type="button"
+                            onClick={() => { setSelectedCity(c); setShowCityMenu(false); }}
+                            className={`w-full text-left px-3 py-2 text-sm hover:bg-orange-50 truncate ${selectedCity === c ? 'text-orange-600 font-semibold' : 'text-gray-700'}`}
+                          >
+                            {c} {selectedCity === c && '✓'}
+                          </button>
+                        ))}
+                      </>
                     )}
-                    {cities.map((c) => (
-                      <button
-                        key={c}
-                        type="button"
-                        onClick={() => { setSelectedCity(c); setShowCityMenu(false); }}
-                        className={`w-full text-left px-3 py-2 text-sm hover:bg-orange-50 truncate ${selectedCity === c ? 'text-orange-600 font-semibold' : 'text-gray-700'}`}
-                      >
-                        {c} {selectedCity === c && '✓'}
-                      </button>
-                    ))}
                   </div>
                 </>
               )}
