@@ -29,6 +29,13 @@ export function CartPage() {
   const [deliveryFee, setDeliveryFee] = useState(null);
   const [isCalculatingFee, setIsCalculatingFee] = useState(false);
   const [feeError, setFeeError] = useState(null);
+  // Quem pode levar ESTE peso. Vem junto do frete (mesma chamada, mesmo peso).
+  //   capazes = existem cadastrados com veículo suficiente, no raio. Zero aqui
+  //             é ESTRUTURAL: esperar não resolve, ninguém vai poder pegar.
+  //   online  = quantos desses estão disponíveis agora. Zero aqui é temporário.
+  // A diferença separa "não dá" de "pode demorar" — e só a primeira bloqueia.
+  const [capazes, setCapazes] = useState(null);
+  const [capazesOnline, setCapazesOnline] = useState(null);
   const [deliveryDistance, setDeliveryDistance] = useState(null);
   const [clientProfile, setClientProfile] = useState(null);
   const [restaurantInfo, setRestaurantInfo] = useState(null);
@@ -244,6 +251,11 @@ export function CartPage() {
         }
         setDeliveryFee(Number(feeData.data.delivery_fee) || 0);
         setDeliveryDistance(Number(feeData.data.delivery_distance_km) || 0);
+        // null = loja de entrega própria (não depende de entregador nosso) ou
+        // a checagem falhou. Nos dois casos não mostra nada: aviso que a gente
+        // não tem certeza é pior que aviso nenhum.
+        setCapazes(feeData.data.entregadores_capazes ?? null);
+        setCapazesOnline(feeData.data.entregadores_online ?? null);
       } catch {
         addToast('error', "Não foi possível calcular o frete.");
         setFeeError("Não foi possível calcular o frete.");
@@ -313,6 +325,14 @@ export function CartPage() {
     if (restaurantIds.length > 1) { addToast('warning', 'Apenas uma loja por pedido.'); return; }
     if (deliveryFee === null || isCalculatingFee || feeError) {
       addToast('error', 'Aguarde o cálculo do frete antes de finalizar.'); return;
+    }
+    // NENHUM entregador com veículo pra esta carga. Deixar pagar aqui seria o
+    // pior desfecho: dinheiro presa num pedido que ninguém pode buscar, e a
+    // pessoa descobrindo pela demora. Bloqueia só o caso estrutural (capazes
+    // === 0); "tem capaz mas ninguém online" é aviso, não trava.
+    if (capazes === 0) {
+      addToast('error', 'Ainda não temos veículo para uma carga deste peso nesta região.');
+      return;
     }
     if (!user?.email || !user?.id) {
       addToast('error', 'Erro: dados do usuário não encontrados. Faça login novamente.'); return;
@@ -547,7 +567,30 @@ export function CartPage() {
               </div>
             )}
 
-            {/* Cupom de desconto */}
+            {capazes === 0 && (
+            <div className="mx-1 mb-3 rounded-xl border border-red-200 bg-red-50 p-3">
+              <p className="text-sm font-bold text-red-800">
+                Não temos veículo para esta carga
+              </p>
+              <p className="mt-0.5 text-xs text-red-700">
+                O peso deste pedido exige um veículo maior do que os disponíveis na
+                sua região. Tire alguns itens ou divida em dois pedidos.
+              </p>
+            </div>
+          )}
+            {capazes > 0 && capazesOnline === 0 && (
+            <div className="mx-1 mb-3 rounded-xl border border-amber-200 bg-amber-50 p-3">
+              <p className="text-sm font-bold text-amber-800">
+                Pode demorar mais que o normal
+              </p>
+              <p className="mt-0.5 text-xs text-amber-700">
+                No momento não há entregador online com veículo para este peso. Você
+                pode pedir — assim que alguém entrar, o pedido é enviado.
+              </p>
+            </div>
+          )}
+
+      {/* Cupom de desconto */}
             <div className="border-t pt-3 mt-3">
               <p className="text-sm font-medium text-gray-700 mb-2">Cupom de desconto</p>
               <div className="flex gap-2">

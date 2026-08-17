@@ -102,6 +102,12 @@ export function RestaurantDetailsPage() {
 
   const ratingValue = restaurant.rating ?? 0;
   const deliveryFee = restaurant.delivery_fee ?? 0;
+  // Loja de entrega PRÓPRIA cobra a taxa fixa dela; loja da plataforma tem
+  // frete por distância e peso, que só existe depois do endereço. Mostrar o
+  // delivery_fee estático nesse caso era anunciar R$ 1,00 e cobrar R$ 30 no
+  // carrinho — o card da lista já tratava isso, esta tela não.
+  const temTaxaPropria = (restaurant.delivery_type ?? 'platform') !== 'platform'
+    && Number(deliveryFee) > 0;
   const deliveryTime = restaurant.delivery_time;
 
   return (
@@ -181,7 +187,7 @@ export function RestaurantDetailsPage() {
               
               <div className="flex items-center gap-2 text-gray-600">
                 <span className="text-sm font-medium">
-                  {deliveryFee > 0 ? (
+                  {temTaxaPropria ? (
                     `Entrega: R$ ${parseFloat(deliveryFee).toFixed(2)}`
                   ) : (
                     <span className="text-blue-600 font-medium">Frete calculado no seu endereço</span>
