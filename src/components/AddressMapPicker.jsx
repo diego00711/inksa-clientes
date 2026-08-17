@@ -9,6 +9,7 @@ import { LocateFixed, Loader2 } from "lucide-react";
 import { useToast } from "../context/ToastContext";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
+import { TILE_URL, TILE_ATTRIBUTION } from '../lib/mapTiles';
 
 delete L.Icon.Default.prototype._getIconUrl;
 L.Icon.Default.mergeOptions({
@@ -83,7 +84,7 @@ export default function AddressMapPicker({ value, onChange }) {
     <div className="relative">
       <div className="h-52 rounded-xl overflow-hidden border border-gray-200 relative z-0">
         <MapContainer center={[center.lat, center.lng]} zoom={pos ? 16 : 13} style={{ height: "100%", width: "100%" }} attributionControl={false}>
-          <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+          <TileLayer url={TILE_URL} attribution={TILE_ATTRIBUTION} />
           <ClickHandler onPick={onChange} />
           {pos && (
             <Marker

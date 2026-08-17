@@ -8,6 +8,7 @@ import { useMemo } from "react";
 import { MapContainer, TileLayer, Marker, Popup, Polyline, useMap } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
+import { TILE_URL, TILE_ATTRIBUTION } from '../lib/mapTiles';
 
 // Corrige o bug classico dos icones default do Leaflet com bundlers
 delete L.Icon.Default.prototype._getIconUrl;
@@ -94,7 +95,7 @@ export default function LiveTrackingMap({ driver, restaurant, destination }) {
         scrollWheelZoom={false}
         attributionControl={false}
       >
-        <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+        <TileLayer url={TILE_URL} attribution={TILE_ATTRIBUTION} />
 
         {routeLine && (
           <Polyline
