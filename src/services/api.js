@@ -38,8 +38,21 @@ export async function processResponse(response) {
 
   if (!response.ok) {
     // Usa a mensagem de erro do backend, se disponível, ou uma mensagem padrão.
-    const errorMessage = data?.error || data?.message || `Erro ${response.status}: ${response.statusText}`;
-    throw new Error(errorMessage);
+    //
+    // `erro` (português) entra na lista porque TODO o payment.py responde
+    // assim — 40 mensagens escritas com cuidado ("este pedido pesa 160 kg e
+    // precisa de utilitário", "esta loja está fechada", "o valor da entrega
+    // mudou") viravam "Erro 409:" na tela, porque aqui só se procurava
+    // `error`. O usuário levava um número no lugar do motivo.
+    const errorMessage = data?.error || data?.erro || data?.message
+      || `Erro ${response.status}: ${response.statusText}`;
+    const err = new Error(errorMessage);
+    // O backend manda error_code justamente pra tela poder reagir ao MOTIVO,
+    // não só mostrar texto. Sem carregar aqui, ele morria no meio do caminho.
+    err.code = data?.error_code || null;
+    err.status = response.status;
+    err.data = data;
+    throw err;
   }
 
   return data;

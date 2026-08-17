@@ -450,6 +450,17 @@ export function CartPage() {
         throw new Error("Link de checkout não gerado pelo servidor.");
       }
     } catch (error) {
+      // O servidor recusou por falta de veículo pra esta carga. Se ele recusou,
+      // é porque o que esta tela sabia estava velho (frete calculado antes de
+      // alguém sair, ou JS antigo em memória). Corrige o estado na hora: o
+      // bloco vermelho aparece e o botão trava, em vez de a pessoa tentar de
+      // novo e levar o mesmo toast.
+      if (error.code === 'SEM_ENTREGADOR') setCapazes(0);
+      // Frete mudou entre o carrinho e o fechamento: recalcula sozinho, senão
+      // ela fica presa num erro que só sai saindo e voltando da tela.
+      if (error.code === 'FRETE_DIVERGENTE' && error.data?.delivery_fee_correto != null) {
+        setDeliveryFee(Number(error.data.delivery_fee_correto));
+      }
       addToast('error', error.message || 'Erro ao finalizar pedido.');
     } finally {
       setIsProcessingOrder(false);
