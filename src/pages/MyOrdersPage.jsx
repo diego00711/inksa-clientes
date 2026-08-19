@@ -260,23 +260,14 @@ const MyOrdersPage = () => {
   }, [fetchOrders]);
 
   // Supabase Realtime — notifica mudança de status
-  useEffect(() => {
-    if (!supabase) return;
-    const channel = supabase
-      .channel('order-status-client')
-      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'orders' }, payload => {
-        const updated = payload.new;
-        setOrders(prev => {
-          const existing = prev.find(o => o.id === updated.id);
-          if (!existing || existing.status === updated.status) return prev;
-          const msg = STATUS_TOAST[updated.status];
-          if (msg) addToast(updated.status === 'cancelled' ? 'error' : 'success', msg);
-          return prev.map(o => o.id === updated.id ? { ...o, status: updated.status } : o);
-        });
-      })
-      .subscribe();
-    return () => supabase.removeChannel(channel);
-  }, [addToast]);
+  // ── Realtime REMOVIDO (auditoria de 18/08/2026) ────────────────────────────
+  // Canal que nunca entregou evento: a RLS compara auth.uid() com colunas que
+  // apontam pro PERFIL, e os apps conectam como anon puro (sem setSession),
+  // então auth.uid() é NULL. Testado com a chave anon publicada: leitura de
+  // orders / delivery_profiles / delivery_tracking devolve 0 linhas — e sem
+  // leitura não há evento. Quem entrega isso é o polling desta mesma tela.
+  // Detalhes completos e o caminho pra ressuscitar: ver a nota no ChatModal.
+
 
   const handleDeleteOrder = async (orderId) => {
     if (!(await confirm({ title: 'Excluir pedido', message: 'Tem certeza que deseja excluir este pedido?', confirmText: 'Excluir', danger: true }))) return;

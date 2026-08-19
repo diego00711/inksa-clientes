@@ -73,42 +73,35 @@ export default function ChatModal({ orderId, isOpen, onClose, senderType = 'clie
     }
   };
 
-  useEffect(() => {
-    if (!isOpen || !orderId) return;
+  // ── Realtime do Supabase REMOVIDO (auditoria de 18/08/2026) ────────────────
+  //
+  // Havia aqui uma inscrição em postgres_changes que NUNCA entregou um evento
+  // sequer. A política de RLS resolve o dono comparando auth.uid() com colunas
+  // que apontam pro PERFIL, não pro usuário do auth — medido no banco:
+  // client_profiles.id = user_id em 0 de 24, delivery_profiles em 0 de 6 (só
+  // restaurant_profiles casa, 17 de 17). E nenhum app chama
+  // supabase.auth.setSession: todos conectam como anon puro, então auth.uid()
+  // é NULL e nenhuma política casa.
+  //
+  // Provado com a chave anon do pacote publicado:
+  //   GET /rest/v1/orders  ->  0 linhas
+  //   GET /rest/v1/chat_messages  ->  0 linhas
+  //   GET /rest/v1/delivery_tracking  ->  0 linhas
+  // Sem leitura não há evento: o canal conectava e ficava mudo.
+  //
+  // Isso está CERTO em segurança (nenhum anônimo lê pedido ou conversa alheia).
+  // O problema era o canal existir e PARECER que funcionava — em 18/08 essa
+  // aparência me levou a afrouxar o polling de 6s pra 20s "porque o realtime
+  // cobre". Não cobria.
+  //
+  // O que ele prometia já vem por dois caminhos que funcionam: o POLLING desta
+  // mesma tela (app aberto) e o PUSH do FCM (app em segundo plano).
+  //
+  // PRA RESSUSCITAR seriam DUAS coisas, nesta ordem: (1) os apps abrirem sessão
+  // no Supabase com setSession e (2) reescrever as políticas pra resolver o
+  // perfil (client_id IN (SELECT id FROM client_profiles WHERE user_id =
+  // auth.uid())). Mexer só numa das duas não liga nada.
 
-    // Reset unread count when opened
-    lastCountRef.current = 0;
-    onUnreadChange?.(0);
-
-    fetchMessages();
-
-    // Polling: o realtime do Supabase não entrega aqui (chat_messages tem RLS
-    // ligada e sem policy pro anon do supabase-js), então a mensagem demorava.
-    // Busca a cada 3s enquanto o chat está aberto.
-    const pollId = setInterval(fetchMessages, 3000);
-
-    let channel = null;
-    if (supabase) {
-      channel = supabase
-        .channel(`chat-${orderId}`)
-        .on('postgres_changes', {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'chat_messages',
-          filter: `order_id=eq.${orderId}`,
-        }, (payload) => {
-          setMessages(prev => {
-            if (prev.some(m => m.id === payload.new?.id)) return prev; // evita duplicar com o poll
-            if (payload.new?.sender_type !== senderType) playBeep();
-            return mergeMessages(prev, [payload.new]);
-          });
-        })
-        .subscribe();
-    }
-
-    return () => { clearInterval(pollId); if (channel) supabase.removeChannel(channel); };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isOpen, orderId]);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
