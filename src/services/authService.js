@@ -15,8 +15,17 @@ const processResponse = async (response) => {
     return null;
   }
   if (!response.ok) {
-    const error = await response.json().catch(() => ({ message: 'Erro desconhecido' }));
-    throw new Error(error.message || `HTTP error! status: ${response.status}`);
+    const corpo = await response.json().catch(() => ({}));
+    // Lê `error` e `erro` também, não só `message`. Este arquivo tem o PRÓPRIO
+    // leitor de resposta, separado do de services/api.js — corrigi aquele em
+    // 18/08 e não conferi se havia outros. Resultado: o cadastro devolvia
+    // "HTTP error! status: 409" com o backend respondendo, literalmente,
+    // "E-mail já cadastrado".
+    const msg = corpo.error || corpo.erro || corpo.message;
+    const err = new Error(msg || `Não foi possível concluir (código ${response.status}).`);
+    err.status = response.status;
+    err.data = corpo;
+    throw err;
   }
   return response.json();
 };
