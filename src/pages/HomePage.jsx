@@ -15,6 +15,7 @@ import { usePullToRefresh } from "../hooks/usePullToRefresh";
 import { RestaurantSkeleton as RestaurantSkeletonGrid } from "../components/skeletons/RestaurantSkeleton";
 import SocialDayBanner from "../components/SocialDayBanner";
 import { SEGMENTS } from "../utils/segments";
+import SugerirRestaurante from '../components/SugerirRestaurante';
 
 // ─── Constants ─────────────────────────────────────────────────────────────
 
@@ -788,6 +789,12 @@ export function HomePage() {
                   Limpar filtros
                 </button>
               )}
+              {/* Aqui é onde a pessoa está a um toque de desinstalar: procurou e
+                  não achou. Em vez de deixá-la ir embora calada, pergunta o que
+                  ela queria — vira lead pro Diego e motivo pra ela voltar. */}
+              <div className="mt-6 mx-auto max-w-lg text-left">
+                <SugerirRestaurante />
+              </div>
             </div>
           ) : (
             <>
@@ -836,6 +843,15 @@ export function HomePage() {
                 <FavoriteCard key={r.id} restaurant={r} />
               ))}
             </div>
+          </div>
+        )}
+
+        {/* Com a vitrine curta, quem chegou ao fim da lista viu tudo o que
+            existe — e é aí que ele percebe que falta o restaurante dele.
+            Aparece só até 8 lojas: com catálogo cheio isso vira ruído. */}
+        {!isLoading && filteredRestaurants.length > 0 && filteredRestaurants.length <= 8 && (
+          <div className="mt-10 mx-auto max-w-lg">
+            <SugerirRestaurante compacto />
           </div>
         )}
 
