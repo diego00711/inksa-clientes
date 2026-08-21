@@ -5,6 +5,7 @@ import './index.css'
 import { BrowserRouter } from 'react-router-dom'
 import { ConfirmProvider } from './components/ConfirmProvider.jsx'
 import ErrorBoundary from './components/ErrorBoundary.jsx'
+import { iniciarAutoAtualizacao } from './utils/autoAtualiza'
 
 // 🚀 REGISTRO DO SERVICE WORKER - PWA (só no build de produção: em dev o SW
 // intercepta os fetches do Vite/mocks e causa "Failed to fetch" fantasma —
@@ -36,6 +37,12 @@ window.addEventListener('beforeinstallprompt', (e) => {
 window.addEventListener('appinstalled', (evt) => {
   console.log('🎉 App foi instalado com sucesso!');
 });
+
+
+// Pega a versao nova sem o usuario ter que fechar e abrir o app.
+// So recarrega ao voltar pro app depois de um tempo fora, e nunca nas
+// telas abaixo, onde recarregar apagaria o que a pessoa esta fazendo.
+iniciarAutoAtualizacao({ rotasSensiveis: ['carrinho', 'pagamento', 'checkout', 'acompanhar', 'register', 'reset-password'] });
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>

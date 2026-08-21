@@ -1,4 +1,4 @@
-const CACHE_NAME = 'inksa-cliente-v13';
+const CACHE_NAME = 'inksa-cliente-v14';
 
 self.addEventListener('install', (event) => {
   // Nao pre-cacheia o index: ele sera cacheado (atualizado) a cada navegacao com rede
@@ -16,6 +16,11 @@ self.addEventListener('activate', (event) => {
 self.addEventListener('fetch', (event) => {
   const { request } = event;
   if (!request.url.startsWith('http')) return;
+  // A checagem de versao do app (?__ver=) TEM que ir na rede. Se viesse do
+  // cache, o app compararia o index guardado com ele mesmo e nunca veria
+  // versao nova — que e exatamente o problema que ela existe pra resolver.
+  if (request.url.includes('__ver=')) return;
+
   if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(request.method)) return;
   if (request.url.includes('/api/')) return;
 
