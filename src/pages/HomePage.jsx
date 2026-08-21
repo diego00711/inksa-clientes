@@ -812,7 +812,9 @@ export function HomePage() {
                   ))}
               </div>
               <p className="text-center text-xs text-gray-400 mt-6">
-                {filteredRestaurants.length} restaurante{filteredRestaurants.length !== 1 ? "s" : ""} encontrado{filteredRestaurants.length !== 1 ? "s" : ""}
+                {/* "loja", não "restaurante": a mesma lista já pode trazer pet
+                    shop e padaria, e contar tudo como restaurante mente. */}
+                {filteredRestaurants.length} loja{filteredRestaurants.length !== 1 ? "s" : ""} encontrada{filteredRestaurants.length !== 1 ? "s" : ""}
               </p>
               {/* Sentinela do scroll infinito */}
               {hasMore && (
@@ -847,7 +849,7 @@ export function HomePage() {
         )}
 
         {/* Com a vitrine curta, quem chegou ao fim da lista viu tudo o que
-            existe — e é aí que ele percebe que falta o restaurante dele.
+            existe — e é aí que ele percebe que falta a loja dele.
             Aparece só até 8 lojas: com catálogo cheio isso vira ruído. */}
         {!isLoading && filteredRestaurants.length > 0 && filteredRestaurants.length <= 8 && (
           <div className="mt-10 mx-auto max-w-lg">

@@ -6,9 +6,13 @@ import { useState } from 'react';
 
 const SLIDES = [
   {
-    emoji: '🍔',
-    title: 'Peça do seu restaurante favorito',
-    desc: 'Dezenas de restaurantes em Lages esperando por você',
+    // Primeira frase que o cliente lê no app — é ela que define, na cabeça
+    // dele, o que dá pra pedir aqui. Falava só em restaurante e prometia
+    // "dezenas", duas coisas que não são verdade: a Inksa também entrega de
+    // pet shop, padaria e mercado, e o catálogo ainda é curto.
+    emoji: '🛍️',
+    title: 'Peça de tudo, aqui da sua cidade',
+    desc: 'Restaurante, padaria, pet shop, mercado — tudo na mesma bolsa',
   },
   {
     emoji: '🛵',

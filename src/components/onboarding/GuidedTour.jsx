@@ -10,8 +10,8 @@ const STEPS = [
     desc: 'Defina seu endereço para ver lojas próximas',
   },
   {
-    title: 'Restaurantes',
-    desc: 'Escolha seu restaurante favorito',
+    title: 'Lojas',
+    desc: 'Escolha de onde você quer pedir',
   },
   {
     title: 'Carrinho',

@@ -1,4 +1,9 @@
-// "Não achou o seu restaurante? Diz qual é."
+// "Não achou o parceiro que você queria? Diz qual é."
+//
+// Fala em PARCEIRO, não em restaurante (decisão do Diego, 20/08/2026). A Inksa
+// não é só comida: pet shop, padaria, mercado e farmácia cabem no mesmo app, e
+// escrever "restaurante" ensina o cliente a NÃO pedir o resto. A palavra que
+// aparece na tela é o que delimita o negócio na cabeça de quem lê.
 //
 // Nasce do problema mais caro que a Inksa tem hoje: o app mostra pouquíssimas
 // lojas, e quem abre e não encontra nada desinstala SEM DIZER NADA. É a falha
@@ -8,7 +13,7 @@
 // Isto transforma essa saída silenciosa em duas coisas:
 //   1. a pessoa sente que foi ouvida (e tem motivo pra voltar);
 //   2. o admin ganha uma fila de prospecção ordenada por demanda REAL.
-//      Chegar num restaurante dizendo "sete clientes meus pediram vocês" não
+//      Chegar numa loja dizendo "sete clientes meus pediram vocês" não
 //      é venda, é recado — e converte muito melhor que falar de comissão.
 //
 // NÃO promete prazo. "Vamos atrás" é verdade; "em 7 dias" não seria, e
@@ -32,7 +37,7 @@ export default function SugerirRestaurante({ compacto = false }) {
   const enviar = async (e) => {
     e.preventDefault();
     const limpo = nome.trim();
-    if (limpo.length < 3) { setErro('Escreva o nome do restaurante.'); return; }
+    if (limpo.length < 3) { setErro('Escreva o nome do lugar.'); return; }
     setEnviando(true); setErro('');
     try {
       const r = await fetch(`${CLIENT_API_URL}/api/client/suggestions`, {
@@ -61,7 +66,7 @@ export default function SugerirRestaurante({ compacto = false }) {
           {pronto.pedidos > 1
             // Prova social verdadeira: o número vem do banco, não é enfeite.
             // "Você e mais 6" faz a pessoa sentir que o pedido tem força.
-            ? `Você e mais ${pronto.pedidos - 1} ${pronto.pedidos - 1 === 1 ? 'pessoa pediram' : 'pessoas pediram'} esse restaurante.`
+            ? `Você e mais ${pronto.pedidos - 1} ${pronto.pedidos - 1 === 1 ? 'pessoa pediram' : 'pessoas pediram'} esse lugar.`
             : 'Você foi a primeira pessoa a pedir esse aqui.'}
           {' '}Se ele entrar, a gente te avisa.
         </p>
@@ -79,18 +84,19 @@ export default function SugerirRestaurante({ compacto = false }) {
     <form onSubmit={enviar} className="rounded-xl border border-orange-200 bg-orange-50 p-4">
       <p className="flex items-center gap-2 font-bold text-orange-900">
         <Store className="h-5 w-5 shrink-0" />
-        {compacto ? 'Falta algum restaurante?' : 'Não achou o seu restaurante favorito?'}
+        {compacto ? 'Falta algum parceiro?' : 'Não achou o parceiro que você queria?'}
       </p>
       <p className="mt-1 text-sm text-orange-800">
-        Diz qual é que a gente vai atrás. Ir buscar é literalmente o nosso trabalho.
+        Restaurante, pet shop, padaria, mercado, farmácia. Diz qual é que a gente
+        vai atrás — ir buscar é literalmente o nosso trabalho.
       </p>
       <div className="mt-3 flex flex-col gap-2 sm:flex-row">
         <input
           value={nome}
           onChange={(e) => { setNome(e.target.value); if (erro) setErro(''); }}
-          placeholder="Nome do restaurante"
+          placeholder="Ex.: padaria, pet shop, restaurante…"
           maxLength={120}
-          aria-label="Nome do restaurante que você gostaria de encontrar"
+          aria-label="Nome do parceiro que você gostaria de encontrar no app"
           className="min-h-[44px] flex-1 rounded-lg border border-orange-300 bg-white px-3 text-sm text-gray-800 outline-none focus:border-orange-500"
         />
         <button
