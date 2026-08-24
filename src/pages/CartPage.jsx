@@ -3,7 +3,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import { ChevronLeft, ShoppingCart, PlusCircle, MinusCircle, Trash2, Loader2, MapPin, ChevronDown, LocateFixed, X } from "lucide-react";
-import { useCart } from '../context/CartContext';
+import { useCart, chaveDaLinha } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
 import { createPaymentPreference, calculateDeliveryFee } from '../services/orderService';
 import { useToast } from '../context/ToastContext.jsx';
@@ -361,6 +361,10 @@ export function CartPage() {
           quantity: item.quantity,
           unit_price: parseFloat(item.price ?? 0),
           menu_item_id: item.id,
+          // Só os IDs importam: o servidor busca nome e preço de cada opção no
+          // banco e recalcula. Mandar preço daqui seria deixar o cliente
+          // escolher quanto paga pelo adicional.
+          opcoes: (item.opcoes || []).map((o) => ({ id: o.id })),
         })),
         { title: 'Taxa de Entrega', quantity: 1, unit_price: safeFee },
       ];
@@ -528,14 +532,22 @@ export function CartPage() {
           {/* Cart items */}
           <div className="space-y-6 mb-8">
             {cartItems.map(item => (
-              <div key={item.id} className="flex items-start gap-3">
+              <div key={chaveDaLinha(item)} className="flex items-start gap-3">
                 <img src={item.image_url || '/inka-logo.png'} alt={item.name}
                   className="w-16 h-16 sm:w-20 sm:h-20 rounded-md object-cover shrink-0" />
                 <div className="flex-grow min-w-0">
                   <h3 className="font-semibold text-sm sm:text-base truncate">{item.name}</h3>
+                  {/* As escolhas precisam aparecer AQUI. Sem isso o cliente vê
+                      duas linhas iguais do mesmo prato e não entende por que
+                      uma custa mais — e não tem como conferir se pediu certo. */}
+                  {item.opcoes?.length > 0 && (
+                    <p className="text-xs text-gray-500 leading-snug">
+                      {item.opcoes.map((o) => o.nome).join(' · ')}
+                    </p>
+                  )}
                   <p className="text-sm text-gray-600">R$ {parseFloat(item.price ?? 0).toFixed(2)}</p>
                   <div className="flex items-center gap-1 mt-1">
-                    <Button variant="ghost" size="icon" className="h-8 w-8 min-h-[32px]" onClick={() => removeItemFromCart(item.id)}>
+                    <Button variant="ghost" size="icon" className="h-8 w-8 min-h-[32px]" onClick={() => removeItemFromCart(chaveDaLinha(item))}>
                       <MinusCircle className="h-4 w-4" />
                     </Button>
                     <span className="font-bold w-6 text-center text-sm">{item.quantity}</span>

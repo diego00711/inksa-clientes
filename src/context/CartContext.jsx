@@ -4,6 +4,49 @@ import React, { createContext, useState, useContext, useEffect, useCallback } fr
 
 export const CartContext = createContext();
 
+/**
+ * Identidade de uma LINHA do carrinho: o item mais as opções escolhidas.
+ *
+ * Existe porque o mesmo prato com escolhas diferentes é outro pedido pra
+ * cozinha. Sem isso, pedir um frango com coxa e outro com peito viraria
+ * "2x frango" e alguém receberia o corte errado.
+ *
+ * Os ids das opções vão ORDENADOS: escolher molho e depois bacon tem que dar a
+ * mesma linha de quem escolheu bacon e depois molho.
+ */
+export function linhaIdDe(item) {
+  const ids = (item?.opcoes || []).map((o) => o.id).filter(Boolean).sort();
+  return ids.length ? `${item.id}::${ids.join(',')}` : String(item.id);
+}
+
+/** Chave de um item JÁ no carrinho, tolerando carrinho salvo antes das opções. */
+export function chaveDaLinha(cartItem) {
+  return cartItem?.linhaId || String(cartItem?.id);
+}
+
+/**
+ * Monta o item pro carrinho com as opções escolhidas.
+ *
+ * O `price` da linha já sai COM o extra somado. Assim o subtotal, a tela do
+ * carrinho e o resumo do pedido continuam fazendo preço × quantidade sem
+ * precisar saber que opção existe — e um lugar a menos pra errar conta.
+ *
+ * O servidor recalcula tudo de novo pelo id da opção; isto aqui é só o que o
+ * cliente VÊ.
+ */
+export function montarItemComOpcoes(item, escolhidas) {
+  const opcoes = (escolhidas || []).map((o) => ({
+    id: o.id, nome: o.nome, grupo: o.grupo, preco_extra: Number(o.preco_extra || 0),
+  }));
+  const extra = opcoes.reduce((s, o) => s + o.preco_extra, 0);
+  return {
+    ...item,
+    opcoes,
+    preco_base: Number(item.price || 0),
+    price: Number(item.price || 0) + extra,
+  };
+}
+
 export const CartProvider = ({ children }) => {
   const [cartItems, setCartItems] = useState(() => {
     try {
@@ -24,37 +67,41 @@ export const CartProvider = ({ children }) => {
   }, [cartItems]);
 
   const addItemToCart = useCallback((item) => {
+    // linhaId = item + opções escolhidas. É o que faz "frango com coxa" e
+    // "frango com peito" serem DUAS linhas do carrinho em vez de virarem
+    // quantidade 2 do mesmo prato — que chegaria errado na cozinha.
+    //
+    // Sem opção, linhaId é o próprio id: o carrinho de quem não usa opções
+    // continua se comportando exatamente como antes.
+    const novo = { ...item, linhaId: linhaIdDe(item), quantity: 1 };
+    // price já vem com o extra somado (ver montarItemComOpcoes), então o
+    // subtotal daqui de baixo não precisa saber que opção existe.
     setCartItems(prevItems => {
-      const existingItem = prevItems.find(cartItem => cartItem.id === item.id);
-      if (existingItem) {
-        return prevItems.map(cartItem =>
-          cartItem.id === item.id
-            ? { ...cartItem, quantity: cartItem.quantity + 1 }
-            : cartItem
+      const existente = prevItems.find(ci => chaveDaLinha(ci) === novo.linhaId);
+      if (existente) {
+        return prevItems.map(ci =>
+          chaveDaLinha(ci) === novo.linhaId
+            ? { ...ci, quantity: ci.quantity + 1 }
+            : ci
         );
-      } else {
-        return [...prevItems, { ...item, quantity: 1 }];
       }
+      return [...prevItems, novo];
     });
   }, []);
 
-  const removeItemFromCart = useCallback((itemId, removeAll = false) => {
+  // Recebe o linhaId (ou o id puro, pra carrinho salvo antes das opções
+  // existirem — chaveDaLinha resolve os dois).
+  const removeItemFromCart = useCallback((linhaId, removeAll = false) => {
     setCartItems(prevItems => {
-      const currentItems = Array.isArray(prevItems) ? prevItems : []; 
-      if (removeAll) {
-        return currentItems.filter(cartItem => cartItem.id !== itemId);
-      } else {
-        const existingItem = currentItems.find(cartItem => cartItem.id === itemId);
-        if (existingItem && existingItem.quantity > 1) {
-          return currentItems.map(cartItem =>
-            cartItem.id === itemId
-              ? { ...cartItem, quantity: cartItem.quantity - 1 }
-              : cartItem
-          );
-        } else {
-          return currentItems.filter(cartItem => cartItem.id !== itemId);
-        }
+      const atuais = Array.isArray(prevItems) ? prevItems : [];
+      const ehEsta = (ci) => chaveDaLinha(ci) === linhaId;
+      if (removeAll) return atuais.filter(ci => !ehEsta(ci));
+
+      const existente = atuais.find(ehEsta);
+      if (existente && existente.quantity > 1) {
+        return atuais.map(ci => (ehEsta(ci) ? { ...ci, quantity: ci.quantity - 1 } : ci));
       }
+      return atuais.filter(ci => !ehEsta(ci));
     });
   }, []);
 

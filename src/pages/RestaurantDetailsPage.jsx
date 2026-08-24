@@ -4,9 +4,10 @@ import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight, Star, Loader2, MapPin, Clock, Phone, AlertCircle, Plus, Minus } from "lucide-react";
-import { useCart } from '../context/CartContext';
+import { useCart, montarItemComOpcoes } from '../context/CartContext';
 import RestaurantService from '../services/restaurantService';
 import StoreCoupons from '../components/StoreCoupons';
+import EscolherOpcoes from '../components/EscolherOpcoes';
 
 export function RestaurantDetailsPage() {
   const { id } = useParams();
@@ -46,20 +47,23 @@ export function RestaurantDetailsPage() {
     }));
   };
 
+  // Item com grupos de opção abre a tela de escolha antes de cair no carrinho.
+  // Descobrir se TEM opção custa uma consulta; fazer isso pra cada item ao
+  // desenhar o cardápio seria uma consulta por linha. Então pergunta só quando
+  // a pessoa aperta adicionar — e se não houver grupo nenhum, a tela devolve
+  // na hora e o item entra direto, sem passo a mais pra quem não usa opções.
+  const [itemEscolhendo, setItemEscolhendo] = useState(null);
+
+  const colocarNoCarrinho = (item, quantity, opcoes) => {
+    const base = { ...item, restaurant_id: restaurant.id, quantity };
+    const comOpcoes = opcoes?.length ? montarItemComOpcoes(base, opcoes) : base;
+    for (let i = 0; i < quantity; i++) addItemToCart(comOpcoes);
+    setQuantities(prev => ({ ...prev, [item.id]: 0 }));
+  };
+
   const handleAddToCart = (item) => {
     const quantity = quantities[item.id] || 1;
-    const itemWithRestaurantId = {
-      ...item,
-      restaurant_id: restaurant.id,
-      quantity
-    };
-    
-    for (let i = 0; i < quantity; i++) {
-      addItemToCart(itemWithRestaurantId);
-    }
-    
-    // Reset quantity after adding
-    setQuantities(prev => ({ ...prev, [item.id]: 0 }));
+    setItemEscolhendo({ item, quantity });
   };
 
   if (isLoading) {
@@ -322,6 +326,18 @@ export function RestaurantDetailsPage() {
             </Link>
           </div>
         </div>
+      )}
+
+      {itemEscolhendo && (
+        <EscolherOpcoes
+          item={itemEscolhendo.item}
+          quantidade={itemEscolhendo.quantity}
+          onConfirmar={(opcoes) => {
+            colocarNoCarrinho(itemEscolhendo.item, itemEscolhendo.quantity, opcoes);
+            setItemEscolhendo(null);
+          }}
+          onFechar={() => setItemEscolhendo(null)}
+        />
       )}
     </div>
   );
