@@ -15,8 +15,13 @@ export const CartContext = createContext();
  * mesma linha de quem escolheu bacon e depois molho.
  */
 export function linhaIdDe(item) {
-  const ids = (item?.opcoes || []).map((o) => o.id).filter(Boolean).sort();
-  return ids.length ? `${item.id}::${ids.join(',')}` : String(item.id);
+  // Inclui a QUANTIDADE de cada opção: açaí com 1 banana e açaí com 3 bananas
+  // são pedidos diferentes e precisam ser linhas diferentes.
+  const partes = (item?.opcoes || [])
+    .filter((o) => o?.id)
+    .map((o) => `${o.id}x${o.qtd || 1}`)
+    .sort();
+  return partes.length ? `${item.id}::${partes.join(',')}` : String(item.id);
 }
 
 /** Chave de um item JÁ no carrinho, tolerando carrinho salvo antes das opções. */
@@ -36,9 +41,11 @@ export function chaveDaLinha(cartItem) {
  */
 export function montarItemComOpcoes(item, escolhidas) {
   const opcoes = (escolhidas || []).map((o) => ({
-    id: o.id, nome: o.nome, grupo: o.grupo, preco_extra: Number(o.preco_extra || 0),
+    id: o.id, nome: o.nome, grupo: o.grupo,
+    preco_extra: Number(o.preco_extra || 0),
+    qtd: Math.max(1, Number(o.qtd) || 1),
   }));
-  const extra = opcoes.reduce((s, o) => s + o.preco_extra, 0);
+  const extra = opcoes.reduce((s, o) => s + o.preco_extra * o.qtd, 0);
   return {
     ...item,
     opcoes,

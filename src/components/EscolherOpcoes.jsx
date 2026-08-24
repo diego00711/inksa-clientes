@@ -45,31 +45,58 @@ export default function EscolherOpcoes({ item, quantidade = 1, onConfirmar, onFe
     if (grupos && grupos.length === 0) onConfirmar([]);
   }, [grupos, onConfirmar]);
 
+  // Quantas UNIDADES já foram marcadas no grupo. Com quantidade por opção,
+  // "até 3" passa a contar unidades: 3 bananas ocupam o limite inteiro, que é
+  // como qualquer pessoa lê "escolha até 3".
+  const unidades = (gid) => (escolhas[gid] || []).reduce((s, o) => s + (o.qtd || 1), 0);
+
   const alternar = (grupo, opcao) => {
     setErro('');
     setEscolhas((atual) => {
-      const jaTem = (atual[grupo.id] || []).some((o) => o.id === opcao.id);
-      const lista = jaTem
-        ? atual[grupo.id].filter((o) => o.id !== opcao.id)
-        : [...(atual[grupo.id] || []), { ...opcao, grupo: grupo.nome }];
+      const lista = atual[grupo.id] || [];
+      const jaTem = lista.some((o) => o.id === opcao.id);
 
-      // Grupo de escolha única troca em vez de acumular — é o que a pessoa
-      // espera ao tocar em outra opção, e evita ela ter que desmarcar antes.
-      if (!jaTem && grupo.max_escolhas === 1) {
-        return { ...atual, [grupo.id]: [{ ...opcao, grupo: grupo.nome }] };
+      // Escolha única troca em vez de acumular — é o que a pessoa espera ao
+      // tocar em outra opção, e evita ter que desmarcar antes.
+      if (grupo.max_escolhas === 1) {
+        return { ...atual, [grupo.id]: jaTem ? [] : [{ ...opcao, grupo: grupo.nome, qtd: 1 }] };
       }
-      if (lista.length > grupo.max_escolhas) return atual;
-      return { ...atual, [grupo.id]: lista };
+      if (jaTem) {
+        return { ...atual, [grupo.id]: lista.filter((o) => o.id !== opcao.id) };
+      }
+      const usadas = lista.reduce((s, o) => s + (o.qtd || 1), 0);
+      if (usadas + 1 > grupo.max_escolhas) return atual;
+      return { ...atual, [grupo.id]: [...lista, { ...opcao, grupo: grupo.nome, qtd: 1 }] };
+    });
+  };
+
+  /** Mais ou menos uma unidade da MESMA opção (3 de banana). */
+  const mudarQtd = (grupo, opcao, passo) => {
+    setErro('');
+    setEscolhas((atual) => {
+      const lista = atual[grupo.id] || [];
+      const alvo = lista.find((o) => o.id === opcao.id);
+      if (!alvo) return atual;
+      const nova = (alvo.qtd || 1) + passo;
+      if (nova <= 0) {
+        return { ...atual, [grupo.id]: lista.filter((o) => o.id !== opcao.id) };
+      }
+      const usadas = lista.reduce((s, o) => s + (o.qtd || 1), 0);
+      if (passo > 0 && usadas + 1 > grupo.max_escolhas) return atual;
+      return {
+        ...atual,
+        [grupo.id]: lista.map((o) => (o.id === opcao.id ? { ...o, qtd: nova } : o)),
+      };
     });
   };
 
   const todas = useMemo(() => Object.values(escolhas).flat(), [escolhas]);
-  const extra = todas.reduce((s, o) => s + Number(o.preco_extra || 0), 0);
+  const extra = todas.reduce((s, o) => s + Number(o.preco_extra || 0) * (o.qtd || 1), 0);
   const totalLinha = (Number(item.price || 0) + extra) * quantidade;
 
-  const faltando = (grupos || []).filter(
-    (g) => (escolhas[g.id] || []).length < g.min_escolhas,
-  );
+  // Conta UNIDADES, não linhas: quem pôs 2 de banana num grupo que exige 2 já
+  // cumpriu, mesmo tendo marcado uma opção só.
+  const faltando = (grupos || []).filter((g) => unidades(g.id) < g.min_escolhas);
 
   const confirmar = () => {
     if (faltando.length) {
@@ -122,13 +149,19 @@ export default function EscolherOpcoes({ item, quantidade = 1, onConfirmar, onFe
                 </div>
                 <div className="space-y-1.5">
                   {g.opcoes.filter((o) => o.disponivel).map((o) => {
-                    const marcada = marcadas.some((m) => m.id === o.id);
+                    const escolhida = marcadas.find((m) => m.id === o.id);
+                    const marcada = Boolean(escolhida);
+                    // Só grupo de várias ganha +/-: em "escolher 1" a
+                    // quantidade não faz sentido e só polui a tela.
+                    const podeRepetir = marcada && g.max_escolhas > 1;
                     return (
-                      <button
+                      <div
                         key={o.id}
-                        type="button"
+                        role="button"
+                        tabIndex={0}
                         onClick={() => alternar(g, o)}
-                        className={`flex w-full items-center justify-between gap-3 rounded-xl border px-3 py-2.5 text-left transition ${
+                        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); alternar(g, o); } }}
+                        className={`flex w-full cursor-pointer items-center justify-between gap-3 rounded-xl border px-3 py-2.5 text-left transition ${
                           marcada
                             ? 'border-orange-500 bg-orange-50'
                             : 'border-gray-200 hover:border-orange-300'}`}
@@ -147,12 +180,41 @@ export default function EscolherOpcoes({ item, quantidade = 1, onConfirmar, onFe
                           )}
                           <span className="truncate text-sm text-gray-800">{o.nome}</span>
                         </span>
-                        {Number(o.preco_extra) > 0 && (
-                          <span className="shrink-0 text-sm font-semibold text-orange-700">
-                            + {brl(o.preco_extra)}
-                          </span>
-                        )}
-                      </button>
+                        <span className="flex shrink-0 items-center gap-2">
+                          {Number(o.preco_extra) > 0 && (
+                            <span className="text-sm font-semibold text-orange-700">
+                              + {brl(o.preco_extra)}
+                            </span>
+                          )}
+                          {/* "Açaí com 3 de banana": a mesma opção, três vezes.
+                              stopPropagation porque a linha inteira já é o
+                              botão de marcar — sem isso, tocar no + marcaria e
+                              desmarcaria junto. */}
+                          {podeRepetir && (
+                            <span
+                              className="flex items-center gap-1.5 rounded-full bg-white px-1 py-0.5 ring-1 ring-orange-300"
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              <button
+                                type="button"
+                                onClick={() => mudarQtd(g, o, -1)}
+                                aria-label={`Menos um ${o.nome}`}
+                                className="grid h-7 w-7 place-items-center rounded-full text-orange-700 hover:bg-orange-100"
+                              >−</button>
+                              <span className="min-w-[1.1rem] text-center text-sm font-bold tabular-nums text-orange-900">
+                                {escolhida.qtd || 1}
+                              </span>
+                              <button
+                                type="button"
+                                onClick={() => mudarQtd(g, o, +1)}
+                                disabled={unidades(g.id) >= g.max_escolhas}
+                                aria-label={`Mais um ${o.nome}`}
+                                className="grid h-7 w-7 place-items-center rounded-full text-orange-700 hover:bg-orange-100 disabled:opacity-30"
+                              >+</button>
+                            </span>
+                          )}
+                        </span>
+                      </div>
                     );
                   })}
                 </div>

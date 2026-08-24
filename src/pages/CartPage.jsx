@@ -364,7 +364,7 @@ export function CartPage() {
           // Só os IDs importam: o servidor busca nome e preço de cada opção no
           // banco e recalcula. Mandar preço daqui seria deixar o cliente
           // escolher quanto paga pelo adicional.
-          opcoes: (item.opcoes || []).map((o) => ({ id: o.id })),
+          opcoes: (item.opcoes || []).map((o) => ({ id: o.id, qtd: o.qtd || 1 })),
         })),
         { title: 'Taxa de Entrega', quantity: 1, unit_price: safeFee },
       ];
@@ -542,7 +542,7 @@ export function CartPage() {
                       uma custa mais — e não tem como conferir se pediu certo. */}
                   {item.opcoes?.length > 0 && (
                     <p className="text-xs text-gray-500 leading-snug">
-                      {item.opcoes.map((o) => o.nome).join(' · ')}
+                      {item.opcoes.map((o) => (o.qtd > 1 ? `${o.qtd}x ${o.nome}` : o.nome)).join(' · ')}
                     </p>
                   )}
                   <p className="text-sm text-gray-600">R$ {parseFloat(item.price ?? 0).toFixed(2)}</p>
