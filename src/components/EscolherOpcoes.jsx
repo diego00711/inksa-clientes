@@ -39,11 +39,25 @@ export default function EscolherOpcoes({ item, quantidade = 1, onConfirmar, onFe
     return () => window.removeEventListener('keydown', esc);
   }, [onFechar]);
 
+  // Grupo cuja opção acabou toda não é desenhado nem cobrado.
+  //
+  // A loja pode marcar opção em falta. Se acabarem TODAS de um grupo, sobraria
+  // um título sem nada embaixo — e, se o grupo fosse obrigatório, o botão de
+  // adicionar ficaria travado pedindo uma escolha que não existe: o item
+  // simplesmente não podia ser pedido, sem dizer por quê.
+  //
+  // A tela do parceiro já barra criar essa situação. Aqui é a segunda tranca,
+  // pros itens que já estavam gravados assim antes daquela trava existir.
+  const visiveis = useMemo(
+    () => (grupos || []).filter((g) => (g.opcoes || []).some((o) => o.disponivel)),
+    [grupos],
+  );
+
   // Item SEM opção nenhuma vai direto pro carrinho: quem vende só cafezinho
   // não pode ganhar um passo a mais por causa de um recurso que não usa.
   useEffect(() => {
-    if (grupos && grupos.length === 0) onConfirmar([]);
-  }, [grupos, onConfirmar]);
+    if (grupos && visiveis.length === 0) onConfirmar([]);
+  }, [grupos, visiveis, onConfirmar]);
 
   // Quantas UNIDADES já foram marcadas no grupo. Com quantidade por opção,
   // "até 3" passa a contar unidades: 3 bananas ocupam o limite inteiro, que é
@@ -95,8 +109,9 @@ export default function EscolherOpcoes({ item, quantidade = 1, onConfirmar, onFe
   const totalLinha = (Number(item.price || 0) + extra) * quantidade;
 
   // Conta UNIDADES, não linhas: quem pôs 2 de banana num grupo que exige 2 já
-  // cumpriu, mesmo tendo marcado uma opção só.
-  const faltando = (grupos || []).filter((g) => unidades(g.id) < g.min_escolhas);
+  // cumpriu, mesmo tendo marcado uma opção só. Só grupos VISÍVEIS entram —
+  // exigir escolha de um grupo que não está na tela trava o botão pra sempre.
+  const faltando = visiveis.filter((g) => unidades(g.id) < g.min_escolhas);
 
   const confirmar = () => {
     if (faltando.length) {
@@ -108,7 +123,7 @@ export default function EscolherOpcoes({ item, quantidade = 1, onConfirmar, onFe
 
   // Enquanto não sabe se há opções, não desenha nada. Sem isto, todo item
   // piscaria um modal "carregando" antes de cair no carrinho.
-  if (grupos === null || grupos.length === 0) return null;
+  if (grupos === null || visiveis.length === 0) return null;
 
   return (
     <div className="fixed inset-0 z-[70] flex items-end justify-center bg-black/60 sm:items-center"
@@ -133,7 +148,7 @@ export default function EscolherOpcoes({ item, quantidade = 1, onConfirmar, onFe
             </p>
           )}
 
-          {grupos?.map((g) => {
+          {visiveis.map((g) => {
             const marcadas = escolhas[g.id] || [];
             return (
               <div key={g.id} className="mb-5">
@@ -222,9 +237,6 @@ export default function EscolherOpcoes({ item, quantidade = 1, onConfirmar, onFe
             );
           })}
 
-          {grupos?.length === 0 && (
-            <p className="py-6 text-sm text-gray-500">Este item não tem opções.</p>
-          )}
         </div>
 
         <div className="border-t border-gray-100 p-4">
