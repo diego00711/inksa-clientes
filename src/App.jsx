@@ -29,6 +29,7 @@ const ProfilePage = lazy(() => import("./pages/ProfilePage").then(m => ({ defaul
 const MyOrdersPage = lazy(() => import("./pages/MyOrdersPage"));
 const ClientEvaluationsCenter = lazy(() => import("./pages/ClientEvaluationsCenter"));
 const GamificationPage = lazy(() => import("./pages/GamificationPage"));
+const IndiqueGanhePage = lazy(() => import("./pages/IndiqueGanhePage"));
 const OrderTrackingPage = lazy(() => import("./pages/OrderTrackingPage").then(m => ({ default: m.OrderTrackingPage })));
 const PaymentSuccessPage = lazy(() => import("./pages/PaymentSuccessPage"));
 const PaymentFailurePage = lazy(() => import("./pages/PaymentFailurePage"));
@@ -194,6 +195,8 @@ function AppContent() {
                 <Route path="avaliacoes" element={<ClientEvaluationsCenter />} />
                 {/* Clube Inksa unificado (absorveu a antiga Gamificação/Minha Pontuação) */}
                 <Route path="clube" element={<GamificationPage />} />
+                {/* O push do prêmio manda pra cá (data.url = /indique). */}
+                <Route path="indique" element={<IndiqueGanhePage />} />
                 <Route path="gamificacao" element={<Navigate to="/clube" replace />} />
                 <Route path="suporte" element={<SuportePage />} />
                 <Route path="pedido/:orderId/acompanhar" element={<OrderTrackingPage />} />
