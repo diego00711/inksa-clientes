@@ -138,6 +138,13 @@ export default function EscolherOpcoes({ item, quantidade = 1, onConfirmar, onFe
                             marcada ? 'border-orange-500 bg-orange-500' : 'border-gray-300'}`}>
                             {marcada && <Check className="h-3 w-3 text-white" />}
                           </span>
+                          {/* Foto quando a loja subiu. Morango e banana se
+                              escolhem pelo olho; sem foto, a linha continua
+                              inteira em texto e nada fica torto. */}
+                          {o.imagem_url && (
+                            <img src={o.imagem_url} alt="" loading="lazy"
+                                 className="h-9 w-9 shrink-0 rounded-md object-cover" />
+                          )}
                           <span className="truncate text-sm text-gray-800">{o.nome}</span>
                         </span>
                         {Number(o.preco_extra) > 0 && (
