@@ -25,7 +25,12 @@ function parseCoord(...candidates) {
 
 // ─── Stage definitions ───────────────────────────────────────────────────────
 const STAGES = [
-  { key: "pending",   label: "Pedido recebido",       emoji: "✅", icon: CheckCircle, msg: "A loja recebeu seu pedido." },
+  // O texto deste primeiro passo MUDA conforme a loja aceita ou não — ver
+  // estagiosPara() logo abaixo. O rótulo fixo dizia "Pedido recebido / A loja
+  // recebeu seu pedido" já em `pending`, e `pending` é justamente o estado em
+  // que a loja AINDA NÃO aceitou. O cliente lia aquilo como confirmação, e se
+  // a loja recusasse depois parecia que a Inksa tinha voltado atrás.
+  { key: "pending",   label: "Pedido enviado",        emoji: "✅", icon: CheckCircle, msg: "Aguardando a loja confirmar." },
   { key: "preparing", label: "Loja preparando", emoji: "🍳", icon: ChefHat,     msg: "A cozinha está no trabalho!" },
   { key: "ready",     label: "Pedido pronto",          emoji: "📦", icon: Package,     msg: "Pronto! Aguardando um entregador retirar." },
   { key: "delivering",label: "Saiu para entrega",      emoji: "🛵", icon: Bike,        msg: "Seu pedido está a caminho de você!" },
@@ -40,6 +45,26 @@ const STATUS_TO_STAGE = {
   ready: 2, accepted_by_delivery: 2,
   delivering: 3, picked_up: 3, on_the_way: 3, delivered: 4,
 };
+
+/**
+ * Os passos com o primeiro escrito de acordo com a realidade.
+ *
+ * Enquanto o pedido está `pending`, a loja recebeu mas NÃO aceitou — e o
+ * cliente precisa saber que ainda depende de alguém do outro lado. Depois que
+ * aceita, o mesmo passo vira confirmação de verdade.
+ *
+ * Prometer confirmação antes da hora é o tipo de mentira que só aparece
+ * quando dá errado: a loja recusa, e quem cancelou o pedido, aos olhos do
+ * cliente, foi a Inksa.
+ */
+function estagiosPara(status) {
+  const aindaEsperando = String(status || '').toLowerCase() === 'pending';
+  if (aindaEsperando) return STAGES;
+  return [
+    { ...STAGES[0], label: "Pedido aceito", msg: "A loja confirmou seu pedido." },
+    ...STAGES.slice(1),
+  ];
+}
 
 // ─── Countdown ───────────────────────────────────────────────────────────────
 // Sem default para estimatedMinutes: o antigo "= 30" fazia a tela inventar um
@@ -89,7 +114,8 @@ function CountdownTimer({
 }
 
 // ─── Timeline ────────────────────────────────────────────────────────────────
-function Timeline({ currentStage }) {
+function Timeline({ currentStage, status }) {
+  const STAGES = estagiosPara(status);
   return (
     <div>
       {STAGES.map((stage, idx) => {
@@ -642,7 +668,7 @@ export function OrderTrackingPage() {
         {/* Timeline */}
         <div className="bg-white rounded-2xl shadow-md p-5 mb-5 border border-gray-100">
           <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-5">Histórico do pedido</p>
-          <Timeline currentStage={currentStage} />
+          <Timeline currentStage={currentStage} status={order.status} />
         </div>
 
         {/* Order summary — separa os produtos da taxa de entrega (padrão iFood):
