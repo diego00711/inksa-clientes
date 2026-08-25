@@ -36,15 +36,22 @@ export default function IndiqueGanhePage() {
 
   useEffect(() => { carregar(); }, [carregar]);
 
+  // O LINK CARREGA O CÓDIGO (?ref=). Quem clica não precisa digitar, decorar
+  // nem lembrar de nada: o app captura sozinho e aplica quando ele logar. O
+  // código continua escrito na mensagem só pra quem preferir digitar na mão —
+  // e pra pessoa entender o que está mandando.
+  const link = dados ? `https://clientes.inksadelivery.com.br/?ref=${dados.codigo}` : '';
   const mensagem = dados
     ? `Tô usando o Inksa pra pedir comida aqui na cidade e tá muito bom. `
-      + `Usa meu código ${dados.codigo} no cadastro que seu primeiro pedido sai SEM FRETE. `
-      + `Baixa aí: https://inksadelivery.com.br`
+      + `Entra por esse link que seu primeiro pedido sai SEM FRETE: ${link} `
+      + `(ou usa o código ${dados.codigo} no cadastro)`
     : '';
 
+  // Copia o LINK, não só o código: colado em qualquer lugar ele já funciona
+  // sozinho, sem a outra pessoa precisar saber onde digitar o código.
   const copiar = async () => {
     try {
-      await navigator.clipboard.writeText(dados.codigo);
+      await navigator.clipboard.writeText(link);
       setCopiado(true);
       setTimeout(() => setCopiado(false), 2000);
     } catch {
@@ -118,7 +125,7 @@ export default function IndiqueGanhePage() {
           onClick={copiar}
           className="mt-2 flex min-h-[44px] w-full items-center justify-center gap-2 rounded-xl border border-white/40 text-sm font-semibold text-white hover:bg-white/10"
         >
-          {copiado ? <><Check className="h-4 w-4" /> Copiado!</> : <><Copy className="h-4 w-4" /> Copiar código</>}
+          {copiado ? <><Check className="h-4 w-4" /> Link copiado!</> : <><Copy className="h-4 w-4" /> Copiar link do convite</>}
         </button>
       </div>
 

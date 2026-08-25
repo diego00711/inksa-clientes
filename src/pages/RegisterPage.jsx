@@ -1,9 +1,15 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Eye, EyeOff } from 'lucide-react';
+import { Eye, EyeOff, Gift } from 'lucide-react';
 import AuthService from '../services/authService';
+import { pendente as indicacaoPendente, guardar as guardarIndicacao } from '../utils/indicacao';
 
 export default function RegisterPage() {
+  // O código NÃO vai no cadastro: este registro não loga, ele manda pro login,
+  // e a indicação precisa de token pra ser aplicada. Então aqui só GUARDAMOS,
+  // e o IndicacaoHandler aplica no primeiro acesso autenticado. Se chegou por
+  // link (?ref=), o campo já vem preenchido e a pessoa não digita nada.
+  const [codigoIndicacao, setCodigoIndicacao] = useState(() => indicacaoPendente() || '');
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
@@ -36,6 +42,10 @@ export default function RegisterPage() {
 
       // Envia os dados corretos para o serviço de autenticação
       await AuthService.register(dataToSend);
+
+      // Guarda ANTES de sair da tela. O vínculo em si é feito depois do login,
+      // pelo IndicacaoHandler — aqui só não se perde o que a pessoa digitou.
+      guardarIndicacao(codigoIndicacao);
 
       // FIX: show inline success message, then redirect after short delay
       setSuccessMessage('Registo feito com sucesso! Redirecionando para o login...');
@@ -84,6 +94,28 @@ export default function RegisterPage() {
             </div>
             {/* FIX: surface password requirement to the user */}
             <p className="mt-1 text-xs text-gray-400">Mínimo de 6 caracteres</p>
+          </div>
+
+          {/* Opcional e por último: campo obrigatório-parecendo no cadastro
+              espanta quem não tem código. Quem chegou pelo link nem vê — já
+              vem preenchido. */}
+          <div>
+            <label htmlFor="codigoIndicacao" className="flex items-center gap-1.5 text-sm font-medium text-gray-700">
+              <Gift className="h-4 w-4 text-orange-500" />
+              Código de indicação <span className="font-normal text-gray-400">(opcional)</span>
+            </label>
+            <input
+              id="codigoIndicacao"
+              name="codigoIndicacao"
+              type="text"
+              value={codigoIndicacao}
+              onChange={(e) => setCodigoIndicacao(e.target.value.toUpperCase())}
+              placeholder="INKABC123"
+              className="mt-1 w-full px-3 py-2 text-base uppercase tracking-widest border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
+            />
+            <p className="mt-1 text-xs text-orange-600">
+              Tem o código de um amigo? Seu primeiro pedido sai sem frete.
+            </p>
           </div>
 
           {/* FIX: show success or error feedback inline */}

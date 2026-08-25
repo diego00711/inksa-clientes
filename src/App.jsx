@@ -15,6 +15,12 @@ import GlobalError from "./components/GlobalError";
 import WakingUpScreen from "./components/WakingUpScreen";
 import SupportButton from "./components/SupportButton";
 import { configurarAcoesDePush } from "./services/notificationService";
+import { CLIENT_API_URL, createAuthHeaders } from "./services/api";
+import {
+  capturarDaUrl as capturarIndicacaoDaUrl,
+  pendente as indicacaoPendente,
+  limpar as limparIndicacao,
+} from "./utils/indicacao";
 
 // --- Lazy-loaded pages ---
 const HomePage = lazy(() => import("./pages/HomePage").then(m => ({ default: m.HomePage })));
@@ -112,6 +118,51 @@ function PaymentReturnHandler() {
   return null;
 }
 
+// Indicação que chegou por link (?ref=INKABC123).
+//
+// Captura assim que o app abre — ANTES do login, porque quem clica no convite
+// ainda não tem conta. Aplica no primeiro acesso já autenticado, que pode ser
+// muitos minutos e um cadastro depois.
+//
+// Resposta do servidor com status 200 encerra o assunto, tenha dado certo ou
+// não: "você já usou um código" é resposta definitiva, e insistir a cada
+// abertura do app viraria um pedido inútil pra sempre. Só erro de rede mantém
+// o código guardado pra tentar de novo.
+function IndicacaoHandler() {
+  const { isAuthenticated } = useAuth();
+  const { addToast } = useToast();
+  const tentado = useRef(false);
+
+  useEffect(() => { capturarIndicacaoDaUrl(); }, []);
+
+  useEffect(() => {
+    if (!isAuthenticated || tentado.current) return;
+    const codigo = indicacaoPendente();
+    if (!codigo) return;
+    tentado.current = true;
+    (async () => {
+      try {
+        const r = await fetch(`${CLIENT_API_URL}/api/referrals/aplicar`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', ...createAuthHeaders() },
+          body: JSON.stringify({ code: codigo }),
+        });
+        if (!r.ok && r.status >= 500) return;   // servidor caiu: tenta na próxima
+        const j = await r.json().catch(() => ({}));
+        limparIndicacao();
+        if (j?.ok) {
+          addToast('success',
+            `Frete grátis no seu primeiro pedido! Use o código ${j.cupom} no checkout.`);
+        }
+      } catch {
+        tentado.current = false;   // sem rede: deixa guardado e tenta depois
+      }
+    })();
+  }, [isAuthenticated, addToast]);
+
+  return null;
+}
+
 function OnboardingManager() {
   const { isAuthenticated } = useAuth();
 
@@ -171,6 +222,7 @@ function AppContent() {
           <PushAcoesHandler />
           <OnlineStatusHandler />
           <PaymentReturnHandler />
+          <IndicacaoHandler />
           <GlobalError />
           <OnboardingManager />
           <SupportButton />
