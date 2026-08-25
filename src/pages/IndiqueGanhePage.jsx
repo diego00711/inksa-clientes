@@ -197,7 +197,8 @@ export default function IndiqueGanhePage() {
       )}
 
       <p className="mt-3 text-center text-xs text-gray-400">
-        Cupons valem em pedidos a partir de {brl(dados.minimo_de_compra)} e vencem em 30 dias.
+        Seus cupons de indicação valem em pedidos a partir de {brl(dados.minimo_de_compra)} e
+        vencem em 30 dias. Vale um cupom por pedido.
       </p>
 
       {/* Só faz sentido pra quem ainda não pediu — o backend recusa os demais e

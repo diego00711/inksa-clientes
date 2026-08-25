@@ -13,7 +13,7 @@ import AddressService, { formatAddress } from '../services/addressService';
 import { PaymentMethodSelector } from '../components/PaymentMethodSelector';
 import CardPaymentModal from '../components/CardPaymentModal';
 import PixPaymentModal from '../components/PixPaymentModal';
-import { CLIENT_API_URL } from '../services/api';
+import { CLIENT_API_URL, createAuthHeaders } from '../services/api';
 import { PENDING_COUPON_KEY } from '../components/StoreCoupons';
 
 const MP_PUBLIC_KEY = import.meta.env.VITE_MERCADOPAGO_PUBLIC_KEY;
@@ -70,6 +70,7 @@ export function CartPage() {
   });
   const [couponData, setCouponData] = useState(null); // {valid, discount_amount, message}
   const [couponLoading, setCouponLoading] = useState(false);
+  const [cuponsDisponiveis, setCuponsDisponiveis] = useState([]);
 
   // Observação do cliente pro pedido (ex: "sem cebola"). Chega no restaurante
   // (modal de detalhes + comanda impressa). O backend já grava em orders.notes.
@@ -284,8 +285,31 @@ export function CartPage() {
     setChangeFor('');
   };
 
-  const applyCoupon = async () => {
-    if (!couponCode.trim()) return;
+  // Cupons que ESTE cliente pode usar NESTE carrinho, já com o valor de cada um.
+  //
+  // Entra um cupom por pedido, e antes disto o cliente não tinha como saber
+  // nem disso nem do que tinha na mão: o convidado ganhava frete grátis, chegava
+  // numa loja em promoção e escolhia às cegas — quando sabia que havia escolha.
+  useEffect(() => {
+    const restaurantId = cartItems[0]?.restaurant_id;
+    if (!restaurantId || subTotal <= 0) { setCuponsDisponiveis([]); return; }
+    let vivo = true;
+    const q = new URLSearchParams({
+      restaurant_id: restaurantId,
+      subtotal: String(subTotal),
+      delivery_fee: String(safeFee),
+    });
+    fetch(`${CLIENT_API_URL}/api/coupons/disponiveis?${q}`, { headers: createAuthHeaders() })
+      .then((r) => (r.ok ? r.json() : { data: [] }))
+      .then((j) => { if (vivo) setCuponsDisponiveis(j?.data || []); })
+      .catch(() => { if (vivo) setCuponsDisponiveis([]); });
+    return () => { vivo = false; };
+  }, [cartItems, subTotal, safeFee]);
+
+  const applyCoupon = async (codigo) => {
+    const alvo = (codigo ?? couponCode).trim();
+    if (!alvo) return;
+    if (codigo) setCouponCode(codigo);
     setCouponLoading(true);
     try {
       const res = await fetch(`${CLIENT_API_URL}/api/coupons/validate`, {
@@ -295,7 +319,7 @@ export function CartPage() {
         // loja dele. Sem isso o cliente veria "válido" aqui e levaria a recusa
         // só no fechamento do pedido.
         body: JSON.stringify({
-          code: couponCode.trim(),
+          code: alvo,
           order_total: subTotal,
           delivery_fee: safeFee,
           restaurant_id: cartItems[0]?.restaurant_id || null,
@@ -616,6 +640,50 @@ export function CartPage() {
       {/* Cupom de desconto */}
             <div className="border-t pt-3 mt-3">
               <p className="text-sm font-medium text-gray-700 mb-2">Cupom de desconto</p>
+
+              {/* A ESCOLHA APARECE em vez de ficar escondida. Só um cupom entra
+                  por pedido — mostrar os dois lado a lado com quanto cada um
+                  economiza transforma um conflito silencioso numa decisão. */}
+              {cuponsDisponiveis.length > 0 && (
+                <div className="mb-3 space-y-1.5">
+                  {cuponsDisponiveis.map((c, i) => {
+                    const escolhido = couponData?.valid && couponCode.trim().toUpperCase() === c.codigo;
+                    return (
+                      <button
+                        key={c.codigo}
+                        onClick={() => applyCoupon(c.codigo)}
+                        className={`flex w-full items-center justify-between gap-3 rounded-xl border px-3 py-2.5 text-left transition ${
+                          escolhido ? 'border-orange-500 bg-orange-50' : 'border-gray-200 hover:border-orange-300'}`}
+                      >
+                        <span className="min-w-0">
+                          <span className="block text-sm font-bold text-gray-800">
+                            {c.codigo}
+                            {c.meu && <span className="ml-2 rounded bg-orange-100 px-1.5 py-0.5 text-[10px] font-semibold text-orange-700">SEU</span>}
+                            {/* Só marca o melhor quando há mais de um: com um
+                                cupom só, "melhor" não informa nada. */}
+                            {i === 0 && cuponsDisponiveis.length > 1 && (
+                              <span className="ml-2 rounded bg-green-100 px-1.5 py-0.5 text-[10px] font-semibold text-green-700">MELHOR</span>
+                            )}
+                          </span>
+                          <span className="block truncate text-xs text-gray-500">
+                            {c.tipo === 'free_delivery' ? 'Frete grátis' : c.descricao || 'Desconto'}
+                          </span>
+                        </span>
+                        <span className="shrink-0 text-sm font-bold text-green-700">
+                          − R$ {Number(c.desconto).toFixed(2).replace('.', ',')}
+                        </span>
+                      </button>
+                    );
+                  })}
+                  {cuponsDisponiveis.length > 1 && (
+                    <p className="pt-0.5 text-xs text-gray-500">
+                      Vale <strong>um cupom por pedido</strong>. Os outros continuam
+                      valendo até vencer — use no próximo.
+                    </p>
+                  )}
+                </div>
+              )}
+
               <div className="flex gap-2">
                 <input
                   value={couponCode}
