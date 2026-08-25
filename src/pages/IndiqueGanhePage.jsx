@@ -152,11 +152,42 @@ export default function IndiqueGanhePage() {
         </p>
       )}
 
-      <p className="mt-3 rounded-xl bg-gray-50 p-3 text-sm text-gray-600">
-        A cada <strong>{dados.marco_a_cada}</strong> amigos, você ganha
-        {' '}<strong>{brl(dados.valor_marco)}</strong> de bônus.
-        {dados.premiadas > 0 && ` Faltam ${dados.faltam_pro_marco} para o próximo.`}
-      </p>
+      {/* OS CUPONS FICAM AQUI, e não só na notificação. Push é dispensado,
+          celular é trocado — e aí a pessoa ganhou um cupom que não tem onde
+          procurar, e conclui que não recebeu nada. Os usados e vencidos
+          continuam na lista: sumir com eles faria parecer que nunca existiram. */}
+      {dados.cupons?.length > 0 && (
+        <div className="mt-4 rounded-xl border border-gray-200 bg-white p-4">
+          <p className="mb-3 font-semibold text-gray-800">Seus cupons</p>
+          <ul className="space-y-2">
+            {dados.cupons.map((c) => {
+              const inativo = c.usado || c.vencido;
+              return (
+                <li key={c.codigo}
+                    className={`flex items-center justify-between gap-3 rounded-lg border p-3 ${
+                      inativo ? 'border-gray-200 bg-gray-50 opacity-60' : 'border-orange-200 bg-orange-50'}`}>
+                  <div className="min-w-0">
+                    <p className={`font-bold tracking-widest ${inativo ? 'text-gray-500 line-through' : 'text-orange-700'}`}>
+                      {c.codigo}
+                    </p>
+                    <p className="text-xs text-gray-500">
+                      {c.tipo === 'free_delivery' ? 'Frete grátis' : brl(c.valor)}
+                      {c.minimo > 0 && ` · a partir de ${brl(c.minimo)}`}
+                      {c.vence_em && ` · até ${new Date(c.vence_em).toLocaleDateString('pt-BR')}`}
+                    </p>
+                  </div>
+                  <span className="shrink-0 text-xs font-semibold text-gray-500">
+                    {c.usado ? 'usado' : c.vencido ? 'vencido' : 'disponível'}
+                  </span>
+                </li>
+              );
+            })}
+          </ul>
+          <p className="mt-3 text-xs text-gray-500">
+            Digite o código no carrinho, no campo “Cupom”. Vale um cupom por pedido.
+          </p>
+        </div>
+      )}
 
       {noTeto && (
         <p className="mt-3 rounded-xl bg-gray-100 p-3 text-sm text-gray-600">
