@@ -1,7 +1,7 @@
 // Local: src/components/LoginForm.jsx - VERSÃO FINAL E CORRIGIDA
 
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../context/AuthContext"; // 1. Importamos o useAuth
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
@@ -19,6 +19,17 @@ export function LoginForm() {
   const navigate = useNavigate();
   const { login, loginWithGoogle } = useAuth(); // 2. Pegamos a função de login do nosso contexto
 
+  // Pra onde voltar depois de entrar. Quem veio do carrinho tem que VOLTAR pro
+  // carrinho: mandar pra home faz a pessoa achar que perdeu o pedido que
+  // montou, mesmo com os itens ainda salvos. Só caminho interno é aceito —
+  // um "from" vindo de fora seria um jeito de me mandar pra outro site.
+  const location = useLocation();
+  const voltarPara = (() => {
+    const alvo = location.state?.from;
+    return typeof alvo === 'string' && alvo.startsWith('/') && !alvo.startsWith('//')
+      ? alvo : '/';
+  })();
+
   const handleSubmit = async (event) => {
     event.preventDefault();
     setError(null);
@@ -33,7 +44,7 @@ export function LoginForm() {
       // e o ProtectedRoute vai nos redirecionar automaticamente.
       // O navigate("/") aqui é um bônus, mas o redirecionamento principal
       // acontece por causa da mudança de estado.
-      navigate("/"); 
+      navigate(voltarPara);
 
     } catch (err) {
       console.error("Falha no login:", err);
@@ -48,7 +59,7 @@ export function LoginForm() {
     setIsLoading(true);
     try {
       await loginWithGoogle(credential);
-      navigate("/");
+      navigate(voltarPara);
     } catch (err) {
       console.error("Falha no login com Google:", err);
       setError(err.message || "Não foi possível entrar com o Google.");

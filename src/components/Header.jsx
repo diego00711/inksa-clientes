@@ -151,6 +151,29 @@ export function Header() {
               </Button>
             </>
           )}
+
+          {/* Visitante: o app agora abre sem conta, então o cabeçalho precisa
+              de um caminho pra entrar — e do carrinho, que ele pode montar
+              antes de ter conta. Sem isto ele navegaria sem saída visível. */}
+          {!isAuthenticated && (
+            <>
+              <Link to="/carrinho" className="relative flex min-h-[44px] min-w-[44px] items-center justify-center">
+                <Button variant="ghost" size="icon" aria-label="Carrinho" className="text-white hover:bg-white/15 hover:text-white">
+                  <ShoppingCart className="h-5 w-5" />
+                  {totalItemsInCart > 0 && (
+                    <Badge variant="destructive" className="absolute -top-2 -right-2 h-5 w-5 rounded-full flex items-center justify-center p-0 text-xs">
+                      {totalItemsInCart}
+                    </Badge>
+                  )}
+                </Button>
+              </Link>
+              <Link to="/login">
+                <Button className="min-h-[40px] bg-white px-4 font-bold text-orange-600 hover:bg-orange-50">
+                  Entrar
+                </Button>
+              </Link>
+            </>
+          )}
         </nav>
       </div>
     </header>

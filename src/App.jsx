@@ -236,12 +236,27 @@ function AppContent() {
               <Route path="/pagamento/falha" element={<PaymentFailurePage />} />
               <Route path="/pagamento/pendente" element={<PaymentPendingPage />} />
 
-              <Route element={<ProtectedRoute><Layout /></ProtectedRoute>}>
+              {/* VITRINE — sem conta.
+                  O app inteiro ficava atrás do login: abria e tomava tela de
+                  senha, sem poder ver uma loja sequer. Pedir cadastro antes de
+                  mostrar qualquer valor é pedir compromisso antes de dar
+                  motivo — e foi a primeira coisa que um parceiro reclamou.
+                  Os endpoints de loja, cardápio e opções já eram públicos; o
+                  bloqueio era só este roteador.
+                  O carrinho também entra: deixar montar o pedido cria o
+                  compromisso que faz a pessoa criar conta pra não perder o que
+                  escolheu. A conta é exigida no FINALIZAR. */}
+              <Route element={<Layout />}>
                 <Route path="/" element={<HomePage />} />
                 <Route path="restaurantes/:id" element={<RestaurantDetailsPage />} />
                 {/* Avaliações da loja — pública, o cliente lê antes de pedir. */}
                 <Route path="restaurantes/:id/avaliacoes" element={<StoreReviewsPage />} />
                 <Route path="carrinho" element={<CartPage />} />
+              </Route>
+
+              {/* Daqui pra baixo é coisa de quem já tem conta: dados pessoais,
+                  histórico, prêmios e o acompanhamento do próprio pedido. */}
+              <Route element={<ProtectedRoute><Layout /></ProtectedRoute>}>
                 <Route path="perfil" element={<ProfilePage />} />
                 <Route path="meus-pedidos" element={<MyOrdersPage />} />
                 <Route path="avaliacoes" element={<ClientEvaluationsCenter />} />

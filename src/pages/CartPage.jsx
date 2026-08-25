@@ -292,7 +292,9 @@ export function CartPage() {
   // numa loja em promoção e escolhia às cegas — quando sabia que havia escolha.
   useEffect(() => {
     const restaurantId = cartItems[0]?.restaurant_id;
-    if (!restaurantId || subTotal <= 0) { setCuponsDisponiveis([]); return; }
+    // Sem conta não há cupom pessoal nem como saber quem é: pular a chamada
+    // evita um 401 inútil a cada mudança do carrinho.
+    if (!isAuthenticated || !restaurantId || subTotal <= 0) { setCuponsDisponiveis([]); return; }
     let vivo = true;
     const q = new URLSearchParams({
       restaurant_id: restaurantId,
@@ -304,7 +306,7 @@ export function CartPage() {
       .then((j) => { if (vivo) setCuponsDisponiveis(j?.data || []); })
       .catch(() => { if (vivo) setCuponsDisponiveis([]); });
     return () => { vivo = false; };
-  }, [cartItems, subTotal, safeFee]);
+  }, [cartItems, subTotal, safeFee, isAuthenticated]);
 
   const applyCoupon = async (codigo) => {
     const alvo = (codigo ?? couponCode).trim();
@@ -336,8 +338,11 @@ export function CartPage() {
 
   const handleFinalizarPedido = async () => {
     if (!isAuthenticated) {
-      addToast('warning', 'Você precisa estar logado para fazer um pedido.');
-      navigate('/login');
+      // Volta pro carrinho depois de entrar: o carrinho é local, então o que
+      // ele montou continua lá. Mandar pra home apagaria o esforço da cabeça
+      // dele mesmo com os itens salvos.
+      addToast('info', 'Entre na sua conta para finalizar — seu carrinho fica guardado.');
+      navigate('/login', { state: { from: '/carrinho' } });
       return;
     }
     if (cartItems.length === 0) { addToast('warning', 'Seu carrinho está vazio!'); return; }
@@ -602,9 +607,20 @@ export function CartPage() {
             <div className="flex justify-between items-center text-gray-600">
               <span>Frete</span>
               <span>
-                {isCalculatingFee && <Loader2 className="h-4 w-4 animate-spin inline-block" />}
-                {feeError && <span className="text-red-500">{feeError}</span>}
-                {deliveryFee !== null && !isCalculatingFee && !feeError && `R$ ${safeFee.toFixed(2)}`}
+                {/* Quem não entrou não tem endereço, então não há frete a
+                    calcular. Mostrar erro vermelho aqui seria acusar o cliente
+                    de um problema que ele não tem — e nenhum valor inventado,
+                    porque frete que muda depois de escolhido é o tipo de
+                    surpresa que faz a pessoa desistir no checkout. */}
+                {!isAuthenticated ? (
+                  <span className="text-sm text-gray-500">calculado ao entrar</span>
+                ) : (
+                  <>
+                    {isCalculatingFee && <Loader2 className="h-4 w-4 animate-spin inline-block" />}
+                    {feeError && <span className="text-red-500">{feeError}</span>}
+                    {deliveryFee !== null && !isCalculatingFee && !feeError && `R$ ${safeFee.toFixed(2)}`}
+                  </>
+                )}
               </span>
             </div>
             {deliveryDistance > 0 && (
@@ -866,9 +882,17 @@ export function CartPage() {
             <Button
               className="flex-1 bg-primary text-primary-foreground hover:bg-primary/90"
               onClick={handleFinalizarPedido}
-              disabled={isProcessingOrder || isCalculatingFee || !!feeError || deliveryFee === null || restauranteFechado || faltaComplemento}
+              // Sem conta o frete NUNCA é calculado (não há endereço), e as
+              // travas abaixo dependem dele — o botão ficaria morto pra sempre
+              // e a pessoa nem chegaria na tela de login. Por isso o anônimo
+              // passa direto: o clique dele é "entrar", não "pedir".
+              disabled={isAuthenticated && (
+                isProcessingOrder || isCalculatingFee || !!feeError
+                || deliveryFee === null || restauranteFechado || faltaComplemento)}
             >
-              {isProcessingOrder ? (
+              {!isAuthenticated ? (
+                'Entrar para finalizar o pedido'
+              ) : isProcessingOrder ? (
                 <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Processando...</>
               ) : restauranteFechado ? (
                 'Loja fechada'
