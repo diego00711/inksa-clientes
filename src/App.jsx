@@ -147,7 +147,24 @@ function IndicacaoHandler() {
           headers: { 'Content-Type': 'application/json', ...createAuthHeaders() },
           body: JSON.stringify({ code: codigo }),
         });
-        if (!r.ok && r.status >= 500) return;   // servidor caiu: tenta na próxima
+        // SÓ APAGA O CÓDIGO DIANTE DE UMA RESPOSTA DE NEGÓCIO.
+        //
+        // Antes bastava não ser 5xx pra apagar, e isso destruía o convite em
+        // estados que são NORMAIS no primeiro acesso — justamente quando o
+        // convite acabou de ser usado:
+        //   404  o client_profile ainda não existe. O próprio AuthContext
+        //        documenta essa janela ("conta recém-criada"): ele deixa a
+        //        pessoa entrar antes de o perfil aparecer.
+        //   401  token gravado meio passo depois do isAuthenticated.
+        //   429  limitador de taxa.
+        // Nenhum desses é resposta sobre a indicação — são "pergunte de novo".
+        // Como `tentado` também volta a false, a próxima abertura do app tenta
+        // outra vez em vez de perder a promessa feita no WhatsApp.
+        const RETENTAR = [401, 403, 404, 408, 425, 429];
+        if (!r.ok && (r.status >= 500 || RETENTAR.includes(r.status))) {
+          tentado.current = false;
+          return;
+        }
         const j = await r.json().catch(() => ({}));
         limparIndicacao();
         if (j?.ok) {
