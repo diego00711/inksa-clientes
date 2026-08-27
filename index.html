@@ -41,7 +41,19 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="Inksa Cliente">
-<link rel="apple-touch-icon" href="/icons/icon-192x192.png">
+<!-- Ícone da tela de início do iPhone. Era /icons/icon-192x192.png — a logo da
+     moto em PNG COM TRANSPARÊNCIA, e o iOS não respeita alfa aqui: ele compõe
+     o que vier sobre branco/preto, e o resultado saía sem nada a ver com o
+     ícone da Play Store. Agora é a MESMA sacola, sobre o laranja chapado da
+     marca (#F97316, amostrado do ic_launcher).
+     Não arredondo nem adiciono brilho: a máscara é do sistema, e cantos
+     arredondados na arte viram borda dupla depois que o iOS aplica a dele.
+     O 180 é o do iPhone atual; os menores evitam o iOS reamostrar sozinho no
+     iPad e em aparelhos antigos. -->
+<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon-180.png">
+<link rel="apple-touch-icon" sizes="167x167" href="/apple-touch-icon-167.png">
+<link rel="apple-touch-icon" sizes="152x152" href="/apple-touch-icon-152.png">
+<link rel="apple-touch-icon" sizes="120x120" href="/apple-touch-icon-120.png">
   <!-- Sentry Error Monitoring (CDN — sem npm) -->
   <script src="https://browser.sentry-cdn.com/7.99.0/bundle.min.js" crossorigin="anonymous"></script>
   <script>

@@ -18,7 +18,7 @@
 // propósito: quem digitou errado ou mudou de ideia não pode ficar preso a uma
 // indicação errada pra sempre. O que não pode é uma pessoa valer por cinco.
 import { useCallback, useEffect, useState } from 'react';
-import { HeartHandshake, Check, Loader2, X, Pencil } from 'lucide-react';
+import { HeartHandshake, Check, Loader2, X, Pencil, List } from 'lucide-react';
 import { createAuthHeaders } from '../services/api';
 
 const API = import.meta.env.VITE_API_URL || 'https://inksa-auth-flask-dev.onrender.com';
@@ -37,6 +37,29 @@ export default function IndicarInstituicao() {
   const [minha, setMinha] = useState(null);
   const [trocando, setTrocando] = useState(false);
   const [acabouDeEnviar, setAcabouDeEnviar] = useState(false);
+
+  // Instituições que a cidade já indicou. Existe pra atacar a duplicata na
+  // ORIGEM: o servidor agrupa maiúscula, acento e pontuação, mas não agrupa
+  // redação — "Lar São Vicente" e "Lar de Idosos São Vicente" viram duas
+  // linhas de um voto cada, e o ranking nunca sobe. Vendo a lista, a pessoa
+  // reconhece a que já está lá e clica, em vez de inventar um jeito novo de
+  // escrever.
+  const [jaIndicadas, setJaIndicadas] = useState(null);   // null = ainda não buscou
+  const [verLista, setVerLista] = useState(false);
+  const [carregandoLista, setCarregandoLista] = useState(false);
+
+  const buscarLista = useCallback(async () => {
+    setCarregandoLista(true);
+    try {
+      const r = await fetch(`${ROTA}/lista`, { headers: createAuthHeaders() });
+      const d = r.ok ? await r.json() : {};
+      setJaIndicadas(Array.isArray(d?.itens) ? d.itens : []);
+    } catch {
+      setJaIndicadas([]);   // sem lista o formulário continua funcionando
+    } finally {
+      setCarregandoLista(false);
+    }
+  }, []);
 
   const buscarMinha = useCallback(async () => {
     try {
@@ -158,14 +181,27 @@ export default function IndicarInstituicao() {
                     ? `Você e mais ${minha.votos - 1} ${minha.votos - 1 === 1 ? 'pessoa indicaram' : 'pessoas indicaram'} essa.`
                     : 'Você foi a primeira pessoa a indicar essa.'}
                 </p>
-                <div className="mt-3 flex flex-wrap items-center gap-3">
+                {/* BOTÕES DE VERDADE, não texto sublinhado.
+                    No iPhone do Diego eles apareceram com um retângulo
+                    vermelho atrás, o que parecia defeito do app. Não era: o
+                    iOS tem "Formas de botão" na Acessibilidade, que desenha um
+                    fundo atrás de tudo que o sistema reconhece como botão —
+                    e botão feito de texto puro é exatamente o que ele decora.
+                    Com forma, cor e área de toque próprias, eles ficam certos
+                    com o recurso ligado ou desligado. */}
+                <div className="mt-4 flex flex-wrap items-center gap-2">
                   <button
                     onClick={abrirTroca}
-                    className="inline-flex items-center gap-1.5 text-sm font-semibold text-green-800 underline underline-offset-2"
+                    className="inline-flex min-h-[40px] items-center gap-1.5 rounded-lg border border-green-300 bg-white px-3 text-sm font-semibold text-green-800 hover:bg-green-100 active:opacity-80"
                   >
                     <Pencil className="h-3.5 w-3.5" /> Trocar minha indicação
                   </button>
-                  <button onClick={fechar} className="text-sm text-green-700">Fechar</button>
+                  <button
+                    onClick={fechar}
+                    className="inline-flex min-h-[40px] items-center rounded-lg px-3 text-sm font-semibold text-green-700 hover:bg-green-100 active:opacity-80"
+                  >
+                    Fechar
+                  </button>
                 </div>
                 <p className="mt-3 text-xs text-green-700/70">
                   Cada pessoa tem uma indicação. Trocar substitui a sua — não
@@ -192,6 +228,62 @@ export default function IndicarInstituicao() {
                   autoFocus
                   className="mt-1 min-h-[44px] w-full rounded-lg border border-gray-300 px-3 text-sm text-gray-800 outline-none focus:border-orange-500"
                 />
+
+                {/* Fica LOGO ABAIXO do campo, e não no rodapé: a hora de
+                    conferir se a instituição já está na lista é antes de
+                    terminar de digitar o nome, não depois de enviar. */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    const abrindo = !verLista;
+                    setVerLista(abrindo);
+                    if (abrindo && jaIndicadas === null) buscarLista();
+                  }}
+                  aria-expanded={verLista}
+                  className="mt-2 inline-flex min-h-[36px] items-center gap-1.5 rounded-lg border border-gray-300 bg-white px-3 text-xs font-semibold text-gray-700 hover:bg-gray-50 active:opacity-80"
+                >
+                  <List className="h-3.5 w-3.5" />
+                  {verLista ? 'Esconder indicadas' : 'Ver instituições já indicadas'}
+                </button>
+
+                {verLista && (
+                  <div className="mt-2 rounded-lg border border-gray-200 bg-gray-50 p-2">
+                    {carregandoLista && (
+                      <p className="px-1 py-2 text-xs text-gray-500">Carregando…</p>
+                    )}
+                    {!carregandoLista && jaIndicadas?.length === 0 && (
+                      <p className="px-1 py-2 text-xs text-gray-500">
+                        Ninguém indicou ainda. A sua vai ser a primeira.
+                      </p>
+                    )}
+                    {!carregandoLista && jaIndicadas?.length > 0 && (
+                      <>
+                        <p className="px-1 pb-1.5 text-xs text-gray-500">
+                          Se a sua já está aqui, <strong>toque nela</strong> — assim
+                          os votos somam em vez de virar duas linhas.
+                        </p>
+                        {/* Teto de altura com rolagem: com muitas indicações a
+                            lista empurraria o botão de enviar pra fora da tela. */}
+                        <ul className="max-h-44 space-y-1 overflow-y-auto">
+                          {jaIndicadas.map((it) => (
+                            <li key={it.nome}>
+                              <button
+                                type="button"
+                                onClick={() => { setNome(it.nome); setVerLista(false); setErro(''); }}
+                                className="flex w-full min-h-[36px] items-center justify-between gap-2 rounded-md bg-white px-2.5 text-left text-xs text-gray-800 hover:bg-orange-50 active:opacity-80"
+                              >
+                                <span className="min-w-0 flex-1 truncate">{it.nome}</span>
+                                <span className="shrink-0 rounded-full bg-gray-100 px-2 py-0.5 text-[11px] font-semibold text-gray-600">
+                                  {it.votos} {it.votos === 1 ? 'voto' : 'votos'}
+                                </span>
+                              </button>
+                            </li>
+                          ))}
+                        </ul>
+                      </>
+                    )}
+                  </div>
+                )}
 
                 <label className="mt-4 block text-xs font-semibold uppercase tracking-wide text-gray-400">
                   Por que essa? <span className="normal-case text-gray-400">(opcional)</span>
