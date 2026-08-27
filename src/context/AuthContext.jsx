@@ -5,7 +5,7 @@ import authService from '../services/authService';
 import clientService from '../services/clientService';
 import { requestNotificationPermission, obterTokenFCM, saveFcmToken } from '../services/notificationService';
 import { CLIENT_API_URL, createAuthHeaders } from '../services/api';
-import { isTokenExpired } from '../services/apiClient';
+import { isTokenExpired, refreshSession, REFRESH_NETWORK_ERROR } from '../services/apiClient';
 
 export const AuthContext = createContext(null);
 
@@ -14,14 +14,25 @@ export const AuthProvider = ({ children }) => {
   const [isLoading, setIsLoading] = useState(true);
 
   const fetchAndSetUser = useCallback(async () => {
-    const token = authService.getToken();
-    // Se o token ja expirou, encerra sessao limpa antes de tentar usar
+    let token = authService.getToken();
+    // TOKEN VENCIDO NÃO É SESSÃO PERDIDA — é sessão que precisa renovar.
+    // Antes isto deslogava direto, ignorando que existe um refresh_token
+    // guardado e válido. Quem voltava ao app depois de uma hora caía no login
+    // sem motivo. Ver o comentário do intervalo de 30s mais abaixo.
     if (token && isTokenExpired(token)) {
-      console.warn('[AuthContext] Token expirado detectado na inicializacao, fazendo logout limpo.');
-      authService.logout();
-      setUser(null);
-      setIsLoading(false);
-      return;
+      const novo = await refreshSession();
+      if (novo === REFRESH_NETWORK_ERROR) {
+        // Backend hibernando ou wi-fi caiu: NÃO é sessão inválida. Segue com
+        // o token velho; o apiClient renova na primeira chamada que der certo.
+      } else if (novo) {
+        token = novo;
+      } else {
+        console.warn('[AuthContext] Token expirado e refresh recusado — encerrando sessão.');
+        authService.logout();
+        setUser(null);
+        setIsLoading(false);
+        return;
+      }
     }
     if (token) {
       try {
@@ -89,14 +100,40 @@ export const AuthProvider = ({ children }) => {
     return () => { vivo = false; };
   }, [user]);
 
-  // Verifica periodicamente se o token expirou (a cada 30s). Se sim, desloga.
+  // Vigia a validade do token (a cada 30s e ao voltar pra frente).
+  //
+  // ⚠️ ISTO DESLOGAVA O CLIENTE NO MEIO DO PEDIDO. A regra era: token vencido
+  // → logout, ponto. Sem NUNCA tentar renovar — mesmo com um refresh_token
+  // válido guardado e com todo o mecanismo de renovação pronto no apiClient.
+  //
+  // Por que aparecia no checkout e não no resto: o apiClient renova sozinho
+  // ANTES de cada chamada. Enquanto a pessoa navega, alguma requisição sempre
+  // acontece e o token se mantém fresco. No checkout ela para — escolhe
+  // endereço, confere o carrinho, decide o pagamento — e passa minutos sem
+  // disparar nada. Aí este timer chegava primeiro e derrubava a sessão com o
+  // pedido montado. Relatado pelo Diego em pedido de teste real.
+  //
+  // Agora renovar vem antes de desistir. Só desloga se o refresh for RECUSADO
+  // (refresh_token revogado ou ausente) — que é a única situação em que a
+  // sessão realmente acabou. Falha de rede não derruba: refreshSession devolve
+  // REFRESH_NETWORK_ERROR nesse caso, e a próxima passada tenta de novo.
   useEffect(() => {
-    const checkExpiry = () => {
+    let rodando = false;
+    const checkExpiry = async () => {
+      if (rodando) return;            // não empilha renovação a cada tique
       const token = authService.getToken();
-      if (token && isTokenExpired(token)) {
+      if (!token || !isTokenExpired(token)) return;
+      rodando = true;
+      try {
+        const novo = await refreshSession();
+        // Só o `null` significa sessão encerrada de verdade (refresh_token
+        // ausente ou recusado). Erro de rede devolve o sentinel e espera.
+        if (novo || novo === REFRESH_NETWORK_ERROR) return;
         authService.logout();
         setUser(null);
         window.dispatchEvent(new CustomEvent('auth:unauthorized'));
+      } finally {
+        rodando = false;
       }
     };
     const interval = setInterval(checkExpiry, 30_000);
