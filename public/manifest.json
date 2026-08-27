@@ -1,7 +1,7 @@
 {
   "name": "Inksa Delivery - Cliente",
   "short_name": "Inksa Cliente",
-  "description": "App de delivery Inksa para clientes",
+  "description": "Peça restaurantes, bebidas e mais no app de delivery feito na sua região",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#ffffff",
@@ -9,7 +9,11 @@
   "orientation": "portrait-primary",
   "scope": "/",
   "lang": "pt-BR",
-  "categories": ["food", "shopping"],
+  "categories": [
+    "food",
+    "shopping",
+    "lifestyle"
+  ],
   "icons": [
     {
       "src": "icons/icon-72x72.png",

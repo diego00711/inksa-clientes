@@ -42,7 +42,10 @@ export default function IndiqueGanhePage() {
   // e pra pessoa entender o que está mandando.
   const link = dados ? `https://clientes.inksadelivery.com.br/?ref=${dados.codigo}` : '';
   const mensagem = dados
-    ? `Tô usando o Inksa pra pedir comida aqui na cidade e tá muito bom. `
+    // "pra pedir" e não "pra pedir COMIDA": o app já tem bebidas e o cadastro
+    // tem segmento pra pet/mercado. Quem recebe o convite e abre numa loja de
+    // bebida não pode estranhar o que foi prometido na mensagem.
+    ? `Tô usando o Inksa pra pedir aqui na cidade e tá muito bom. `
       + `Entra por esse link que seu primeiro pedido sai SEM FRETE: ${link} `
       + `(ou usa o código ${dados.codigo} no cadastro)`
     : '';
