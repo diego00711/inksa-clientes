@@ -116,8 +116,13 @@ function FaixaDeConvite() {
       className="flex items-center justify-center gap-2 bg-orange-100 px-4 py-2 text-center text-sm text-orange-900 hover:bg-orange-200"
     >
       <span aria-hidden>🎁</span>
+      {/* O CÓDIGO FICA VISÍVEL de propósito. Ele vive no localStorage DESTE
+          navegador, e quem instala o app se cadastra noutro storage — foi
+          assim que o convite do sogro pra sogra se perdeu (27/08). Com o
+          código na tela, quem sair daqui pelo menos consegue digitá-lo no
+          campo que o cadastro já tem. */}
       <span>
-        <strong>Convite ativo:</strong> seu primeiro pedido sai{' '}
+        <strong>Convite ativo</strong> ({codigo}): seu primeiro pedido sai{' '}
         <strong>sem frete</strong>. Criar conta →
       </span>
     </Link>
