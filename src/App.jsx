@@ -246,27 +246,43 @@ function AppContent() {
                   O carrinho também entra: deixar montar o pedido cria o
                   compromisso que faz a pessoa criar conta pra não perder o que
                   escolheu. A conta é exigida no FINALIZAR. */}
+              {/* ⚠️ UM <Layout /> SÓ, e as protegidas ANINHADAS dentro dele.
+                  Não separe em duas árvores de rota (era assim antes):
+
+                    <Route element={<Layout />}>            ...públicas
+                    <Route element={<ProtectedRoute><Layout /></ProtectedRoute>}>
+
+                  Pro React Router aqueles são elementos DIFERENTES. Ir de "/"
+                  para "/perfil" desmontava o Layout inteiro e montava outro —
+                  Header, heartbeat, CompleteCadastro e NotificationPrompt,
+                  todos do zero, a cada travessia. Dava dois sintomas que não
+                  pareciam ter relação: o app ficou lento depois da vitrine
+                  livre, e a permissão de notificação "caía" (o efeito do
+                  NotificationPrompt reexecutava e regravava o token toda vez).
+                  Aninhado, o Layout monta UMA vez e só o miolo troca. */}
               <Route element={<Layout />}>
                 <Route path="/" element={<HomePage />} />
                 <Route path="restaurantes/:id" element={<RestaurantDetailsPage />} />
                 {/* Avaliações da loja — pública, o cliente lê antes de pedir. */}
                 <Route path="restaurantes/:id/avaliacoes" element={<StoreReviewsPage />} />
                 <Route path="carrinho" element={<CartPage />} />
-              </Route>
 
-              {/* Daqui pra baixo é coisa de quem já tem conta: dados pessoais,
-                  histórico, prêmios e o acompanhamento do próprio pedido. */}
-              <Route element={<ProtectedRoute><Layout /></ProtectedRoute>}>
-                <Route path="perfil" element={<ProfilePage />} />
-                <Route path="meus-pedidos" element={<MyOrdersPage />} />
-                <Route path="avaliacoes" element={<ClientEvaluationsCenter />} />
-                {/* Clube Inksa unificado (absorveu a antiga Gamificação/Minha Pontuação) */}
-                <Route path="clube" element={<GamificationPage />} />
-                {/* O push do prêmio manda pra cá (data.url = /indique). */}
-                <Route path="indique" element={<IndiqueGanhePage />} />
-                <Route path="gamificacao" element={<Navigate to="/clube" replace />} />
-                <Route path="suporte" element={<SuportePage />} />
-                <Route path="pedido/:orderId/acompanhar" element={<OrderTrackingPage />} />
+                {/* Daqui pra baixo é coisa de quem já tem conta: dados pessoais,
+                    histórico, prêmios e o acompanhamento do próprio pedido.
+                    ProtectedRoute sem children devolve <Outlet />, então ele
+                    funciona como rota "pathless" e só guarda o que vem abaixo. */}
+                <Route element={<ProtectedRoute />}>
+                  <Route path="perfil" element={<ProfilePage />} />
+                  <Route path="meus-pedidos" element={<MyOrdersPage />} />
+                  <Route path="avaliacoes" element={<ClientEvaluationsCenter />} />
+                  {/* Clube Inksa unificado (absorveu a antiga Gamificação/Minha Pontuação) */}
+                  <Route path="clube" element={<GamificationPage />} />
+                  {/* O push do prêmio manda pra cá (data.url = /indique). */}
+                  <Route path="indique" element={<IndiqueGanhePage />} />
+                  <Route path="gamificacao" element={<Navigate to="/clube" replace />} />
+                  <Route path="suporte" element={<SuportePage />} />
+                  <Route path="pedido/:orderId/acompanhar" element={<OrderTrackingPage />} />
+                </Route>
               </Route>
             </Routes>
           </Suspense>
