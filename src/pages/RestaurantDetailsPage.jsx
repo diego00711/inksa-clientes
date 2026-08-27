@@ -8,6 +8,7 @@ import { useCart, montarItemComOpcoes } from '../context/CartContext';
 import RestaurantService from '../services/restaurantService';
 import StoreCoupons from '../components/StoreCoupons';
 import EscolherOpcoes from '../components/EscolherOpcoes';
+import { DescricaoExpandivel } from '../components/DescricaoExpandivel';
 
 export function RestaurantDetailsPage() {
   const { id } = useParams();
@@ -242,9 +243,7 @@ export function RestaurantDetailsPage() {
 
                       <div className="flex-grow min-w-0">
                         <h3 className="text-base sm:text-lg font-semibold text-gray-800 mb-1 leading-tight">{item.name}</h3>
-                        {item.description && (
-                          <p className="text-xs sm:text-sm text-gray-600 mb-2 leading-relaxed line-clamp-2">{item.description}</p>
-                        )}
+                        <DescricaoExpandivel texto={item.description} />
                         <p className="text-lg sm:text-xl font-bold text-orange-600 mb-2">
                           R$ {parseFloat(item.price ?? 0).toFixed(2)}
                         </p>
