@@ -7,6 +7,7 @@ export const SEGMENTS = [
   { value: "farmacia",     emoji: "💊", label: "Farmácia",     singular: "Farmácia" },
   { value: "mercado",      emoji: "🛒", label: "Mercado",      singular: "Mercado" },
   { value: "padaria",      emoji: "🥖", label: "Padaria",      singular: "Padaria" },
+  { value: "cafeteria",    emoji: "☕", label: "Cafeteria",    singular: "Cafeteria" },
   { value: "pet",          emoji: "🐾", label: "Pet",          singular: "Pet" },
   { value: "conveniencia", emoji: "🏪", label: "Conveniência", singular: "Conveniência" },
   { value: "bebidas",      emoji: "🍺", label: "Bebidas",      singular: "Bebidas" },
