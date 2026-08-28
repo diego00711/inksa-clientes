@@ -4,6 +4,7 @@ import { Link } from "react-router-dom";
 import {
   MapPin, Search, ChevronRight, History,
   ChevronLeft, Star, Clock, Bike,
+  LayoutGrid, Store,
 } from "lucide-react";
 import RestaurantService, { supabase } from "../services/restaurantService";
 import BannerService from "../services/bannerService";
@@ -229,21 +230,46 @@ function BannerCarousel({ banners }) {
 // loja precisa do MESMO rótulo (senão os dois divergem).
 
 function SegmentChips({ segments, selected, onSelect }) {
-  const opts = [{ value: "Todos", emoji: "🏠", label: "Todos" }, ...segments];
+  // "Todos" ganha uma GRADE, não uma casinha: o chip significa "todas as
+  // categorias", e casinha significa "início" — que é outra coisa e já é onde
+  // a pessoa está.
+  const opts = [{ value: "Todos", icone: LayoutGrid, label: "Todos" }, ...segments];
   return (
     <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide -mx-4 px-4">
       {opts.map((s) => {
         const isActive = selected === s.value;
+        const Icone = s.icone || Store;
         return (
           <button
             key={s.value}
+            type="button"
             onClick={() => onSelect(s.value)}
-            className={`flex flex-col items-center gap-1.5 shrink-0 transition-all duration-200 ${isActive ? "scale-105" : "hover:scale-105"}`}
+            aria-pressed={isActive}
+            className="group flex flex-col items-center gap-1.5 shrink-0 outline-none"
           >
-            <div className={`w-14 h-14 rounded-2xl flex items-center justify-center text-2xl shadow-sm transition-all duration-200 ${isActive ? "bg-orange-500 shadow-md" : "bg-orange-100"}`}>
-              {s.emoji}
+            {/* O ativo SOBE (-translate-y) em vez de crescer. Escalar o quadrado
+                escalava a sombra junto e o chip "inchava"; subir 2px com sombra
+                mais funda lê como botão apertado, que é o que ele é. */}
+            <div
+              className={`w-14 h-14 rounded-2xl flex items-center justify-center ring-1
+                transition-all duration-200 ease-out group-active:scale-95
+                group-focus-visible:ring-2 group-focus-visible:ring-orange-400
+                group-focus-visible:ring-offset-2 ${
+                isActive
+                  ? "bg-orange-500 ring-orange-500 text-white shadow-lg shadow-orange-500/30 -translate-y-0.5"
+                  : "bg-orange-50 ring-orange-100 text-orange-500 shadow-sm group-hover:bg-orange-100 group-hover:-translate-y-0.5"
+              }`}
+            >
+              {/* strokeWidth igual em todos: é o que faz a fila ler como
+                  conjunto. Se um ícone vier mais grosso, a barra inteira
+                  desmonta. */}
+              <Icone size={24} strokeWidth={1.75} aria-hidden="true" />
             </div>
-            <span className={`text-xs font-semibold whitespace-nowrap transition-colors ${isActive ? "text-orange-600" : "text-gray-600"}`}>
+            <span
+              className={`text-[11px] whitespace-nowrap transition-colors duration-200 ${
+                isActive ? "text-orange-600 font-bold" : "text-gray-500 font-medium"
+              }`}
+            >
               {s.label}
             </span>
           </button>
