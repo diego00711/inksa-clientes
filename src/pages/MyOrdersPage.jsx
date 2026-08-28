@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { usePullToRefresh } from '../hooks/usePullToRefresh';
-import { ArrowLeft, Trash2, Star, X, Loader2, MapPin } from 'lucide-react';
+import { ArrowLeft, Trash2, Star, X, Loader2, MapPin, RotateCcw } from 'lucide-react';
 
 import AuthService from '../services/authService';
 import { useToast } from '../context/ToastContext.jsx';
@@ -11,6 +11,9 @@ import { deleteOrder as deleteOrderApi, cancelOrderByClient } from '../services/
 import { CLIENT_API_URL } from '../services/api';
 import { postRestaurantReview, postDeliveryReview } from '../services/reviewService';
 import { supabase } from '../services/restaurantService';
+import { useNavigate } from 'react-router-dom';
+import { useCart } from '../context/CartContext';
+import { usePedirDeNovo } from '../hooks/usePedirDeNovo';
 
 const API_URL = `${CLIENT_API_URL}/api`;
 
@@ -222,6 +225,12 @@ function ReviewModal({ order, onClose, onDone }) {
 // ─── MyOrdersPage ─────────────────────────────────────────────────────────────
 
 const MyOrdersPage = () => {
+  const navigate = useNavigate();
+  const { cartItems, addItemToCart, clearCart } = useCart();
+  const { pedirDeNovo, carregando: repetindo } = usePedirDeNovo({
+    cartItems, addItemToCart, clearCart,
+  });
+  const [repetindoId, setRepetindoId] = useState(null);
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -293,6 +302,52 @@ const MyOrdersPage = () => {
     } finally {
       setCancelingId(null);
     }
+  };
+
+  // "Pedir de novo": o hook faz o trabalho pesado (preço de hoje, item que
+  // sumiu, item com opção obrigatória). Aqui fica só a conversa com a pessoa.
+  const handlePedirDeNovo = async (order) => {
+    setRepetindoId(order.id);
+    let r = await pedirDeNovo(order);
+
+    // Carrinho de outra loja: pergunta em vez de apagar. Carrinho montado que
+    // some sozinho é pior que um botão que não funciona de primeira.
+    if (!r.ok && r.motivo === 'conflito') {
+      const trocar = await confirm({
+        title: 'Trocar o carrinho?',
+        message: 'Você tem itens de outra loja no carrinho. Repetir este pedido vai substituir o que está lá.',
+        confirmText: 'Trocar',
+      });
+      if (!trocar) { setRepetindoId(null); return; }
+      r = await pedirDeNovo(order, { substituirCarrinho: true });
+    }
+    setRepetindoId(null);
+
+    if (!r.ok) {
+      if (r.motivo === 'nada_direto' && r.lojaId) {
+        // Tudo que sobrou precisa de escolha: em vez de erro, leva pra loja,
+        // que é onde ela consegue resolver.
+        addToast('info', 'Estes itens precisam que você escolha as opções. Abrindo a loja.');
+        navigate(`/restaurantes/${r.lojaId}`);
+        return;
+      }
+      addToast(
+        'error',
+        r.motivo === 'sem_itens'
+          ? 'Não consegui ler os itens desse pedido.'
+          : 'Não consegui repetir o pedido agora. Tente de novo.',
+      );
+      return;
+    }
+
+    // Avisa o que NÃO foi — silenciar mudaria o pedido dela sem ela saber.
+    if (r.indisponiveis.length) {
+      addToast('info', `Fora do cardápio agora: ${r.indisponiveis.join(', ')}.`);
+    }
+    if (r.precisamEscolha.length) {
+      addToast('info', `Escolha as opções na loja: ${r.precisamEscolha.join(', ')}.`);
+    }
+    navigate('/carrinho');
   };
 
   const handleReviewDone = () => {
@@ -395,6 +450,23 @@ const MyOrdersPage = () => {
             >
               {cancelingId === order.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <X className="w-4 h-4" />}
               Cancelar pedido
+            </button>
+          )}
+
+          {/* PEDIR DE NOVO — primeiro botão do pedido entregue, acima de
+              "Avaliar". Repetir é o que a pessoa quer fazer com um pedido que
+              deu certo; avaliar é o que a gente quer que ela faça. A ordem na
+              tela segue o interesse dela. */}
+          {isDelivered && (
+            <button
+              onClick={() => handlePedirDeNovo(order)}
+              disabled={repetindoId === order.id || repetindo}
+              className="mt-4 w-full flex items-center justify-center gap-2 bg-orange-500 hover:bg-orange-600 text-white font-semibold py-2.5 rounded-lg transition-colors text-sm shadow-sm disabled:opacity-60"
+            >
+              {repetindoId === order.id
+                ? <Loader2 className="w-4 h-4 animate-spin" />
+                : <RotateCcw className="w-4 h-4" />}
+              {repetindoId === order.id ? 'Montando carrinho...' : 'Pedir de novo'}
             </button>
           )}
 
