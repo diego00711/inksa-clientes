@@ -566,6 +566,27 @@ export function OrderTrackingPage() {
     [driverPos, destPos],
   );
 
+  // ⚠️ ESTE useMemo TEM QUE FICAR ACIMA DO `if (loading) return`.
+  //
+  // Eu o coloquei DEPOIS, junto de onde ele é usado — e isso derrubou a tela.
+  // React exige que os ganchos sejam chamados na MESMA ORDEM em toda pintura:
+  // na primeira, `loading` é true, a função retorna antes e este gancho nunca
+  // roda; quando o pedido chega e `loading` vira false, ele aparece do nada e
+  // o React derruba o componente ("Rendered more hooks than during the
+  // previous render"). De fora: esqueleto cinza e depois "algo deu errado".
+  //
+  // Regra pra este arquivo: TODO gancho vai acima do primeiro `return`.
+  //
+  // Quantos segundos tem a última posição recebida. null quando não há
+  // carimbo — aí a tela não afirma nada sobre atraso.
+  const idadePosicao = useMemo(() => {
+    const q = delivererLocation?.recorded_at;
+    if (!q) return null;
+    const ms = Date.now() - new Date(q).getTime();
+    return Number.isFinite(ms) ? Math.max(0, Math.round(ms / 1000)) : null;
+  }, [delivererLocation]);
+  const posicaoAtrasada = idadePosicao != null && idadePosicao >= 45;
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50">
@@ -668,16 +689,6 @@ export function OrderTrackingPage() {
       </div>
     );
   }
-
-  // Quantos segundos tem a última posição recebida. null quando não há
-  // carimbo (rota antiga) — aí a tela não afirma nada sobre atraso.
-  const idadePosicao = useMemo(() => {
-    const q = delivererLocation?.recorded_at;
-    if (!q) return null;
-    const ms = Date.now() - new Date(q).getTime();
-    return Number.isFinite(ms) ? Math.max(0, Math.round(ms / 1000)) : null;
-  }, [delivererLocation]);
-  const posicaoAtrasada = idadePosicao != null && idadePosicao >= 45;
 
   const isDelivered = currentStage >= 4;
   const isFailed = order?.status === 'delivery_failed';
