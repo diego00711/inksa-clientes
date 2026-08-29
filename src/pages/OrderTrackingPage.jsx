@@ -338,9 +338,27 @@ export function OrderTrackingPage() {
 
   const fetchOrder = useCallback(async () => {
     try {
-      const res = await fetch(`${CLIENT_API_URL}/api/orders/${orderId}`, {
-        headers: { ...createAuthHeaders(), Accept: "application/json" },
-      });
+      // ⚠️ PRAZO NA BUSCA PRINCIPAL TAMBÉM.
+      //
+      // Sem isto, uma requisição que fica pendurada (rede oscilando, celular
+      // trocando de Wi-Fi pra 4G) segura a tela no esqueleto cinza ATÉ O
+      // NAVEGADOR DESISTIR — o que no iPhone pode levar minutos. De fora, o
+      // acompanhamento simplesmente "não abre", sem erro e sem explicação.
+      //
+      // Uma tela nunca deveria poder esperar pra sempre. 12s é bem mais que o
+      // normal (a rota responde em ~0,3s) e bem menos que a paciência de
+      // alguém esperando comida.
+      const ctrlPrincipal = new AbortController();
+      const prazoPrincipal = setTimeout(() => ctrlPrincipal.abort(), 12000);
+      let res;
+      try {
+        res = await fetch(`${CLIENT_API_URL}/api/orders/${orderId}`, {
+          headers: { ...createAuthHeaders(), Accept: "application/json" },
+          signal: ctrlPrincipal.signal,
+        });
+      } finally {
+        clearTimeout(prazoPrincipal);
+      }
       if (!res.ok) throw new Error("Pedido não encontrado");
       const json = await res.json();
       const ord = json.data ?? json;
@@ -393,7 +411,11 @@ export function OrderTrackingPage() {
         }
       }
     } catch (e) {
-      setError(e.message || "Erro ao carregar pedido.");
+      // AbortError = estourou o prazo. Mensagem diferente porque a ação
+      // também é diferente: aqui não adianta voltar, adianta tentar de novo.
+      setError(e?.name === 'AbortError'
+        ? "A conexão demorou demais. Toque em Tentar de novo."
+        : (e.message || "Erro ao carregar pedido."));
     } finally {
       setLoading(false);
     }
@@ -564,12 +586,20 @@ export function OrderTrackingPage() {
         <div className="text-center">
           <div className="text-6xl mb-4">😕</div>
           <h2 className="text-xl font-bold text-gray-800 mb-2">{error}</h2>
-          <button
-            onClick={() => navigate(-1)}
-            className="mt-4 px-6 py-2 bg-orange-500 text-white rounded-full font-semibold"
-          >
-            Voltar
-          </button>
+          <div className="mt-4 flex flex-col gap-2 items-center">
+            <button
+              onClick={() => { setError(null); setLoading(true); fetchOrder(); }}
+              className="px-6 py-2 bg-orange-500 text-white rounded-full font-semibold"
+            >
+              Tentar de novo
+            </button>
+            <button
+              onClick={() => navigate(-1)}
+              className="px-6 py-2 text-gray-600 font-semibold"
+            >
+              Voltar
+            </button>
+          </div>
         </div>
       </div>
     );
