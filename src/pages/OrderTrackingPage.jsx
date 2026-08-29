@@ -206,10 +206,22 @@ function DriverCard({ driver }) {
           <p className="font-bold text-gray-800 truncate">
             {driver.first_name || driver.name || "Entregador"} {driver.last_name || ""}
           </p>
-          <div className="flex items-center gap-1 text-yellow-500">
-            <Star className="w-3.5 h-3.5 fill-current" />
-            <span className="text-sm font-semibold text-gray-700">{(+driver.rating || 5).toFixed(1)}</span>
-          </div>
+          {/* NOTA SÓ QUANDO EXISTE.
+              Estava `(+driver.rating || 5).toFixed(1)`: entregador sem
+              avaliação nenhuma aparecia com 5,0 ★. Hoje TODOS os seis estão
+              com rating 0, então todo cliente veria uma nota máxima que
+              ninguém ganhou — e a primeira avaliação real só poderia piorar
+              esse número. Inventar reputação é pior que não ter. */}
+          {Number(driver.rating) > 0 ? (
+            <div className="flex items-center gap-1 text-yellow-500">
+              <Star className="w-3.5 h-3.5 fill-current" />
+              <span className="text-sm font-semibold text-gray-700">
+                {Number(driver.rating).toFixed(1)}
+              </span>
+            </div>
+          ) : (
+            <p className="text-xs text-gray-400">Novo por aqui</p>
+          )}
           {driver.vehicle_plate && (
             <p className="text-xs text-gray-500 mt-0.5">🛵 {driver.vehicle_plate}</p>
           )}
