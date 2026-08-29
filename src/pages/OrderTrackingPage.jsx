@@ -7,6 +7,7 @@ import { supabase } from "../services/restaurantService";
 import { CLIENT_API_URL, createAuthHeaders } from "../services/api";
 import ChatModal from "../components/ChatModal";
 import LiveTrackingMap, { etaMinutes } from "../components/LiveTrackingMap";
+import { numeroPedido } from '../utils/pedidoNumero';
 
 // Extrai {lat,lng} de varias formas possiveis (objeto JSON ou campos soltos)
 function parseCoord(...candidates) {
@@ -508,7 +509,7 @@ export function OrderTrackingPage() {
             <h1 className="font-bold text-gray-800 text-base">Acompanhar Pedido</h1>
             <p className="text-xs text-gray-500 flex items-center gap-1">
               <Clock className="w-3 h-3" />
-              #{orderId?.substring(0, 8).toUpperCase()}
+              {numeroPedido(order)}
             </p>
           </div>
         </div>
@@ -556,7 +557,7 @@ export function OrderTrackingPage() {
           <h1 className="font-bold text-gray-800 text-base">Acompanhar Pedido</h1>
           <p className="text-xs text-gray-500 flex items-center gap-1">
             <Clock className="w-3 h-3" />
-            #{orderId?.substring(0, 8).toUpperCase()}
+            {numeroPedido(order)}
           </p>
         </div>
         {!isDelivered && !isFailed && (
