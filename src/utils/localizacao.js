@@ -39,8 +39,30 @@ import { Capacitor } from '@capacitor/core';
  * prazo maior. Para entregar comida, o ponto do Wi-Fi serve.
  */
 
-const ALTA = { enableHighAccuracy: true, timeout: 8000, maximumAge: 0 };
-const REDE = { enableHighAccuracy: false, timeout: 20000, maximumAge: 60000 };
+const ALTA = { enableHighAccuracy: true, timeout: 12000, maximumAge: 0 };
+// Segunda tentativa: posicionamento por rede (Wi-Fi e antena). Responde quase
+// sempre, mas erra MUITO — no iPhone, centenas de metros são comuns.
+// maximumAge baixo: posição guardada de um minuto atrás pode ser de outro
+// bairro se a pessoa estava no carro.
+const REDE = { enableHighAccuracy: false, timeout: 20000, maximumAge: 15000 };
+
+// ── MARGEM DE ERRO: O CAMPO QUE EU ESTAVA JOGANDO FORA ─────────────────────
+//
+// O navegador devolve `coords.accuracy` — o raio, em metros, dentro do qual
+// ele acredita que a pessoa está. GPS bom dá 5 a 20 m; Wi-Fi dá 20 a 100 m;
+// antena de celular dá de 500 m a vários quilômetros.
+//
+// Eu ignorava esse número e tratava toda posição como se fosse igual. No teste
+// de 29/08/2026 o Diego pôs um Android e um iPhone LADO A LADO: o Android
+// acertou, o iPhone devolveu um ponto 600 m rua abaixo. Como endereço de
+// entrega, isso manda o entregador tocar a campainha errada — "opa, não pedi
+// nada" — enquanto o cliente de verdade espera a seiscentos metros dali.
+//
+// Endereço errado é PIOR que endereço nenhum: sem endereço a pessoa digita;
+// com endereço errado ela confia e espera.
+export const PRECISAO_BOA = 50;      // dá pra usar direto
+export const PRECISAO_DUVIDOSA = 200; // dá pra usar, mas tem que conferir
+                                      // acima disso, não serve pra entrega
 
 function ehIOS() {
   if (typeof navigator === 'undefined') return false;
@@ -70,7 +92,13 @@ function pedirAoNavegador(opcoes) {
       return;
     }
     navigator.geolocation.getCurrentPosition(
-      (p) => resolve({ lat: p.coords.latitude, lng: p.coords.longitude }),
+      (p) => resolve({
+        lat: p.coords.latitude,
+        lng: p.coords.longitude,
+        // Em metros. Quem chama decide o que fazer com isso — ver as
+        // constantes PRECISAO_* acima.
+        precisao: Number.isFinite(p.coords.accuracy) ? Math.round(p.coords.accuracy) : null,
+      }),
       (err) => reject(Object.assign(new Error(mensagemDeErro(err?.code)), { code: err?.code })),
       opcoes,
     );
@@ -88,10 +116,12 @@ export async function obterCoordenadas() {
     try { await Geolocation.requestPermissions(); } catch { /* já concedida */ }
     try {
       const p = await Geolocation.getCurrentPosition(ALTA);
-      return { lat: p.coords.latitude, lng: p.coords.longitude };
+      return { lat: p.coords.latitude, lng: p.coords.longitude,
+               precisao: Number.isFinite(p.coords.accuracy) ? Math.round(p.coords.accuracy) : null };
     } catch {
       const p = await Geolocation.getCurrentPosition(REDE);
-      return { lat: p.coords.latitude, lng: p.coords.longitude };
+      return { lat: p.coords.latitude, lng: p.coords.longitude,
+               precisao: Number.isFinite(p.coords.accuracy) ? Math.round(p.coords.accuracy) : null };
     }
   }
 
@@ -104,4 +134,12 @@ export async function obterCoordenadas() {
     if (e?.code === 1) throw e;
     return pedirAoNavegador(REDE);
   }
+}
+
+/** Rótulo curto do quanto dá pra confiar na posição. */
+export function qualidade(precisao) {
+  if (precisao == null) return 'desconhecida';
+  if (precisao <= PRECISAO_BOA) return 'boa';
+  if (precisao <= PRECISAO_DUVIDOSA) return 'duvidosa';
+  return 'ruim';
 }

@@ -10,7 +10,7 @@ import { useToast } from "../context/ToastContext";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import { TILE_URL, TILE_ATTRIBUTION } from '../lib/mapTiles';
-import { obterCoordenadas } from '../utils/localizacao';
+import { obterCoordenadas, qualidade } from '../utils/localizacao';
 
 delete L.Icon.Default.prototype._getIconUrl;
 L.Icon.Default.mergeOptions({
@@ -50,7 +50,17 @@ export default function AddressMapPicker({ value, onChange }) {
       // navegador, que é justamente o que quebra no Safari do iPhone.
       const coords = await obterCoordenadas();
       onChange(coords);
-      addToast("success", "Localização capturada! Confira o pino no mapa.");
+      // Aqui o pino JÁ é ajustável no mapa, então posição imprecisa não é
+      // fatal como no carrinho — mas o texto muda pra pessoa saber que
+      // precisa arrastar, em vez de confiar no pino como se fosse exato.
+      const q = qualidade(coords.precisao);
+      if (q === 'ruim' || q === 'duvidosa') {
+        addToast("warning",
+          `Localização com ${coords.precisao} m de margem — arraste o pino até o `
+          + 'lugar certo antes de salvar.');
+      } else {
+        addToast("success", "Localização capturada! Confira o pino no mapa.");
+      }
     } catch (err) {
       addToast("error", err?.message || "Não foi possível obter sua localização. Toque no mapa pra marcar manualmente.");
     } finally {

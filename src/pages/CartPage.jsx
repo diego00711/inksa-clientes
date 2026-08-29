@@ -13,7 +13,7 @@ import AddressService, { formatAddress } from '../services/addressService';
 import { PaymentMethodSelector } from '../components/PaymentMethodSelector';
 import CardPaymentModal from '../components/CardPaymentModal';
 import PixPaymentModal from '../components/PixPaymentModal';
-import { obterCoordenadas } from '../utils/localizacao';
+import { obterCoordenadas, PRECISAO_DUVIDOSA, qualidade } from '../utils/localizacao';
 import { CLIENT_API_URL, createAuthHeaders } from '../services/api';
 import { PENDING_COUPON_KEY } from '../components/StoreCoupons';
 
@@ -143,6 +143,25 @@ export function CartPage() {
     setLocatingNow(true);
     try {
       const coords = await obterCoordenadas();
+
+      // ⚠️ POSIÇÃO IMPRECISA NÃO VIRA ENDEREÇO DE ENTREGA.
+      //
+      // O navegador informa a margem de erro em metros. Num teste com um
+      // Android e um iPhone LADO A LADO, o iPhone devolveu um ponto 600 m rua
+      // abaixo — porque caiu no posicionamento por antena. Aceitar isso manda
+      // o entregador tocar a campainha errada ("opa, não pedi nada") enquanto
+      // o cliente espera a seiscentos metros dali.
+      //
+      // Endereço errado é PIOR que endereço nenhum: sem endereço a pessoa
+      // digita; com endereço errado ela confia e espera.
+      const q = qualidade(coords.precisao);
+      if (q === 'ruim') {
+        addToast('error',
+          `Seu aparelho só conseguiu localizar você com ${coords.precisao} m de margem — `
+          + 'longe demais pra entregar no lugar certo. Escolha um endereço salvo ou '
+          + 'tente de novo perto de uma janela.');
+        return;
+      }
       // Endereço para o ENTREGADOR ler, não para o banco de dados guardar.
       //
       // Antes vinha o `display_name` cru do Nominatim — "123, Rua X, Bairro,
@@ -168,7 +187,16 @@ export function CartPage() {
       } catch { /* sem reverse-geocode -> usa as coords */ }
       setCurrentLoc({ ...coords, address });
       setShowAddressList(false);
-      addToast('success', 'Usando sua localização atual para a entrega.');
+      // Margem entre 50 e 200 m: dá pra usar, mas a pessoa precisa saber que
+      // pode ter caído no vizinho — e o complemento já é obrigatório neste
+      // fluxo, então ela tem onde corrigir.
+      if (q === 'duvidosa') {
+        addToast('warning',
+          `Localização com ${coords.precisao} m de margem. Confira o número e o `
+          + 'complemento antes de finalizar.');
+      } else {
+        addToast('success', 'Usando sua localização atual para a entrega.');
+      }
     } catch (e) {
       addToast('error', e?.message || 'Não foi possível obter sua localização.');
     } finally {
