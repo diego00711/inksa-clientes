@@ -244,9 +244,26 @@ export function RestaurantDetailsPage() {
                       <div className="flex-grow min-w-0">
                         <h3 className="text-base sm:text-lg font-semibold text-gray-800 mb-1 leading-tight">{item.name}</h3>
                         <DescricaoExpandivel texto={item.description} />
-                        <p className="text-lg sm:text-xl font-bold text-orange-600 mb-2">
-                          R$ {parseFloat(item.price ?? 0).toFixed(2)}
-                        </p>
+                        {/* PROMOÇÃO — `item.price` JÁ vem com o desconto
+                            aplicado do servidor; `original_price` só existe
+                            quando a promoção está valendo. Por isso aqui não
+                            se calcula nada: se o campo veio, desenha o
+                            riscado. Ver utils/precos.py no backend. */}
+                        <div className="flex items-baseline gap-2 flex-wrap mb-2">
+                          <p className="text-lg sm:text-xl font-bold text-orange-600">
+                            R$ {parseFloat(item.price ?? 0).toFixed(2)}
+                          </p>
+                          {item.original_price ? (
+                            <>
+                              <span className="text-sm text-gray-400 line-through">
+                                R$ {parseFloat(item.original_price).toFixed(2)}
+                              </span>
+                              <span className="text-[11px] font-bold text-green-700 bg-green-100 px-1.5 py-0.5 rounded">
+                                {item.discount_percent}% OFF
+                              </span>
+                            </>
+                          ) : null}
+                        </div>
 
                         <div className="flex items-center gap-2 flex-wrap">
                           <div className="flex items-center gap-1 bg-gray-100 rounded-lg">
