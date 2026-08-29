@@ -611,7 +611,13 @@ export function HomePage() {
         </div>
       )}
       {/* ── 1. Sticky Location + Search Bar ─────────────────────────── */}
-      <div className="bg-white sticky top-[73px] z-40 border-b border-gray-100 shadow-sm">
+      {/* O 73px é a altura do cabeçalho — mas o cabeçalho ainda soma
+          env(safe-area-inset-top), que num iPhone com notch são ~47px a mais.
+          Com o valor cru, esta barra grudava 47px ACIMA do fim do cabeçalho,
+          ou seja, POR BAIXO da tarja laranja. No Android o inset é 0 e o
+          resultado não muda. */}
+      <div className="bg-white sticky z-40 border-b border-gray-100 shadow-sm"
+           style={{ top: 'calc(73px + env(safe-area-inset-top))' }}>
         <div className="max-w-7xl mx-auto px-4 py-3">
           <div className="flex items-center gap-3">
             {/* Location / seletor de cidade */}

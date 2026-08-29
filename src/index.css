@@ -41,6 +41,18 @@
   * {
     @apply border-border;
   }
+  /* A BARRA DE BAIXO SUBIA JUNTO COM A ROLAGEM NO IPHONE.
+     Ela é `fixed bottom-0`, o que está certo — mas no iOS, quando a rolagem
+     passa do fim do documento, o Safari deixa a página QUICAR (rubber-band), e
+     nesse repique os elementos fixos vão junto. Não é a barra que solta: é o
+     documento inteiro que desliza por baixo dela.
+     overscroll-behavior-y desliga o repique (Safari 16+), e aí o `fixed` volta
+     a se comportar. Vale também pro Chrome do Android, onde evita o
+     "puxar-pra-atualizar" acidental dentro do app. */
+  html, body {
+    overscroll-behavior-y: none;
+  }
+
   body {
     @apply bg-background text-foreground;
     padding-top: env(safe-area-inset-top);
