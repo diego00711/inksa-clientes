@@ -275,6 +275,25 @@ export function OrderTrackingPage() {
           const dj = await dr.json();
           setDriver(dj.data ?? dj);
         }
+
+        // POSIÇÃO AO VIVO — vem de /api/deliveries/<pedido>/location, que é
+        // onde o app do entregador grava (PATCH). Antes esta tela não pedia
+        // isso a ninguém: `setDelivererLocation` estava declarado e NUNCA era
+        // chamado, então `delivererLocation` era null pra sempre e o
+        // entregador jamais apareceu no mapa de nenhum cliente. Descoberto no
+        // primeiro pedido real, 29/08/2026.
+        //
+        // 404 é normal e não é erro: significa "o entregador ainda não mandou
+        // posição neste pedido". Nesse caso o marcador simplesmente não
+        // aparece, que é melhor do que mostrar uma posição velha.
+        const loc = await fetch(`${CLIENT_API_URL}/api/deliveries/${orderId}/location`, {
+          headers: createAuthHeaders(),
+        }).catch(() => null);
+        if (loc?.ok) {
+          const lj = await loc.json();
+          const p = lj.data ?? lj;
+          if (p?.latitude != null && p?.longitude != null) setDelivererLocation(p);
+        }
       }
     } catch (e) {
       setError(e.message || "Erro ao carregar pedido.");
