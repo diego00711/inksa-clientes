@@ -79,11 +79,39 @@ function CountdownTimer({
 }) {
   const [remaining, setRemaining] = useState(null);
 
+  // ── O PRAZO É ANCORADO, NÃO RECALCULADO ───────────────────────────────────
+  //
+  // O relógio andava pra trás: 1:59, 1:58, 1:57… e voltava pra 2:00.
+  //
+  // Duas causas somadas:
+  //   1. a tela passava `startedAt={Date.now()}` — valor NOVO a cada
+  //      renderização, e a página repinta a cada 6s por causa do polling.
+  //      Toda repintura reiniciava a contagem.
+  //   2. a estimativa vem do GPS do entregador e muda quando ele anda. Sem
+  //      âncora, cada recálculo empurrava o fim pra frente de novo.
+  //
+  // Agora existe UM instante-alvo, guardado. Ele só é substituído quando a
+  // nova estimativa discorda dele em mais de um minuto — aí é mudança real
+  // (trânsito, caminho errado) e vale corrigir. Diferença menor é ruído de
+  // GPS, e ruído de GPS não pode fazer o relógio do cliente andar pra trás.
+  const prazoRef = useRef(null);
+
+  useEffect(() => {
+    const mins = Number(estimatedMinutes);
+    if (!Number.isFinite(mins)) { prazoRef.current = null; return; }
+    // Com base estável (hora que a loja aceitou), o prazo sai dela. Sem base,
+    // conta a partir de agora — mas só na primeira vez.
+    const base = startedAt ? new Date(startedAt).getTime() : Date.now();
+    const alvo = (Number.isNaN(base) ? Date.now() : base) + mins * 60000;
+    const atual = prazoRef.current;
+    if (atual == null || Math.abs(alvo - atual) > 60000) prazoRef.current = alvo;
+  }, [estimatedMinutes, startedAt]);
+
   useEffect(() => {
     const tick = () => {
-      const start = startedAt ? new Date(startedAt).getTime() : Date.now();
-      const elapsed = (Date.now() - start) / 60000;
-      setRemaining(Math.max(0, estimatedMinutes - elapsed));
+      const prazo = prazoRef.current;
+      if (prazo == null) { setRemaining(null); return; }
+      setRemaining(Math.max(0, (prazo - Date.now()) / 60000));
     };
     tick();
     const id = setInterval(tick, 1000);
@@ -601,8 +629,11 @@ export function OrderTrackingPage() {
             Antes daqui o fallback era "estimated_delivery_minutes || 30" — e a
             coluna nao existe, entao TODO pedido mostrava 30 min inventados. */}
         {!isDelivered && !isFailed && (
+          // SEM startedAt: a estimativa do GPS já é "faltam N minutos a partir
+          // de agora". Passar Date.now() aqui criava um valor novo a cada
+          // renderização e reiniciava a contagem.
           liveEta != null ? (
-            <CountdownTimer estimatedMinutes={liveEta} startedAt={Date.now()} />
+            <CountdownTimer estimatedMinutes={liveEta} />
           ) : order?.estimated_prep_time ? (
             <CountdownTimer
               estimatedMinutes={order.estimated_prep_time}
