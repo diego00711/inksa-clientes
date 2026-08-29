@@ -19,6 +19,9 @@ export function RestaurantDetailsPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const [quantities, setQuantities] = useState({});
+  // Disponíveis x esgotados — ver o comentário no contador do cardápio.
+  const disponiveis = menuItems.filter((m) => m.available !== false).length;
+  const esgotados = menuItems.length - disponiveis;
 
   useEffect(() => {
     const fetchDetails = async () => {
@@ -217,8 +220,13 @@ export function RestaurantDetailsPage() {
         <div className="bg-white rounded-2xl shadow-sm p-4 sm:p-6">
           <h2 className="text-xl sm:text-2xl font-bold mb-4 sm:mb-6 text-gray-800 flex items-center gap-2">
             🍽️ Cardápio
+            {/* Conta só o que dá pra comprar, e diz quantos estão esgotados
+                em vez de escondê-los na soma. Com o esgotado visível, um
+                "(12 itens)" que inclui 5 indisponíveis promete mais do que a
+                loja entrega. */}
             <span className="text-sm font-normal text-gray-500">
-              ({menuItems.length} {menuItems.length === 1 ? 'item' : 'itens'})
+              ({disponiveis} {disponiveis === 1 ? 'item' : 'itens'}
+              {esgotados > 0 ? ` · ${esgotados} esgotado${esgotados > 1 ? 's' : ''}` : ''})
             </span>
           </h2>
           
@@ -226,9 +234,22 @@ export function RestaurantDetailsPage() {
             <div className="grid grid-cols-1 gap-4">
               {menuItems.map(item => {
                 const quantity = quantities[item.id] || 0;
+                // ESGOTADO APARECE, APAGADO. Antes o servidor nem mandava o
+                // item: sumia do cardápio, e junto sumia a informação de que a
+                // loja TEM aquilo. `available` vem como false; só o texto e o
+                // preço continuam legíveis, o resto perde cor e o botão sai.
+                const esgotado = item.available === false;
                 return (
-                  <div key={item.id} className="border border-gray-200 rounded-xl p-3 sm:p-4 hover:shadow-sm transition-shadow">
-                    <div className="flex gap-3">
+                  <div
+                    key={item.id}
+                    aria-disabled={esgotado || undefined}
+                    className={`relative border rounded-xl p-3 sm:p-4 transition-shadow ${
+                      esgotado
+                        ? 'border-gray-150 bg-gray-50/60'
+                        : 'border-gray-200 hover:shadow-sm'
+                    }`}
+                  >
+                    <div className={`flex gap-3 ${esgotado ? 'opacity-55' : ''}`}>
                       {item.image_url ? (
                         <img
                           src={item.image_url}
@@ -265,6 +286,14 @@ export function RestaurantDetailsPage() {
                           ) : null}
                         </div>
 
+                        {/* Sem controles quando esgotado: um botão desativado
+                            ainda convida ao toque e frustra. O selo diz o que
+                            está acontecendo, que é o que a pessoa precisa. */}
+                        {esgotado ? (
+                          <span className="inline-flex items-center gap-1.5 rounded-full bg-gray-200 px-2.5 py-1 text-xs font-bold text-gray-600">
+                            Indisponível no momento
+                          </span>
+                        ) : (
                         <div className="flex items-center gap-2 flex-wrap">
                           <div className="flex items-center gap-1 bg-gray-100 rounded-lg">
                             <Button
@@ -295,6 +324,7 @@ export function RestaurantDetailsPage() {
                             {quantity === 0 ? 'Adicionar' : `+ ${quantity}`}
                           </Button>
                         </div>
+                        )}
                       </div>
                     </div>
                   </div>

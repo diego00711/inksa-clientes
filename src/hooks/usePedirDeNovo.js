@@ -64,7 +64,16 @@ export function usePedirDeNovo({ cartItems, addItemToCart, clearCart }) {
           (o.menuItemId && porId.get(String(o.menuItemId))) ||
           porNome.get(o.nome.toLowerCase()) ||
           null;
-        if (!atual || atual.is_available === false) {
+        // ⚠️ O CAMPO SE CHAMA `available` AQUI, NÃO `is_available`.
+        // A consulta pública faz `is_available AS available`, então a checagem
+        // antiga (`atual.is_available === false`) NUNCA era verdadeira — ela só
+        // não causava estrago porque o servidor filtrava o esgotado antes de
+        // mandar. Desde que o cardápio passou a MOSTRAR o esgotado (cinza), essa
+        // rede furada voltaria a repetir item que a loja não tem.
+        // Os dois nomes ficam aceitos: se um dia outra rota alimentar isto com
+        // o nome do banco, continua funcionando.
+        const indisponivel = atual && (atual.available === false || atual.is_available === false);
+        if (!atual || indisponivel) {
           indisponiveis.push(o.nome || 'item');
         } else {
           candidatos.push({ atual, quantidade: o.quantidade });
