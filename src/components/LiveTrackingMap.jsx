@@ -4,7 +4,7 @@
 // distancia entregador -> destino. Reutiliza o mesmo stack (Leaflet) do app
 // do entregador para manter consistencia.
 
-import { useMemo } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { MapContainer, TileLayer, Marker, Popup, Polyline, useMap } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
@@ -76,15 +76,76 @@ function FitBounds({ points, follow }) {
   return null;
 }
 
+// Distância em metros, só pra decidir se vale pedir a rota de novo.
+function metros(aLat, aLng, bLat, bLng) {
+  const R = 6371000, r = Math.PI / 180;
+  const dLat = (bLat - aLat) * r, dLng = (bLng - aLng) * r;
+  const s = Math.sin(dLat / 2) ** 2
+    + Math.cos(aLat * r) * Math.cos(bLat * r) * Math.sin(dLng / 2) ** 2;
+  return 2 * R * Math.asin(Math.sqrt(s));
+}
+
 export default function LiveTrackingMap({ driver, restaurant, destination }) {
   const points = [driver, restaurant, destination].filter(Boolean);
   const center = driver || destination || restaurant || { lat: -27.2178, lng: -49.645 };
 
-  // Linha da rota: entregador -> destino (foco do cliente)
-  const routeLine =
+  // ── ROTA PELA RUA, NÃO LINHA RETA ──────────────────────────────────────────
+  //
+  // A linha era um traço direto do entregador ao destino: atravessava
+  // quarteirão, rio e prédio. O cliente olhava e via o entregador "cortando
+  // caminho" por onde não existe rua.
+  //
+  // Quem desenha a rota é o OSRM, o MESMO roteador que o app do entregador já
+  // usa (inksa-entregadores/src/components/MapDisplay.jsx). Não é serviço novo
+  // nem chave nova — é o mesmo, agora dos dois lados.
+  //
+  // ⚠️ É O SERVIDOR PÚBLICO DE DEMONSTRAÇÃO do projeto OSRM. Aguenta o volume
+  // de hoje com folga, mas não tem compromisso de disponibilidade: pode
+  // limitar ou sair do ar. Por isso a linha reta continua aqui como reserva —
+  // se a rota não vier, o mapa desenha o traço e ninguém fica sem nada.
+  const [rotaGeo, setRotaGeo] = useState(null);
+  const pedidaDe = useRef(null);
+
+  useEffect(() => {
+    if (!driver || !destination) { setRotaGeo(null); return undefined; }
+    const { lat: dLat, lng: dLng } = driver;
+    const { lat: tLat, lng: tLng } = destination;
+
+    // Só refaz quando o destino muda ou o entregador andou de verdade.
+    // 120 m ≈ um quarteirão: abaixo disso a rota desenhada continua correta, e
+    // pedir a cada respiro do GPS castigaria um servidor que é emprestado.
+    const ref = pedidaDe.current;
+    if (ref && ref.tLat === tLat && ref.tLng === tLng
+        && metros(ref.dLat, ref.dLng, dLat, dLng) < 120) return undefined;
+    pedidaDe.current = { dLat, dLng, tLat, tLng };
+
+    let vivo = true;
+    const ctrl = new AbortController();
+    fetch(
+      `https://router.project-osrm.org/route/v1/driving/${dLng},${dLat};${tLng},${tLat}`
+      + '?overview=full&geometries=geojson',
+      { signal: ctrl.signal },
+    )
+      .then((r) => (r.ok ? r.json() : Promise.reject(new Error('osrm'))))
+      .then((d) => {
+        if (!vivo) return;
+        const coords = d?.routes?.[0]?.geometry?.coordinates;
+        if (Array.isArray(coords) && coords.length) {
+          setRotaGeo(coords.map(([lng, lat]) => [lat, lng]));
+        }
+      })
+      .catch(() => { if (vivo) setRotaGeo(null); });  // cai na reserva
+    return () => { vivo = false; ctrl.abort(); };
+  }, [driver?.lat, driver?.lng, destination?.lat, destination?.lng]);
+
+  const linhaReta =
     driver && destination
       ? [[driver.lat, driver.lng], [destination.lat, destination.lng]]
       : null;
+  const routeLine = rotaGeo || linhaReta;
+  // Traço pontilhado quando é a reserva (é estimativa); sólido quando é a rota
+  // de verdade. A diferença conta ao cliente o que ele está vendo.
+  const rotaReal = Boolean(rotaGeo);
 
   return (
     <div className="h-56 rounded-2xl overflow-hidden border border-gray-200 shadow-sm relative z-0">
@@ -100,7 +161,9 @@ export default function LiveTrackingMap({ driver, restaurant, destination }) {
         {routeLine && (
           <Polyline
             positions={routeLine}
-            pathOptions={{ color: "#FF6F00", weight: 4, opacity: 0.7, dashArray: "8 8" }}
+            pathOptions={{ color: "#FF6F00", weight: rotaReal ? 5 : 4,
+                          opacity: rotaReal ? 0.85 : 0.6,
+                          dashArray: rotaReal ? undefined : "8 8" }}
           />
         )}
 
