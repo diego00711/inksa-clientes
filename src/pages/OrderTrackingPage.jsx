@@ -325,6 +325,17 @@ export function OrderTrackingPage() {
     setCurrentStage(STATUS_TO_STAGE[status] ?? 0);
   }, []);
 
+  // Corta qualquer busca acessória em 8s. Sem isto, uma requisição pendurada
+  // fica presa até o navegador desistir (o que pode levar minutos) e cada
+  // ciclo do polling empilha mais uma.
+  const comPrazo = (url) => {
+    const ctrl = new AbortController();
+    const id = setTimeout(() => ctrl.abort(), 8000);
+    return fetch(url, { headers: createAuthHeaders(), signal: ctrl.signal })
+      .catch(() => null)
+      .finally(() => clearTimeout(id));
+  };
+
   const fetchOrder = useCallback(async () => {
     try {
       const res = await fetch(`${CLIENT_API_URL}/api/orders/${orderId}`, {
@@ -335,6 +346,17 @@ export function OrderTrackingPage() {
       const ord = json.data ?? json;
       setOrder(ord);
       applyStatus(ord.status);
+      // ⚠️ A TELA JÁ PODE APARECER AQUI.
+      //
+      // `setLoading(false)` ficava lá embaixo, no finally — ou seja, só depois
+      // das buscas do PERFIL e da POSIÇÃO do entregador. Quando eu acrescentei
+      // a terceira busca, virou isto: qualquer uma delas lenta (ou pendurada)
+      // segurava a tela inteira no esqueleto cinza, mesmo com o pedido já em
+      // mãos. Foi o que o Diego viu — acompanhamento que não abre.
+      //
+      // Perfil e posição são ENFEITE do pedido, não pré-requisito: entram
+      // quando chegarem. O que a pessoa abriu a tela pra ver é o status.
+      setLoading(false);
 
       if (ord.delivery_id) {
         // ⚠️ PERFIL DO ENTREGADOR: UMA VEZ SÓ, NÃO A CADA 6 SEGUNDOS.
@@ -344,9 +366,7 @@ export function OrderTrackingPage() {
         // como "as telas estão demorando mais pra carregar". Agora só busca
         // quando ainda não tem, ou quando trocou o entregador.
         if (!driverRef.current || driverRef.current.__id !== ord.delivery_id) {
-          const dr = await fetch(`${CLIENT_API_URL}/api/delivery/public-profile/${ord.delivery_id}`, {
-            headers: createAuthHeaders(),
-          }).catch(() => null);
+          const dr = await comPrazo(`${CLIENT_API_URL}/api/delivery/public-profile/${ord.delivery_id}`);
           if (dr?.ok) {
             const dj = await dr.json();
             const d = { ...(dj.data ?? dj), __id: ord.delivery_id };
@@ -365,9 +385,7 @@ export function OrderTrackingPage() {
         // 404 é normal e não é erro: significa "o entregador ainda não mandou
         // posição neste pedido". Nesse caso o marcador simplesmente não
         // aparece, que é melhor do que mostrar uma posição velha.
-        const loc = await fetch(`${CLIENT_API_URL}/api/deliveries/${orderId}/location`, {
-          headers: createAuthHeaders(),
-        }).catch(() => null);
+        const loc = await comPrazo(`${CLIENT_API_URL}/api/deliveries/${orderId}/location`);
         if (loc?.ok) {
           const lj = await loc.json();
           const p = lj.data ?? lj;
