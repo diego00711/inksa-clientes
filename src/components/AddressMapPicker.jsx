@@ -10,6 +10,7 @@ import { useToast } from "../context/ToastContext";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import { TILE_URL, TILE_ATTRIBUTION } from '../lib/mapTiles';
+import { obterCoordenadas } from '../utils/localizacao';
 
 delete L.Icon.Default.prototype._getIconUrl;
 L.Icon.Default.mergeOptions({
@@ -44,33 +45,10 @@ export default function AddressMapPicker({ value, onChange }) {
   const useMyLocation = useCallback(async () => {
     setLocating(true);
     try {
-      // Tenta Capacitor primeiro (build mobile); cai no navegador no web
-      let coords;
-      try {
-        const { Geolocation } = await import("@capacitor/geolocation");
-        // Pede permissão explicitamente antes (Android 13+)
-        try { await Geolocation.requestPermissions(); } catch {}
-        const p = await Geolocation.getCurrentPosition({ enableHighAccuracy: true, timeout: 15000 });
-        coords = { lat: p.coords.latitude, lng: p.coords.longitude };
-      } catch (capErr) {
-        coords = await new Promise((resolve, reject) => {
-          if (!navigator.geolocation) return reject(new Error("Seu navegador não suporta localização"));
-          navigator.geolocation.getCurrentPosition(
-            (p) => resolve({ lat: p.coords.latitude, lng: p.coords.longitude }),
-            (err) => {
-              const msg = err.code === 1
-                ? "Permissão de localização negada. Habilite nas configurações do app."
-                : err.code === 2
-                ? "Não foi possível obter sua localização. Verifique o GPS."
-                : err.code === 3
-                ? "Tempo esgotado ao buscar localização. Tente de novo."
-                : "Erro ao buscar localização.";
-              reject(new Error(msg));
-            },
-            { enableHighAccuracy: true, timeout: 15000 },
-          );
-        });
-      }
+      // Regra única em utils/localizacao.js. Antes esta tela tinha a própria
+      // cópia — com o import dinâmico do Capacitor ANTES do pedido ao
+      // navegador, que é justamente o que quebra no Safari do iPhone.
+      const coords = await obterCoordenadas();
       onChange(coords);
       addToast("success", "Localização capturada! Confira o pino no mapa.");
     } catch (err) {

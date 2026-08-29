@@ -13,6 +13,7 @@ import AddressService, { formatAddress } from '../services/addressService';
 import { PaymentMethodSelector } from '../components/PaymentMethodSelector';
 import CardPaymentModal from '../components/CardPaymentModal';
 import PixPaymentModal from '../components/PixPaymentModal';
+import { obterCoordenadas } from '../utils/localizacao';
 import { CLIENT_API_URL, createAuthHeaders } from '../services/api';
 import { PENDING_COUPON_KEY } from '../components/StoreCoupons';
 
@@ -141,25 +142,7 @@ export function CartPage() {
   const useCurrentLocation = async () => {
     setLocatingNow(true);
     try {
-      let coords;
-      try {
-        const { Geolocation } = await import('@capacitor/geolocation');
-        try { await Geolocation.requestPermissions(); } catch { /* web ignora */ }
-        const p = await Geolocation.getCurrentPosition({ enableHighAccuracy: true, timeout: 15000 });
-        coords = { lat: p.coords.latitude, lng: p.coords.longitude };
-      } catch {
-        coords = await new Promise((resolve, reject) => {
-          if (!navigator.geolocation) return reject(new Error('Seu aparelho não suporta localização.'));
-          navigator.geolocation.getCurrentPosition(
-            (p) => resolve({ lat: p.coords.latitude, lng: p.coords.longitude }),
-            (err) => reject(new Error(
-              err.code === 1 ? 'Permissão de localização negada. Habilite nas configurações.'
-              : err.code === 3 ? 'Tempo esgotado ao buscar o GPS. Tente de novo.'
-              : 'Não foi possível obter sua localização.')),
-            { enableHighAccuracy: true, timeout: 15000 },
-          );
-        });
-      }
+      const coords = await obterCoordenadas();
       // Endereço para o ENTREGADOR ler, não para o banco de dados guardar.
       //
       // Antes vinha o `display_name` cru do Nominatim — "123, Rua X, Bairro,
