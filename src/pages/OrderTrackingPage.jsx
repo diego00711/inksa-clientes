@@ -310,6 +310,10 @@ export function OrderTrackingPage() {
 
   const [order, setOrder] = useState(null);
   const [driver, setDriver] = useState(null);
+  // Espelho do driver pra decidir, DENTRO do fetch, se já temos o perfil —
+  // sem pôr `driver` nas dependências do callback (o que recriaria o
+  // polling a cada resposta e ligaria dois temporizadores).
+  const driverRef = useRef(null);
   const [currentStage, setCurrentStage] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -333,12 +337,22 @@ export function OrderTrackingPage() {
       applyStatus(ord.status);
 
       if (ord.delivery_id) {
-        const dr = await fetch(`${CLIENT_API_URL}/api/delivery/public-profile/${ord.delivery_id}`, {
-          headers: createAuthHeaders(),
-        }).catch(() => null);
-        if (dr?.ok) {
-          const dj = await dr.json();
-          setDriver(dj.data ?? dj);
+        // ⚠️ PERFIL DO ENTREGADOR: UMA VEZ SÓ, NÃO A CADA 6 SEGUNDOS.
+        //
+        // Nome, foto e placa não mudam durante a entrega. Buscar isso a cada
+        // ciclo do polling triplicou as requisições da tela — e o Diego sentiu
+        // como "as telas estão demorando mais pra carregar". Agora só busca
+        // quando ainda não tem, ou quando trocou o entregador.
+        if (!driverRef.current || driverRef.current.__id !== ord.delivery_id) {
+          const dr = await fetch(`${CLIENT_API_URL}/api/delivery/public-profile/${ord.delivery_id}`, {
+            headers: createAuthHeaders(),
+          }).catch(() => null);
+          if (dr?.ok) {
+            const dj = await dr.json();
+            const d = { ...(dj.data ?? dj), __id: ord.delivery_id };
+            driverRef.current = d;
+            setDriver(d);
+          }
         }
 
         // POSIÇÃO AO VIVO — vem de /api/deliveries/<pedido>/location, que é
