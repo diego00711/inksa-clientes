@@ -76,6 +76,8 @@ function CountdownTimer({
   label = "Chega em aproximadamente",
   doneLabel = "Chegou!",
   doneText = "🎉 Aqui está!",
+  // Só quem SABE que chegou pode dizer que chegou. Ver `chegou` abaixo.
+  entregue = false,
 }) {
   const [remaining, setRemaining] = useState(null);
 
@@ -104,7 +106,13 @@ function CountdownTimer({
     const base = startedAt ? new Date(startedAt).getTime() : Date.now();
     const alvo = (Number.isNaN(base) ? Date.now() : base) + mins * 60000;
     const atual = prazoRef.current;
-    if (atual == null || Math.abs(alvo - atual) > 60000) prazoRef.current = alvo;
+    // Prazo já vencido volta a aceitar QUALQUER estimativa nova, sem o filtro
+    // de um minuto. O filtro existe pra o relógio não tremer enquanto conta;
+    // depois que ele zerou, não há mais o que proteger — e sem esta linha ele
+    // ficaria preso em "chegando a qualquer momento" mesmo com o GPS dizendo
+    // que ainda faltam três minutos.
+    const venceu = atual != null && atual <= Date.now();
+    if (atual == null || venceu || Math.abs(alvo - atual) > 60000) prazoRef.current = alvo;
   }, [estimatedMinutes, startedAt]);
 
   useEffect(() => {
@@ -122,15 +130,31 @@ function CountdownTimer({
   if (remaining === null || !Number.isFinite(Number(estimatedMinutes))) return null;
   const mins = Math.floor(remaining);
   const secs = Math.floor((remaining - mins) * 60);
-  const arrived = remaining === 0;
+
+  // ⚠️ ESTIMATIVA ZERADA NÃO É CHEGADA.
+  //
+  // Antes, `remaining === 0` disparava "Chegou! / 🎉 Aqui está!". Mas o zero
+  // só diz que a ESTIMATIVA acabou — e estimativa acaba antes da pessoa
+  // quando o entregador pega um farol, sobe uma ladeira ou erra a rua. No
+  // pedido #1002 a tela anunciou a chegada com o entregador ainda pedalando.
+  //
+  // Anunciar chegada que não houve é a pior mentira que esta tela pode contar:
+  // o cliente desce, abre a porta, e não tem ninguém. Agora quem autoriza esse
+  // texto é o STATUS do pedido, que é fato, não previsão.
+  const arrived = entregue;
+  const estourou = remaining === 0 && !entregue;
 
   return (
     <div className="bg-gradient-to-r from-orange-500 to-red-500 rounded-2xl p-6 text-white text-center mb-5 shadow-lg shadow-orange-200">
       <p className="text-sm font-medium opacity-90 mb-1">
-        {arrived ? doneLabel : label}
+        {arrived ? doneLabel : estourou ? "O entregador está bem perto" : label}
       </p>
       {arrived ? (
         <p className="text-3xl sm:text-4xl font-black">{doneText}</p>
+      ) : estourou ? (
+        // Passou da estimativa e ainda não chegou: diz isso, sem número.
+        // Um "0 min 00s" parado na tela parece app travado.
+        <p className="text-2xl sm:text-3xl font-black">Chegando a qualquer momento</p>
       ) : (
         <div className="flex items-end justify-center gap-1">
           <span className="text-5xl sm:text-6xl font-black leading-none">{mins}</span>
@@ -583,6 +607,16 @@ export function OrderTrackingPage() {
     );
   }
 
+  // Quantos segundos tem a última posição recebida. null quando não há
+  // carimbo (rota antiga) — aí a tela não afirma nada sobre atraso.
+  const idadePosicao = useMemo(() => {
+    const q = delivererLocation?.recorded_at;
+    if (!q) return null;
+    const ms = Date.now() - new Date(q).getTime();
+    return Number.isFinite(ms) ? Math.max(0, Math.round(ms / 1000)) : null;
+  }, [delivererLocation]);
+  const posicaoAtrasada = idadePosicao != null && idadePosicao >= 45;
+
   const isDelivered = currentStage >= 4;
   const isFailed = order?.status === 'delivery_failed';
 
@@ -692,9 +726,28 @@ export function OrderTrackingPage() {
         {delivererLocation?.latitude && delivererLocation?.longitude && (
           <div className="bg-orange-50 border border-orange-200 rounded-2xl p-4 mb-5 flex items-center gap-3">
             <span className="text-2xl">📍</span>
+            {/* A IDADE DA POSIÇÃO, EM VEZ DE UMA PROMESSA.
+                Dizia "atualizando a cada 10 segundos" sempre — mesmo quando a
+                última posição tinha minutos. No teste do #1002 o celular do
+                cliente mostrava o entregador 600 m atrás de onde ele estava, e
+                a tela seguia afirmando que estava ao vivo.
+                O app do entregador não consegue enviar posição com a tela
+                desligada ou com outro app por cima (o sistema congela a
+                página), então atraso VAI acontecer. O que não pode é a tela
+                esconder isso: melhor dizer "há 2 minutos" do que fingir. */}
             <div>
-              <p className="font-semibold text-orange-700 text-sm">Entregador localizado</p>
-              <p className="text-xs text-orange-600 mt-0.5">Atualizando posição a cada 10 segundos...</p>
+              <p className="font-semibold text-orange-700 text-sm">
+                {posicaoAtrasada ? 'Última posição conhecida' : 'Entregador localizado'}
+              </p>
+              <p className="text-xs text-orange-600 mt-0.5">
+                {idadePosicao == null
+                  ? 'Acompanhando em tempo real...'
+                  : idadePosicao < 45
+                  ? 'Atualizando em tempo real'
+                  : `Registrada há ${idadePosicao < 120
+                      ? 'cerca de 1 minuto'
+                      : `${Math.round(idadePosicao / 60)} minutos`} — ele pode estar mais adiante`}
+              </p>
             </div>
           </div>
         )}
