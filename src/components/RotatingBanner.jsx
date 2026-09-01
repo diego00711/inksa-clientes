@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { CLIENT_API_URL as API_BASE_URL } from '../services/api';
+import { useLocation } from '../context/LocationContext';
 
 const RotatingBanner = () => {
   const [banners, setBanners] = useState([]);
@@ -9,6 +10,9 @@ const RotatingBanner = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [imageDimensions, setImageDimensions] = useState({ height: 300, width: 1200 });
+  // Posição do cliente (endereço salvo ou GPS). O banner com alcance
+  // geográfico depende dela — ver o comentário no fetch abaixo.
+  const { location } = useLocation();
 
   const loadImage = (imageUrl ) => {
     return new Promise((resolve, reject) => {
@@ -23,7 +27,27 @@ const RotatingBanner = () => {
     const fetchBanners = async () => {
       try {
         setLoading(true);
-        const url = `${API_BASE_URL}/api/banners/`;
+        /* ── POR QUE A LOCALIZAÇÃO VAI NA URL ──────────────────────────────
+           O backend filtra banner por alcance geográfico: um banner com
+           geo_latitude/longitude só aparece pra quem está dentro do raio.
+           Mas ele decide isso com o `lat`/`lng` que ESTA chamada mandar — e
+           esta chamada não mandava nada.
+
+           Sem coordenada o filtro vira `AND geo_latitude IS NULL`, ou seja,
+           só passam os banners nacionais. Efeito prático: um banner
+           geolocalizado não apareceria pra NINGUÉM, nem pra quem está na
+           porta da loja. No dia em que a Inksa vendesse espaço pra um
+           parceiro de Lages, ele pagaria por zero exibições e o defeito
+           seria invisível dos dois lados.
+
+           Enquanto a posição não resolve, a chamada sai sem ela e traz só os
+           nacionais; quando resolve, o efeito roda de novo e completa. É
+           melhor que segurar o carrossel vazio esperando o GPS. */
+        const url = new URL(`${API_BASE_URL}/api/banners/`);
+        if (Number.isFinite(location?.latitude) && Number.isFinite(location?.longitude)) {
+          url.searchParams.set('lat', location.latitude);
+          url.searchParams.set('lng', location.longitude);
+        }
         const response = await fetch(url);
         
         if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
@@ -42,7 +66,7 @@ const RotatingBanner = () => {
       }
     };
     fetchBanners();
-  }, [API_BASE_URL]);
+  }, [API_BASE_URL, location?.latitude, location?.longitude]);
 
   useEffect(() => {
     if (banners.length > 0) {
