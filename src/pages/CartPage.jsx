@@ -1,5 +1,5 @@
 // src/pages/CartPage.jsx
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import { ChevronLeft, ShoppingCart, PlusCircle, MinusCircle, Trash2, Loader2, MapPin, ChevronDown, LocateFixed, X } from "lucide-react";
@@ -21,12 +21,21 @@ const MP_PUBLIC_KEY = import.meta.env.VITE_MERCADOPAGO_PUBLIC_KEY;
 
 export function CartPage() {
   const { cartItems, addItemToCart, removeItemFromCart, clearCart, subTotal } = useCart();
+  const temItemRestrito = useMemo(
+    () => cartItems.some(i => i?.age_restricted), [cartItems]);
   const { isAuthenticated, user } = useAuth();
   const navigate = useNavigate();
   const { addToast } = useToast();
   const confirm = useConfirm();
 
   const [isProcessingOrder, setIsProcessingOrder] = useState(false);
+  /* ── ITEM PARA MAIORES DE 18 ───────────────────────────────────────────
+     A marca vem do catálogo (menu_items.age_restricted) e viaja no item do
+     carrinho. Aqui ela só decide se a declaração aparece — quem congela a
+     restrição no pedido é o servidor, lendo o catálogo de novo. Se isto
+     aqui fosse a fonte da verdade, bastaria mexer no payload pra sumir com
+     o aviso e com a instrução ao entregador. */
+  const [maioridadeOk, setMaioridadeOk] = useState(false);
   const [deliveryFee, setDeliveryFee] = useState(null);
   const [isCalculatingFee, setIsCalculatingFee] = useState(false);
   const [feeError, setFeeError] = useState(null);
@@ -883,6 +892,30 @@ export function CartPage() {
             </div>
           )}
 
+          {/* DECLARAÇÃO DE MAIORIDADE — vem ANTES do botão de propósito.
+              Vender bebida alcoólica a menor de 18 é crime (ECA, art. 243), e
+              responde tanto a loja quanto a plataforma. O software não tem como
+              saber a idade de quem abre a porta; o que ele pode fazer é obrigar
+              a declaração antes do pagamento e mandar a instrução pro entregador
+              conferir documento na entrega. */}
+          {temItemRestrito && (
+            <label className="mt-6 flex items-start gap-3 rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={maioridadeOk}
+                onChange={(e) => setMaioridadeOk(e.target.checked)}
+                className="mt-1 h-5 w-5 accent-amber-600 shrink-0"
+              />
+              <span className="text-sm text-amber-900">
+                <strong>Este pedido tem item proibido para menores de 18 anos.</strong>
+                <span className="block mt-1">
+                  Declaro ser maior de idade e concordo em <strong>apresentar documento
+                  com foto</strong> ao entregador. Sem documento, a entrega não é feita.
+                </span>
+              </span>
+            </label>
+          )}
+
           {/* Actions */}
           <div className="flex justify-between mt-8 gap-4 flex-col sm:flex-row">
             <Button variant="outline" onClick={clearCart}
@@ -899,7 +932,8 @@ export function CartPage() {
               // passa direto: o clique dele é "entrar", não "pedir".
               disabled={isAuthenticated && (
                 isProcessingOrder || isCalculatingFee || !!feeError
-                || deliveryFee === null || restauranteFechado || faltaComplemento)}
+                || deliveryFee === null || restauranteFechado || faltaComplemento
+                || (temItemRestrito && !maioridadeOk))}
             >
               {!isAuthenticated ? (
                 'Entrar para finalizar o pedido'
