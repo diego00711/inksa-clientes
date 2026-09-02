@@ -5,6 +5,8 @@ import { Button } from "@/components/ui/button";
 import { ChevronLeft, ShoppingCart, PlusCircle, MinusCircle, Trash2, Loader2, MapPin, ChevronDown, LocateFixed, X } from "lucide-react";
 import { useCart, chaveDaLinha } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
+import CheckoutRapido from '../components/CheckoutRapido';
+import { guardarSessao } from '../services/authService';
 import { createPaymentPreference, calculateDeliveryFee } from '../services/orderService';
 import { useToast } from '../context/ToastContext.jsx';
 import { useConfirm } from '../components/ConfirmProvider.jsx';
@@ -23,7 +25,7 @@ export function CartPage() {
   const { cartItems, addItemToCart, removeItemFromCart, clearCart, subTotal } = useCart();
   const temItemRestrito = useMemo(
     () => cartItems.some(i => i?.age_restricted), [cartItems]);
-  const { isAuthenticated, user } = useAuth();
+  const { isAuthenticated, user, refreshUser } = useAuth();
   const navigate = useNavigate();
   const { addToast } = useToast();
   const confirm = useConfirm();
@@ -36,6 +38,10 @@ export function CartPage() {
      aqui fosse a fonte da verdade, bastaria mexer no payload pra sumir com
      o aviso e com a instrução ao entregador. */
   const [maioridadeOk, setMaioridadeOk] = useState(false);
+  /* Checkout rápido: só aparece quando a pessoa clica em finalizar sem ter
+     conta. Mostrar o formulário antes disso encheria a tela de campos pra
+     quem ainda está decidindo se pede. */
+  const [pedindoDados, setPedindoDados] = useState(false);
   const [deliveryFee, setDeliveryFee] = useState(null);
   const [isCalculatingFee, setIsCalculatingFee] = useState(false);
   const [feeError, setFeeError] = useState(null);
@@ -358,11 +364,13 @@ export function CartPage() {
 
   const handleFinalizarPedido = async () => {
     if (!isAuthenticated) {
-      // Volta pro carrinho depois de entrar: o carrinho é local, então o que
-      // ele montou continua lá. Mandar pra home apagaria o esforço da cabeça
-      // dele mesmo com os itens salvos.
-      addToast('info', 'Entre na sua conta para finalizar — seu carrinho fica guardado.');
-      navigate('/login', { state: { from: '/carrinho' } });
+      // Antes isto mandava pra tela de login, e era ali que a pessoa vinda do
+      // link do Instagram desistia — logo depois de a gente ter feito o
+      // trabalho de trazê-la até o carrinho cheio.
+      // Agora abre três campos aqui mesmo (ver CheckoutRapido): nome, telefone
+      // e e-mail, que ela teria que dar de qualquer jeito pra receber comida.
+      if (cartItems.length === 0) { addToast('warning', 'Seu carrinho está vazio!'); return; }
+      setPedindoDados(true);
       return;
     }
     if (cartItems.length === 0) { addToast('warning', 'Seu carrinho está vazio!'); return; }
@@ -916,6 +924,21 @@ export function CartPage() {
             </label>
           )}
 
+          {/* CHECKOUT RÁPIDO — substitui a tela de login para quem ainda não
+              tem conta. Quando termina, a sessão é gravada no mesmo lugar do
+              login normal e o fluxo do pedido segue sem sair da página. */}
+          {!isAuthenticated && pedindoDados && (
+            <CheckoutRapido
+              addToast={addToast}
+              onPronto={async (dados) => {
+                guardarSessao(dados);
+                await refreshUser();
+                setPedindoDados(false);
+                addToast('success', `Bem-vindo, ${dados?.user?.name || ''}! Agora é só confirmar o endereço.`);
+              }}
+            />
+          )}
+
           {/* Actions */}
           <div className="flex justify-between mt-8 gap-4 flex-col sm:flex-row">
             <Button variant="outline" onClick={clearCart}
@@ -936,7 +959,7 @@ export function CartPage() {
                 || (temItemRestrito && !maioridadeOk))}
             >
               {!isAuthenticated ? (
-                'Entrar para finalizar o pedido'
+                'Finalizar Pedido'
               ) : isProcessingOrder ? (
                 <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Processando...</>
               ) : restauranteFechado ? (

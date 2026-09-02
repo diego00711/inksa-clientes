@@ -6,6 +6,17 @@ const AUTH_TOKEN_KEY = 'clientAuthToken';
 const CLIENT_USER_DATA_KEY = 'clientUser';
 const REFRESH_TOKEN_KEY = 'clientRefreshToken';
 
+/** Grava a sessão vinda do checkout rápido, no MESMO lugar que o login normal.
+ *  Sem isto o pedido seguiria com o token na memória e sumiria no refresh da
+ *  página — no meio de um pedido. */
+export const guardarSessao = (data) => {
+  if (!data?.token) return false;
+  localStorage.setItem(AUTH_TOKEN_KEY, data.token);
+  localStorage.setItem(CLIENT_USER_DATA_KEY, JSON.stringify(data.user || {}));
+  if (data.refresh_token) localStorage.setItem(REFRESH_TOKEN_KEY, data.refresh_token);
+  return true;
+};
+
 const processResponse = async (response) => {
   if (response.status === 401) {
     localStorage.removeItem(AUTH_TOKEN_KEY);
