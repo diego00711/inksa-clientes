@@ -25,6 +25,8 @@ import {
 // --- Lazy-loaded pages ---
 const HomePage = lazy(() => import("./pages/HomePage").then(m => ({ default: m.HomePage })));
 const RestaurantDetailsPage = lazy(() => import("./pages/RestaurantDetailsPage").then(m => ({ default: m.RestaurantDetailsPage })));
+// Link curto do parceiro (o que vai na bio do Instagram): /<apelido>
+const LojaPorApelidoPage = lazy(() => import('./pages/LojaPorApelidoPage'));
 const StoreReviewsPage = lazy(() => import("./pages/StoreReviewsPage"));
 const LoginPage = lazy(() => import("./pages/LoginPage").then(m => ({ default: m.LoginPage })));
 const RegisterPage = lazy(() => import("./pages/RegisterPage"));
@@ -300,6 +302,14 @@ function AppContent() {
                   <Route path="suporte" element={<SuportePage />} />
                   <Route path="pedido/:orderId/acompanhar" element={<OrderTrackingPage />} />
                 </Route>
+
+                {/* LINK CURTO DO PARCEIRO — precisa ser a ÚLTIMA rota.
+                    clientes.inksadelivery.com.br/gelae abre a Gelaê.
+                    O React Router prioriza segmento fixo sobre parâmetro, então
+                    /carrinho e /perfil continuam ganhando desta. E o banco não
+                    deixa loja usar apelido reservado, então o conflito não
+                    nasce nem do outro lado. */}
+                <Route path=":apelido" element={<LojaPorApelidoPage />} />
               </Route>
             </Routes>
           </Suspense>
