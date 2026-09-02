@@ -1,6 +1,17 @@
 {
   "rewrites": [
     {
+      "source": "/:apelido",
+      "has": [
+        {
+          "type": "header",
+          "key": "user-agent",
+          "value": ".*(facebookexternalhit|WhatsApp|Twitterbot|TelegramBot|Discordbot|Slackbot|LinkedInBot|Googlebot|bingbot|redditbot|Applebot|SkypeUriPreview|vkShare|Iframely|embedly).*"
+        }
+      ],
+      "destination": "/api/preview?slug=:apelido"
+    },
+    {
       "source": "/(.*)",
       "destination": "/index.html"
     }
