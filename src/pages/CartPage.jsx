@@ -6,7 +6,6 @@ import { ChevronLeft, ShoppingCart, PlusCircle, MinusCircle, Trash2, Loader2, Ma
 import { useCart, chaveDaLinha } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
 import CheckoutRapido from '../components/CheckoutRapido';
-import { guardarSessao } from '../services/authService';
 import { createPaymentPreference, calculateDeliveryFee } from '../services/orderService';
 import { useToast } from '../context/ToastContext.jsx';
 import { useConfirm } from '../components/ConfirmProvider.jsx';
@@ -25,7 +24,7 @@ export function CartPage() {
   const { cartItems, addItemToCart, removeItemFromCart, clearCart, subTotal } = useCart();
   const temItemRestrito = useMemo(
     () => cartItems.some(i => i?.age_restricted), [cartItems]);
-  const { isAuthenticated, user, refreshUser } = useAuth();
+  const { isAuthenticated, user, refreshUser, entrarComSessao } = useAuth();
   const navigate = useNavigate();
   const { addToast } = useToast();
   const confirm = useConfirm();
@@ -931,8 +930,10 @@ export function CartPage() {
             <CheckoutRapido
               addToast={addToast}
               onPronto={async (dados) => {
-                guardarSessao(dados);
-                await refreshUser();
+                // entrarComSessao e não guardarSessao+refreshUser na mão: o
+                // login normal também registra o push, e montar isso aqui
+                // deixava o cliente novo sem "pedido aceito"/"saiu p/ entrega".
+                await entrarComSessao(dados);
                 setPedindoDados(false);
                 addToast('success', `Bem-vindo, ${dados?.user?.name || ''}! Agora é só confirmar o endereço.`);
               }}

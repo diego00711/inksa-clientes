@@ -1,7 +1,7 @@
 // src/context/AuthContext.jsx - VERSÃO ULTRA-SIMPLIFICADA (USA EMAIL DO LOGIN)
 
 import { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import authService from '../services/authService';
+import authService, { guardarSessao } from '../services/authService';
 import clientService from '../services/clientService';
 import { requestNotificationPermission, obterTokenFCM, saveFcmToken } from '../services/notificationService';
 import { CLIENT_API_URL, createAuthHeaders } from '../services/api';
@@ -167,6 +167,27 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  /** Entra com uma sessão que JÁ veio pronta do servidor (checkout rápido).
+   *
+   *  Espelha o login() de propósito, inclusive o FCM. A primeira versão do
+   *  checkout rápido gravava a sessão direto no CartPage e pulava o push —
+   *  o cliente novo, vindo do link do Instagram, fazia o pedido e NÃO recebia
+   *  "pedido aceito" nem "saiu para entrega". Justamente quem a gente mais
+   *  quer que tenha uma boa primeira experiência.
+   *
+   *  Duas formas de entrar significam dois lugares pra esquecer de algo. */
+  const entrarComSessao = async (dados) => {
+    if (!guardarSessao(dados)) throw new Error('Sessão inválida.');
+    await fetchAndSetUser();
+    try {
+      const fcmToken = await requestNotificationPermission();
+      if (fcmToken) await saveFcmToken(fcmToken, CLIENT_API_URL, createAuthHeaders());
+    } catch (fcmErr) {
+      // Push é bônus: negar a permissão não pode travar o pedido.
+      console.warn('FCM pós-checkout rápido (ignorado):', fcmErr);
+    }
+  };
+
   const loginWithGoogle = async (idToken) => {
     try {
       await authService.loginWithGoogle(idToken);
@@ -202,6 +223,7 @@ export const AuthProvider = ({ children }) => {
     loginWithGoogle,
     logout,
     refreshUser: fetchAndSetUser,
+    entrarComSessao,
   };
 
   return (

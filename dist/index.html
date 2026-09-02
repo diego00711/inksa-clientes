@@ -4,13 +4,56 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover" />
-    <title>Inksa - Delivery de Comida</title>
+    <!-- NÃO volte a escrever "Delivery de Comida" aqui. A Inksa deixou de ser
+         só comida: o catálogo já tem bebidas e o cadastro tem segmento (pet,
+         mercado, agropecuária). E este título é o que o WhatsApp mostra em
+         NEGRITO na prévia do link de indicação — dizer "comida" ali contradiz
+         a loja que a pessoa vai encontrar do outro lado. -->
+    <title>Inksa Delivery — peça e receba na sua cidade</title>
 <link rel="manifest" href="/manifest.json">
+
+<!-- Prévia do link (WhatsApp, Instagram, Facebook).
+     Sem estas tags o WhatsApp só conseguia mostrar o <title> e o domínio —
+     era o que aparecia no convite do Indique e Ganhe: uma linha de texto seca,
+     sem imagem e sem explicação, justamente no material que a gente pede pro
+     cliente compartilhar. -->
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Inksa Delivery">
+<meta property="og:title" content="Inksa Delivery — peça e receba na sua cidade">
+<meta property="og:description" content="Restaurantes, bebidas e mais, no app feito aqui na região. Você pede, a gente entrega.">
+<meta property="og:url" content="https://clientes.inksadelivery.com.br/">
+<!-- A MESMA sacola do icone da Play Store (gerada do ic_launcher_foreground),
+     sobre o laranja exato da marca (#F97316, amostrado do proprio icone).
+     1200x630 e a proporcao que faz o WhatsApp usar a previa GRANDE; imagem
+     quadrada vira miniatura pequena no canto. A versao 512 quadrada esta em
+     og-inksa-quadrado.png, se um dia precisar. -->
+<meta property="og:image" content="https://clientes.inksadelivery.com.br/og-inksa.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Inksa Delivery">
+<meta property="og:locale" content="pt_BR">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Inksa Delivery — peça e receba na sua cidade">
+<meta name="twitter:description" content="Restaurantes, bebidas e mais, no app feito aqui na região. Você pede, a gente entrega.">
+<meta name="twitter:image" content="https://clientes.inksadelivery.com.br/og-inksa.png">
+<meta name="description" content="Restaurantes, bebidas e mais, no app feito aqui na região. Você pede, a gente entrega.">
 <meta name="theme-color" content="#ff6b35">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="Inksa Cliente">
-<link rel="apple-touch-icon" href="/icons/icon-192x192.png">
+<!-- Ícone da tela de início do iPhone. Era /icons/icon-192x192.png — a logo da
+     moto em PNG COM TRANSPARÊNCIA, e o iOS não respeita alfa aqui: ele compõe
+     o que vier sobre branco/preto, e o resultado saía sem nada a ver com o
+     ícone da Play Store. Agora é a MESMA sacola, sobre o laranja chapado da
+     marca (#F97316, amostrado do ic_launcher).
+     Não arredondo nem adiciono brilho: a máscara é do sistema, e cantos
+     arredondados na arte viram borda dupla depois que o iOS aplica a dele.
+     O 180 é o do iPhone atual; os menores evitam o iOS reamostrar sozinho no
+     iPad e em aparelhos antigos. -->
+<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon-180.png">
+<link rel="apple-touch-icon" sizes="167x167" href="/apple-touch-icon-167.png">
+<link rel="apple-touch-icon" sizes="152x152" href="/apple-touch-icon-152.png">
+<link rel="apple-touch-icon" sizes="120x120" href="/apple-touch-icon-120.png">
   <!-- Sentry Error Monitoring (CDN — sem npm) -->
   <script src="https://browser.sentry-cdn.com/7.99.0/bundle.min.js" crossorigin="anonymous"></script>
   <script>
@@ -20,11 +63,11 @@
       window.Sentry.init({ dsn: SENTRY_DSN, tracesSampleRate: 0.1 });
     }
   </script>
-    <script type="module" crossorigin src="/assets/index-BlJ_tj7E.js"></script>
-    <link rel="stylesheet" crossorigin href="/assets/index-CF1_GsZO.css">
+    <script type="module" crossorigin src="/assets/index-DaMdkgFl.js"></script>
+    <link rel="stylesheet" crossorigin href="/assets/index-C44w7Ajc.css">
   </head>
   <body>
-    <div id="root"></div>
+    <div id="root"></div>
   </body>
 </html>
 
