@@ -334,9 +334,20 @@ export function CartPage() {
   }, [cartItems, subTotal, safeFee, isAuthenticated]);
 
   const applyCoupon = async (codigo) => {
-    const alvo = (codigo ?? couponCode).trim();
+    // typeof string, e não `codigo ?? couponCode`.
+    //
+    // Isto quebrou em produção (Sentry, 03/09/2026, cliente real num iPhone):
+    // o botão "Aplicar" estava ligado como onClick={applyCoupon}, e o React
+    // passa o OBJETO DO EVENTO como primeiro argumento. Evento não é null,
+    // então o `??` não caía no padrão — e .trim() num evento estoura, com a
+    // tela do carrinho junto.
+    //
+    // O call site foi corrigido, mas a checagem fica: é a única coisa que
+    // impede a mesma armadilha de voltar na próxima vez que alguém religar
+    // esta função direto num onClick.
+    const alvo = (typeof codigo === 'string' ? codigo : couponCode).trim();
     if (!alvo) return;
-    if (codigo) setCouponCode(codigo);
+    if (typeof codigo === 'string' && codigo) setCouponCode(codigo);
     setCouponLoading(true);
     try {
       const res = await fetch(`${CLIENT_API_URL}/api/coupons/validate`, {
@@ -735,7 +746,7 @@ export function CartPage() {
                   className="flex-1 border rounded-lg px-3 py-2 text-base text-sm uppercase"
                 />
                 <button
-                  onClick={applyCoupon}
+                  onClick={() => applyCoupon()}
                   disabled={couponLoading}
                   className="bg-[#FF6F00] text-white px-4 rounded-lg min-h-[44px] text-sm font-medium disabled:opacity-50"
                 >
