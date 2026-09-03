@@ -70,6 +70,10 @@ export default function BarraLocalizacao({ restaurantId, deliveryType = 'platfor
       .then((r) => {
         if (!vivo) return;
         if (r?.error === 'fora_da_area') { setCotacao({ foraDaArea: true, mensagem: r.message }); return; }
+        // Mesma caixa de aviso: para o cliente, "não dá para entregar aqui" e
+        // "esta loja não tem endereço" terminam no mesmo lugar — ele não vai
+        // conseguir pedir. Esconder isso o faria montar um carrinho à toa.
+        if (r?.error === 'loja_sem_endereco') { setCotacao({ foraDaArea: true, mensagem: r.message }); return; }
         const km = Number(r?.data?.delivery_distance_km);
         const frete = Number(r?.data?.delivery_fee);
         if (!Number.isFinite(frete)) { setCotacao(null); return; }

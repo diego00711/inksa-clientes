@@ -30,6 +30,13 @@ export const calculateDeliveryFee = async (deliveryData) => {
     if (data?.error === 'fora_da_area') {
       return { status: 'error', error: 'fora_da_area', message: data.message };
     }
+    // Loja cadastrada sem endereço: o servidor RECUSA cotar em vez de
+    // inventar a taxa base, que era o comportamento antigo. Recusa de
+    // negócio vem com HTTP 200, igual ao fora_da_area — quem chama decide
+    // como mostrar.
+    if (data?.error === 'loja_sem_endereco') {
+      return { status: 'error', error: 'loja_sem_endereco', message: data.message };
+    }
     if (!response.ok) throw new Error(data?.error || `HTTP ${response.status}`);
 
     // NUNCA inventar um preço aqui. O "R$ 5 padrão" que existia neste ponto
