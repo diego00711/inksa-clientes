@@ -9,6 +9,7 @@ import RestaurantService from '../services/restaurantService';
 import StoreCoupons from '../components/StoreCoupons';
 import EscolherOpcoes from '../components/EscolherOpcoes';
 import { DescricaoExpandivel } from '../components/DescricaoExpandivel';
+import BarraLocalizacao from '../components/BarraLocalizacao';
 
 export function RestaurantDetailsPage() {
   const { id } = useParams();
@@ -134,6 +135,17 @@ export function RestaurantDetailsPage() {
             </h1>
           </div>
         </div>
+      </div>
+
+      {/* O FRETE ANTES DO CARRINHO. Fica no topo, acima do banner, porque
+          descobrir a entrega depois de montar o pedido é o jeito mais caro de
+          perder alguém — em especial quem chegou pelo link do Instagram e
+          ainda não conhece a Inksa. Dispensável de propósito. */}
+      <div className="max-w-4xl mx-auto">
+        <BarraLocalizacao
+          restaurantId={restaurant.id ?? id}
+          deliveryType={restaurant.delivery_type ?? 'platform'}
+        />
       </div>
 
       <div className="max-w-4xl mx-auto px-4 py-6 space-y-6">

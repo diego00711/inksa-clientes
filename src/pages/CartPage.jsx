@@ -15,6 +15,7 @@ import { PaymentMethodSelector } from '../components/PaymentMethodSelector';
 import CardPaymentModal from '../components/CardPaymentModal';
 import PixPaymentModal from '../components/PixPaymentModal';
 import { obterCoordenadas, PRECISAO_DUVIDOSA, qualidade } from '../utils/localizacao';
+import { lerLocal, salvarLocal } from '../utils/localCliente';
 import { CLIENT_API_URL, createAuthHeaders } from '../services/api';
 import { PENDING_COUPON_KEY } from '../components/StoreCoupons';
 
@@ -61,7 +62,17 @@ export function CartPage() {
   const [showAddressList, setShowAddressList] = useState(false);
   // Localização atual (GPS): pro cliente pedir de onde está, mesmo sem endereço
   // salvo ali (ex.: está em outra cidade). Quando setada, tem prioridade.
-  const [currentLoc, setCurrentLoc] = useState(null); // {lat, lng, address}
+  // Começa com o que a pessoa já informou na página da loja (BarraLocalizacao).
+  // É a outra metade do ganho: ela diz onde está UMA vez, antes de escolher, e
+  // o carrinho abre com a distância pronta em vez de perguntar de novo.
+  //
+  // Só herda quando veio do GPS. Endereço salvo tem dono na lista de endereços
+  // — entrar por aqui faria a tela cobrar complemento de um endereço que já
+  // tem número, e ainda apareceria duplicado.
+  const [currentLoc, setCurrentLoc] = useState(() => {
+    const l = lerLocal();
+    return l && l.origem === 'gps' ? { lat: l.lat, lng: l.lng, address: l.endereco || '' } : null;
+  }); // {lat, lng, address}
   // Número e complemento de quem entrega na localização atual. O GPS marca a
   // RUA; a porta quem diz é a pessoa. Sem isso o entregador chega na calçada
   // certa sem saber em qual casa tocar — e entrega que não acontece custa o
@@ -200,6 +211,10 @@ export function CartPage() {
         }
       } catch { /* sem reverse-geocode -> usa as coords */ }
       setCurrentLoc({ ...coords, address });
+      // Guarda também: a viagem é de mão dupla. Quem localizou pelo carrinho
+      // e depois volta para a loja (ou abre outra) já encontra o frete pronto.
+      salvarLocal({ lat: coords.lat, lng: coords.lng, precisao: coords.precisao,
+                    endereco: address || '', origem: 'gps' });
       setShowAddressList(false);
       // Margem entre 50 e 200 m: dá pra usar, mas a pessoa precisa saber que
       // pode ter caído no vizinho — e o complemento já é obrigatório neste
