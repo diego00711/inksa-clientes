@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
-import { ShoppingCart, LogOut, Receipt, Star, Medal, Menu, X, LifeBuoy, Gift } from "lucide-react";
+import { ShoppingCart, LogOut, Receipt, Star, Medal, Menu, X, LifeBuoy, Gift, MessageCircle } from "lucide-react";
 import { Button } from "./ui/button";
 import { useAuth } from "../context/AuthContext";
 import { useCart } from "../context/CartContext";
@@ -69,20 +69,22 @@ export function Header() {
                   <Gift className="h-5 w-5 text-orange-500" />
                   <span>Indique e ganhe</span>
                 </Link>
-                {/* Duas coisas diferentes, e o nome antigo ("Suporte") escondia
-                    isso: uma abre o WhatsApp na hora, a outra é a central de
-                    chamados. Quem tem um problema urgente quer a primeira. */}
+                {/* Dois destinos diferentes, então dois nomes que dizem o
+                    destino. "Falar no WhatsApp" é literal: abre o WhatsApp.
+                    "Suporte" continua sendo a central de chamados, com o nome
+                    que o pessoal já conhece — renomeá-la para "Meus chamados"
+                    fez parecer que a página tinha sumido. */}
                 <button
                   type="button"
                   onClick={() => { setMenuOpen(false); window.dispatchEvent(new CustomEvent('inksa:abrir-suporte')); }}
                   className="w-full flex items-center gap-3 px-4 py-3 text-sm text-gray-700 hover:bg-orange-50 hover:text-orange-700"
                 >
-                  <LifeBuoy className="h-5 w-5 text-blue-500" />
-                  <span>Falar com o suporte</span>
+                  <MessageCircle className="h-5 w-5 text-green-600" />
+                  <span>Falar no WhatsApp</span>
                 </button>
                 <Link to="/suporte" className="flex items-center gap-3 px-4 py-3 text-sm text-gray-700 hover:bg-orange-50 hover:text-orange-700">
-                  <Receipt className="h-5 w-5 text-gray-500" />
-                  <span>Meus chamados</span>
+                  <LifeBuoy className="h-5 w-5 text-blue-500" />
+                  <span>Suporte</span>
                 </Link>
                 <div className="h-px bg-gray-100 my-1" />
                 <button
@@ -115,9 +117,23 @@ export function Header() {
           <Button
             variant="ghost"
             size="icon"
-            aria-label="Falar com o suporte"
-            title="Falar com o suporte"
-            onClick={() => window.dispatchEvent(new CustomEvent('inksa:abrir-suporte'))}
+            aria-label={isAuthenticated ? 'Suporte' : 'Falar com o suporte'}
+            title={isAuthenticated ? 'Suporte' : 'Falar com o suporte'}
+            onClick={() => {
+              // MESMO BOTÃO, MELHOR CANAL PARA CADA UM.
+              //
+              // Quem tem conta vai para /suporte, a central de chamados: lá o
+              // histórico fica registrado, com número e resposta escrita. É o
+              // que o dono do app espera ao tocar em "suporte", e foi o que
+              // gerou o susto quando este ícone abria só o WhatsApp.
+              //
+              // Quem NÃO tem conta não consegue entrar na central (rota
+              // protegida), então recebe o contato direto — que para essa
+              // pessoa é o único canal existente. Mandá-la para a tela de
+              // login seria transformar "preciso de ajuda" em "crie uma conta".
+              if (isAuthenticated) navigate('/suporte');
+              else window.dispatchEvent(new CustomEvent('inksa:abrir-suporte'));
+            }}
             className="min-h-[44px] min-w-[44px] text-white hover:bg-white/15 hover:text-white"
           >
             <LifeBuoy className="h-5 w-5" />
