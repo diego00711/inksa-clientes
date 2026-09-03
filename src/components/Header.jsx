@@ -69,9 +69,20 @@ export function Header() {
                   <Gift className="h-5 w-5 text-orange-500" />
                   <span>Indique e ganhe</span>
                 </Link>
-                <Link to="/suporte" className="flex items-center gap-3 px-4 py-3 text-sm text-gray-700 hover:bg-orange-50 hover:text-orange-700">
+                {/* Duas coisas diferentes, e o nome antigo ("Suporte") escondia
+                    isso: uma abre o WhatsApp na hora, a outra é a central de
+                    chamados. Quem tem um problema urgente quer a primeira. */}
+                <button
+                  type="button"
+                  onClick={() => { setMenuOpen(false); window.dispatchEvent(new CustomEvent('inksa:abrir-suporte')); }}
+                  className="w-full flex items-center gap-3 px-4 py-3 text-sm text-gray-700 hover:bg-orange-50 hover:text-orange-700"
+                >
                   <LifeBuoy className="h-5 w-5 text-blue-500" />
-                  <span>Suporte</span>
+                  <span>Falar com o suporte</span>
+                </button>
+                <Link to="/suporte" className="flex items-center gap-3 px-4 py-3 text-sm text-gray-700 hover:bg-orange-50 hover:text-orange-700">
+                  <Receipt className="h-5 w-5 text-gray-500" />
+                  <span>Meus chamados</span>
                 </Link>
                 <div className="h-px bg-gray-100 my-1" />
                 <button
@@ -94,6 +105,24 @@ export function Header() {
         </Link>
 
         <nav className="flex items-center gap-1 sm:gap-3">
+          {/* SUPORTE — fora do bloco autenticado DE PROPÓSITO.
+              /suporte é a central de chamados e exige login; este botão abre o
+              contato direto (WhatsApp, e-mail, telefone) e precisa alcançar
+              justamente quem AINDA não tem conta — o visitante que chegou pelo
+              link do Instagram ou pela rádio. Antes isso morava num círculo
+              flutuante que cobria o cardápio; agora mora aqui, onde não
+              atrapalha a navegação. */}
+          <Button
+            variant="ghost"
+            size="icon"
+            aria-label="Falar com o suporte"
+            title="Falar com o suporte"
+            onClick={() => window.dispatchEvent(new CustomEvent('inksa:abrir-suporte'))}
+            className="min-h-[44px] min-w-[44px] text-white hover:bg-white/15 hover:text-white"
+          >
+            <LifeBuoy className="h-5 w-5" />
+          </Button>
+
           {isAuthenticated && user && (
             <>
               <div className="hidden md:flex flex-col items-end">

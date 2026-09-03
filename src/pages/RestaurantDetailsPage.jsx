@@ -10,6 +10,7 @@ import StoreCoupons from '../components/StoreCoupons';
 import EscolherOpcoes from '../components/EscolherOpcoes';
 import { DescricaoExpandivel } from '../components/DescricaoExpandivel';
 import BarraLocalizacao from '../components/BarraLocalizacao';
+import FotoAmpliada from '../components/FotoAmpliada';
 
 export function RestaurantDetailsPage() {
   const { id } = useParams();
@@ -20,6 +21,7 @@ export function RestaurantDetailsPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const [quantities, setQuantities] = useState({});
+  const [fotoAberta, setFotoAberta] = useState(null); // {url, nome}
   // Disponíveis x esgotados — ver o comentário no contador do cardápio.
   const disponiveis = menuItems.filter((m) => m.available !== false).length;
   const esgotados = menuItems.length - disponiveis;
@@ -263,11 +265,22 @@ export function RestaurantDetailsPage() {
                   >
                     <div className={`flex gap-3 ${esgotado ? 'opacity-55' : ''}`}>
                       {item.image_url ? (
-                        <img
-                          src={item.image_url}
-                          alt={item.name}
-                          className="w-20 h-20 sm:w-24 sm:h-24 object-cover rounded-lg flex-shrink-0"
-                        />
+                        /* A miniatura abre a foto grande. É botão e não uma
+                           <img> com onClick: assim funciona no teclado e o
+                           leitor de tela anuncia que dá pra tocar. O aria-label
+                           diz o que acontece, não o que é. */
+                        <button
+                          type="button"
+                          onClick={() => setFotoAberta({ url: item.image_url, nome: item.name })}
+                          aria-label={`Ver a foto de ${item.name} em tamanho maior`}
+                          className="flex-shrink-0 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                        >
+                          <img
+                            src={item.image_url}
+                            alt={item.name}
+                            className="w-20 h-20 sm:w-24 sm:h-24 object-cover rounded-lg"
+                          />
+                        </button>
                       ) : (
                         <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-lg flex-shrink-0 bg-gradient-to-br from-orange-100 to-orange-200 flex items-center justify-center">
                           <span className="text-2xl select-none" aria-hidden>🍔</span>
@@ -384,6 +397,14 @@ export function RestaurantDetailsPage() {
             </Link>
           </div>
         </div>
+      )}
+
+      {fotoAberta && (
+        <FotoAmpliada
+          url={fotoAberta.url}
+          alt={fotoAberta.nome}
+          onFechar={() => setFotoAberta(null)}
+        />
       )}
 
       {itemEscolhendo && (
