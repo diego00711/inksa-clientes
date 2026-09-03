@@ -134,7 +134,19 @@ export function Header() {
               if (isAuthenticated) navigate('/suporte');
               else window.dispatchEvent(new CustomEvent('inksa:abrir-suporte'));
             }}
-            className="min-h-[44px] min-w-[44px] text-white hover:bg-white/15 hover:text-white"
+            className={`min-h-[44px] min-w-[44px] text-white hover:bg-white/15 hover:text-white ${
+              // LOGADO NO CELULAR ESCONDE: ali o menu hambúrguer já tem
+              // "Suporte", e dois caminhos para a mesma tela lado a lado só
+              // ocupam espaço na barra.
+              //
+              // No COMPUTADOR continua, mesmo logado: o hambúrguer é md:hidden,
+              // e o cabeçalho de desktop não tem nenhum outro link para o
+              // suporte — esconder ali deixaria a pessoa sem caminho nenhum.
+              //
+              // Deslogado aparece em tudo: sem menu e sem acesso à central de
+              // chamados, este botão é o único canal que existe.
+              isAuthenticated ? 'hidden md:inline-flex' : ''
+            }`}
           >
             <LifeBuoy className="h-5 w-5" />
           </Button>
