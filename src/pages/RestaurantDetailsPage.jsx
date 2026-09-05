@@ -164,6 +164,18 @@ export function RestaurantDetailsPage() {
     );
   }
 
+  // SEM QUEM ENTREGUE, NÃO DEIXA MONTAR CARRINHO.
+  //
+  // O servidor decide (ele conhece a posição da loja, o raio e quem deu sinal
+  // de vida) e manda pronto. A tela não recalcula nada — se recalculasse, a
+  // regra existiria em dois lugares e um dia divergiriam.
+  //
+  // Isto é aviso, não a trava: a barreira de verdade está na criação do
+  // pedido, nos três caminhos do servidor. Aqui é só para a pessoa não
+  // escolher meia dúzia de itens e descobrir no fim.
+  const entregadores = restaurant.entregadores || {};
+  const semEntregador = entregadores.bloqueado === true;
+
   const ratingValue = restaurant.rating ?? 0;
   const deliveryFee = restaurant.delivery_fee ?? 0;
   // Loja de entrega PRÓPRIA cobra a taxa fixa dela; loja da plataforma tem
@@ -197,10 +209,32 @@ export function RestaurantDetailsPage() {
           perder alguém — em especial quem chegou pelo link do Instagram e
           ainda não conhece a Inksa. Dispensável de propósito. */}
       <div className="max-w-4xl mx-auto">
-        <BarraLocalizacao
-          restaurantId={restaurant.id ?? id}
-          deliveryType={restaurant.delivery_type ?? 'platform'}
-        />
+        {semEntregador ? (
+          /* Fica NO LUGAR da barra de frete, não acima dela: cotar entrega
+             que ninguém pode fazer é oferecer o que não existe, e duas
+             mensagens juntas competindo pela atenção não ajudam ninguém. */
+          <div className="mx-4 mt-3 rounded-xl border border-amber-300 bg-amber-50 p-4">
+            <div className="flex items-start gap-2.5">
+              <AlertCircle className="h-5 w-5 text-amber-600 shrink-0 mt-0.5" aria-hidden="true" />
+              <div className="min-w-0">
+                <p className="text-sm font-bold text-amber-900">
+                  {entregadores.titulo || 'Sem entregadores ativos na sua região'}
+                </p>
+                {entregadores.detalhe && (
+                  <p className="text-sm text-amber-800 mt-1">{entregadores.detalhe}</p>
+                )}
+                <Link to="/" className="mt-2 inline-block text-sm font-semibold text-amber-900 underline">
+                  Ver outras lojas
+                </Link>
+              </div>
+            </div>
+          </div>
+        ) : (
+          <BarraLocalizacao
+            restaurantId={restaurant.id ?? id}
+            deliveryType={restaurant.delivery_type ?? 'platform'}
+          />
+        )}
       </div>
 
       <div className="max-w-4xl mx-auto px-4 py-6 space-y-6">
@@ -401,6 +435,13 @@ export function RestaurantDetailsPage() {
                         {esgotado ? (
                           <span className="inline-flex items-center gap-1.5 rounded-full bg-gray-200 px-2.5 py-1 text-xs font-bold text-gray-600">
                             Indisponível no momento
+                          </span>
+                        ) : semEntregador ? (
+                          /* O item continua legível — a loja TEM isto, e some
+                             a informação junto com o botão seria esconder o
+                             cardápio. O que sai é só o caminho de comprar. */
+                          <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-100 px-2.5 py-1 text-xs font-bold text-amber-800">
+                            Sem entrega no momento
                           </span>
                         ) : (
                         <div className="flex items-center gap-2 flex-wrap">
