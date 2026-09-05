@@ -11,16 +11,40 @@ const STATUS_META = {
   resolvido: { label: 'Resolvido',    cls: 'bg-emerald-100 text-emerald-700' },
 };
 
-const CATEGORIES = ['Dúvida', 'Pagamento', 'Pedido', 'Entrega', 'Cardápio', 'Conta', 'Técnico', 'Outro'];
+const CATEGORIES = ['Dúvida', 'Sugestão', 'Pagamento', 'Pedido', 'Entrega', 'Cardápio', 'Conta', 'Técnico', 'Outro'];
 const PRIORITIES = ['Baixo', 'Médio', 'Alto'];
+
+// SUGESTÃO É UM CHAMADO, NÃO UMA CAIXA NOVA.
+//
+// A tentação era criar uma tabela e uma tela só de sugestões. Seriam duas
+// caixas de entrada — e uma delas vira a que ninguém abre. Caixa de sugestão
+// esquecida é pior que não ter: a pessoa escreveu, ninguém leu, e ela aprende
+// que opinar aqui não serve pra nada.
+//
+// Entrando como categoria em support_tickets, a sugestão cai no MESMO lugar
+// que o Diego já confere, com status e resposta de graça. O que muda é só a
+// porta de entrada: um item de menu com outro convite.
+const MODO_SUGESTAO = {
+  titulo: 'Ajude a melhorar sua experiência',
+  ajuda: 'Achou algo confuso, sentiu falta de alguma coisa ou teve uma ideia? Conta pra gente. Lemos todas.',
+  rotuloAssunto: 'Sua sugestão em uma linha',
+  exemploAssunto: 'Ex: queria repetir meu último pedido com um toque',
+  rotuloTexto: 'Conte com suas palavras',
+  exemploTexto: 'Não precisa formalidade. Escreva do jeito que você falaria.',
+  botao: 'Enviar sugestão',
+};
 
 function headers() {
   const token = authService.getToken();
   return { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` };
 }
 
-function NovoTicket({ onCreated, onCancel }) {
-  const [form, setForm] = useState({ subject: '', description: '', category: 'Dúvida', priority: 'Baixo' });
+function NovoTicket({ onCreated, onCancel, sugestao = false }) {
+  const [form, setForm] = useState({
+    subject: '', description: '',
+    category: sugestao ? 'Sugestão' : 'Dúvida',
+    priority: 'Baixo',
+  });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
 
@@ -50,19 +74,29 @@ function NovoTicket({ onCreated, onCancel }) {
 
   return (
     <form onSubmit={submit} className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 space-y-3">
-      <h2 className="font-semibold text-gray-800">Abrir novo chamado</h2>
+      <h2 className="font-semibold text-gray-800">
+        {sugestao ? MODO_SUGESTAO.titulo : 'Abrir novo chamado'}
+      </h2>
+      {sugestao && <p className="text-sm text-gray-600 -mt-1">{MODO_SUGESTAO.ajuda}</p>}
 
       <div>
-        <label className="text-xs text-gray-600 font-medium">Assunto</label>
+        <label className="text-xs text-gray-600 font-medium">
+          {sugestao ? MODO_SUGESTAO.rotuloAssunto : 'Assunto'}
+        </label>
         <input
           value={form.subject}
           onChange={(e) => setForm((p) => ({ ...p, subject: e.target.value }))}
-          placeholder="Ex: Pedido não chegou"
+          placeholder={sugestao ? MODO_SUGESTAO.exemploAssunto : 'Ex: Pedido não chegou'}
           maxLength={120}
           className="w-full border rounded-lg px-3 py-2 text-sm mt-1"
         />
       </div>
 
+      {/* Sugestão não escolhe categoria nem prioridade. Categoria já está
+          decidida pela porta de entrada, e perguntar a urgência de uma ideia
+          é pedir para a pessoa julgar a própria opinião — atrito puro num
+          formulário que só funciona se for fácil. */}
+      {!sugestao && (
       <div className="grid grid-cols-2 gap-3">
         <div>
           <label className="text-xs text-gray-600 font-medium">Categoria</label>
@@ -85,14 +119,17 @@ function NovoTicket({ onCreated, onCancel }) {
           </select>
         </div>
       </div>
+      )}
 
       <div>
-        <label className="text-xs text-gray-600 font-medium">Descrição</label>
+        <label className="text-xs text-gray-600 font-medium">
+          {sugestao ? MODO_SUGESTAO.rotuloTexto : 'Descrição'}
+        </label>
         <textarea
           value={form.description}
           onChange={(e) => setForm((p) => ({ ...p, description: e.target.value }))}
           rows={5}
-          placeholder="Conte o que aconteceu com detalhes"
+          placeholder={sugestao ? MODO_SUGESTAO.exemploTexto : 'Conte o que aconteceu com detalhes'}
           className="w-full border rounded-lg px-3 py-2 text-sm mt-1"
         />
       </div>
@@ -109,7 +146,7 @@ function NovoTicket({ onCreated, onCancel }) {
         </button>
         <button type="submit" disabled={saving} className="px-4 py-2 text-sm font-bold bg-orange-500 text-white rounded-lg disabled:opacity-60 flex items-center gap-1">
           {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
-          Abrir chamado
+          {sugestao ? MODO_SUGESTAO.botao : 'Abrir chamado'}
         </button>
       </div>
     </form>
@@ -228,7 +265,12 @@ function TicketDetalhe({ ticketId, onBack }) {
 }
 
 export default function SuportePage() {
-  const [view, setView] = useState('list');
+  // /suporte?sugestao=1 abre direto no formulário, em modo sugestão. É o que
+  // o item "Sugestões" do menu aponta — sem rota nova, sem tela duplicada.
+  const modoSugestao = typeof window !== 'undefined'
+    && new URLSearchParams(window.location.search).get('sugestao') === '1';
+
+  const [view, setView] = useState(modoSugestao ? 'new' : 'list');
   const [selected, setSelected] = useState(null);
   const [tickets, setTickets] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -265,6 +307,7 @@ export default function SuportePage() {
     return (
       <div className="container mx-auto px-4 py-6 max-w-3xl">
         <NovoTicket
+          sugestao={modoSugestao}
           onCreated={(id) => { setSelected(id); setView('detail'); }}
           onCancel={() => setView('list')}
         />

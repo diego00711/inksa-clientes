@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
-import { ShoppingCart, LogOut, Receipt, Star, Medal, Menu, X, LifeBuoy, Gift, MessageCircle } from "lucide-react";
+import { ShoppingCart, LogOut, Receipt, Star, Medal, Menu, X, LifeBuoy, Gift, MessageCircle , Lightbulb } from "lucide-react";
 import { Button } from "./ui/button";
 import { useAuth } from "../context/AuthContext";
 import { useCart } from "../context/CartContext";
@@ -85,6 +85,13 @@ export function Header() {
                 <Link to="/suporte" className="flex items-center gap-3 px-4 py-3 text-sm text-gray-700 hover:bg-orange-50 hover:text-orange-700">
                   <LifeBuoy className="h-5 w-5 text-blue-500" />
                   <span>Suporte</span>
+                </Link>
+                {/* Porta separada da do suporte de propósito. Quem tem uma
+                    ideia não se vê "abrindo um chamado" — chamado é coisa de
+                    quem tem problema. Mesmo destino, convite diferente. */}
+                <Link to="/suporte?sugestao=1" className="flex items-center gap-3 px-4 py-3 text-sm text-gray-700 hover:bg-orange-50 hover:text-orange-700">
+                  <Lightbulb className="h-5 w-5 text-amber-500" />
+                  <span>Sugestões</span>
                 </Link>
                 <div className="h-px bg-gray-100 my-1" />
                 <button
