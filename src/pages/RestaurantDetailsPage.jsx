@@ -1,9 +1,9 @@
 // Local: src/pages/RestaurantDetailsPage.jsx
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
-import { ChevronLeft, ChevronRight, Star, Loader2, MapPin, Clock, Phone, AlertCircle, Plus, Minus } from "lucide-react";
+import { ChevronLeft, ChevronRight, Star, Loader2, MapPin, Clock, Phone, AlertCircle, Plus, Minus, Flame } from "lucide-react";
 import { useCart, montarItemComOpcoes } from '../context/CartContext';
 import RestaurantService from '../services/restaurantService';
 import StoreCoupons from '../components/StoreCoupons';
@@ -22,9 +22,61 @@ export function RestaurantDetailsPage() {
   const [error, setError] = useState(null);
   const [quantities, setQuantities] = useState({});
   const [fotoAberta, setFotoAberta] = useState(null); // {url, nome}
+  const [ordem, setOrdem] = useState('padrao');
+  const [ranking, setRanking] = useState({ itens_com_venda: 0, janela_dias: 0 });
   // Disponíveis x esgotados — ver o comentário no contador do cardápio.
   const disponiveis = menuItems.filter((m) => m.available !== false).length;
   const esgotados = menuItems.length - disponiveis;
+
+  // "MAIS PEDIDOS" SÓ APARECE SE HOUVER O QUE RANQUEAR.
+  //
+  // Loja sem venda na janela mostraria um botão que não muda nada na tela —
+  // e controle que não faz nada é pior que controle ausente: a pessoa toca,
+  // não vê diferença e conclui que o app está quebrado. O servidor manda
+  // quantos itens já venderam justamente para esta decisão.
+  const temRanking = (ranking?.itens_com_venda || 0) > 0;
+
+  const ORDENACOES = [
+    { id: 'padrao', rotulo: 'Padrão' },
+    ...(temRanking ? [{ id: 'mais_pedidos', rotulo: 'Mais pedidos', icone: Flame }] : []),
+    { id: 'menor_preco', rotulo: 'Menor preço' },
+    { id: 'maior_preco', rotulo: 'Maior preço' },
+  ];
+
+  const itensOrdenados = useMemo(() => {
+    // 'padrao' devolve EXATAMENTE o que o servidor mandou (categoria,
+    // disponível primeiro, nome). Não reordenar nada aqui é o que garante que
+    // quem nunca toca no filtro vê o cardápio como sempre viu.
+    if (ordem === 'padrao') return menuItems;
+
+    const preco = (x) => Number(x.price ?? 0);
+    const comparadores = {
+      // `vendas` vem do servidor contando por menu_item_id na janela.
+      mais_pedidos: (a, b) => Number(b.vendas ?? 0) - Number(a.vendas ?? 0),
+      // Ordena pelo preço VIGENTE, que é o mesmo número escrito na tela.
+      // Usar o cheio faria um item de R$ 20 em promoção por R$ 9 aparecer
+      // entre os de R$ 20 — a lista pareceria embaralhada. Ver utils/precos.py.
+      menor_preco: (a, b) => preco(a) - preco(b),
+      maior_preco: (a, b) => preco(b) - preco(a),
+    };
+    const comparar = comparadores[ordem] || (() => 0);
+
+    return menuItems
+      .map((m, i) => ({ m, i }))   // índice guarda a ordem original
+      .sort((a, b) => {
+        // Esgotado sempre por último, em qualquer ordenação: não faz sentido
+        // o "mais pedido" da loja ser algo que ninguém pode comprar agora.
+        const ea = a.m.available === false ? 1 : 0;
+        const eb = b.m.available === false ? 1 : 0;
+        if (ea !== eb) return ea - eb;
+        const r = comparar(a.m, b.m);
+        // Empate (inclusive todo mundo com 0 venda) mantém a ordem do servidor
+        // em vez de embaralhar — sort do JS não garante estabilidade sozinho
+        // em todos os motores.
+        return r !== 0 ? r : a.i - b.i;
+      })
+      .map((x) => x.m);
+  }, [menuItems, ordem]);
 
   useEffect(() => {
     const fetchDetails = async () => {
@@ -35,6 +87,7 @@ export function RestaurantDetailsPage() {
         setRestaurant(data);
         const items = data.menu_items || data.menuItems || data.items || [];
         setMenuItems(items);
+        setRanking(data.ranking || { itens_com_venda: 0, janela_dias: 0 });
       } catch (err) {
         setError(err.message);
       } finally {
@@ -243,10 +296,41 @@ export function RestaurantDetailsPage() {
               {esgotados > 0 ? ` · ${esgotados} esgotado${esgotados > 1 ? 's' : ''}` : ''})
             </span>
           </h2>
-          
+
+          {/* ORDENAÇÃO — só aparece com cardápio suficiente para valer a pena.
+              Abaixo de 4 itens a lista inteira cabe na tela e o filtro seria
+              enfeite ocupando altura útil no celular. */}
+          {menuItems.length >= 4 && (
+            <div
+              role="group"
+              aria-label="Ordenar o cardápio"
+              className="flex gap-2 overflow-x-auto pb-3 mb-2 -mx-1 px-1"
+            >
+              {ORDENACOES.map(({ id, rotulo, icone: Icone }) => {
+                const ativo = ordem === id;
+                return (
+                  <button
+                    key={id}
+                    type="button"
+                    onClick={() => setOrdem(id)}
+                    aria-pressed={ativo}
+                    className={`shrink-0 inline-flex items-center gap-1.5 rounded-full px-3.5 py-2 text-sm font-medium border transition-colors min-h-[36px] ${
+                      ativo
+                        ? 'bg-orange-500 border-orange-500 text-white'
+                        : 'bg-white border-gray-200 text-gray-700 hover:border-orange-300'
+                    }`}
+                  >
+                    {Icone && <Icone className="h-4 w-4" aria-hidden="true" />}
+                    {rotulo}
+                  </button>
+                );
+              })}
+            </div>
+          )}
+
           {menuItems.length > 0 ? (
             <div className="grid grid-cols-1 gap-4">
-              {menuItems.map(item => {
+              {itensOrdenados.map(item => {
                 const quantity = quantities[item.id] || 0;
                 // ESGOTADO APARECE, APAGADO. Antes o servidor nem mandava o
                 // item: sumia do cardápio, e junto sumia a informação de que a

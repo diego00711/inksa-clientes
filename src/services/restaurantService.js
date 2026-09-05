@@ -106,15 +106,19 @@ const RestaurantService = {
       const restaurant = restaurantData.data || restaurantData;
 
       let menu_items = [];
+      // Quantos itens desta loja já venderam na janela. A tela usa isso para
+      // só oferecer "Mais pedidos" quando existe o que ranquear.
+      let ranking = { itens_com_venda: 0, janela_dias: 0 };
       if (menuRes.ok) {
         const menuData = await menuRes.json();
         const categories = menuData.categories || [];
+        if (menuData.ranking) ranking = menuData.ranking;
         menu_items = categories.flatMap((cat) =>
           (cat.items || []).map((item) => ({ ...item, category: cat.name }))
         );
       }
 
-      return { ...restaurant, menu_items };
+      return { ...restaurant, menu_items, ranking };
     } catch (err) {
       console.error('❌ Erro ao buscar detalhes do restaurante:', err);
       throw err;
