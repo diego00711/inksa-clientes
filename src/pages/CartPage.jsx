@@ -1,5 +1,5 @@
 // src/pages/CartPage.jsx
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import { ChevronLeft, ShoppingCart, PlusCircle, MinusCircle, Trash2, Loader2, MapPin, ChevronDown, LocateFixed, X } from "lucide-react";
@@ -58,6 +58,10 @@ export function CartPage() {
   // RETIRADA NO LOCAL. Só existe se a loja tiver ligado; começa sempre em
   // entrega, porque é o que a pessoa espera de um app de delivery.
   const [retirada, setRetirada] = useState(false);
+  // Trava do salto automático pra retirada: só acontece UMA vez. Sem isto, se a
+  // pessoa voltasse pra Entrega de propósito, o efeito a jogaria de volta e ela
+  // brigaria com a tela sem entender por quê.
+  const jaPulouPraRetirada = useRef(false);
 
   // Endereços salvos
   const [addresses, setAddresses] = useState([]);
@@ -322,6 +326,18 @@ export function CartPage() {
     // `retirada` PRECISA estar aqui: sem ela, trocar entrega↔retirada não
     // recalcularia nada e o cliente ficaria vendo o frete da opção anterior.
   }, [cartItems, addToast, deliveryLat, deliveryLng, semCoordenada, retirada]);
+
+  // SEM ENTREGADOR ONLINE, ENTREGA NÃO É OPÇÃO — é promessa que a gente não
+  // cumpre. Quando a loja aceita retirada, a tela já pula pra ela em vez de
+  // deixar a pessoa escolher um caminho que vai ser recusado no fim.
+  const entregaIndisponivel = capazesOnline === 0;
+  useEffect(() => {
+    if (jaPulouPraRetirada.current) return;
+    if (entregaIndisponivel && restaurantInfo?.accepts_pickup && !retirada) {
+      jaPulouPraRetirada.current = true;
+      setRetirada(true);
+    }
+  }, [entregaIndisponivel, restaurantInfo, retirada]);
 
   const safeFee = Number(deliveryFee) || 0;
   const couponDiscount = (couponData?.valid && Number(couponData?.discount_amount) > 0)
@@ -828,17 +844,24 @@ export function CartPage() {
             <div className="border-t pt-5 mt-5">
               <p className="text-sm font-semibold text-gray-700 mb-2">Como você quer receber?</p>
               <div className="grid grid-cols-2 gap-2">
+                {/* Entrega fica DESABILITADA sem entregador online. Deixar
+                    clicável seria deixar a pessoa escolher um caminho que o
+                    servidor vai recusar no fim do checkout — e ela só
+                    descobriria depois de preencher tudo. */}
                 <button
                   type="button"
                   onClick={() => setRetirada(false)}
+                  disabled={entregaIndisponivel}
+                  aria-disabled={entregaIndisponivel}
                   className={`rounded-xl border-2 px-3 py-3 text-left transition-colors ${
-                    !retirada ? 'border-orange-500 bg-orange-50' : 'border-gray-200 bg-white'}`}
+                    entregaIndisponivel
+                      ? 'border-gray-200 bg-gray-100 opacity-60 cursor-not-allowed'
+                      : (!retirada ? 'border-orange-500 bg-orange-50' : 'border-gray-200 bg-white')}`}
                 >
-                  <span className="block text-sm font-bold text-gray-800">🛵 Entrega</span>
-                  {/* Sem entregador online a entrega vai ser recusada no fim do
-                      checkout. Dizer AQUI evita a pessoa preencher tudo pra
-                      levar um "não" na última tela. */}
-                  {capazesOnline === 0 ? (
+                  <span className={`block text-sm font-bold ${entregaIndisponivel ? 'text-gray-500' : 'text-gray-800'}`}>
+                    🛵 Entrega
+                  </span>
+                  {entregaIndisponivel ? (
                     <span className="block text-xs text-red-600 font-semibold mt-0.5">
                       Sem entregador agora
                     </span>
