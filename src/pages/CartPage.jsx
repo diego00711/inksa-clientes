@@ -330,7 +330,15 @@ export function CartPage() {
   // SEM ENTREGADOR ONLINE, ENTREGA NÃO É OPÇÃO — é promessa que a gente não
   // cumpre. Quando a loja aceita retirada, a tela já pula pra ela em vez de
   // deixar a pessoa escolher um caminho que vai ser recusado no fim.
-  const entregaIndisponivel = capazesOnline === 0;
+  // DUAS FONTES, DE PROPÓSITO. `capazesOnline` só é preenchido pelo cálculo do
+  // frete — e esse cálculo nem roda antes de a pessoa ter endereço escolhido.
+  // Era por isso que a opção Entrega continuava clicável: sem endereço,
+  // capazesOnline ficava null e a trava nunca ligava.
+  // A contagem da LOJA (/api/restaurants/:id) chega assim que o carrinho abre,
+  // sem depender de endereço nenhum. Loja de entrega própria devolve null aqui,
+  // e null não é zero — ela segue com a entrega liberada, como tem que ser.
+  const onlineDaLoja = restaurantInfo?.entregadores?.online_agora;
+  const entregaIndisponivel = capazesOnline === 0 || onlineDaLoja === 0;
   useEffect(() => {
     if (jaPulouPraRetirada.current) return;
     if (entregaIndisponivel && restaurantInfo?.accepts_pickup && !retirada) {
