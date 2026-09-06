@@ -58,14 +58,38 @@ const STATUS_TO_STAGE = {
  * quando dá errado: a loja recusa, e quem cancelou o pedido, aos olhos do
  * cliente, foi a Inksa.
  */
-function estagiosPara(status) {
+function estagiosPara(status, retirada = false) {
   const aindaEsperando = String(status || '').toLowerCase() === 'pending';
-  if (aindaEsperando) return STAGES;
-  return [
-    { ...STAGES[0], label: "Pedido aceito", msg: "A loja confirmou seu pedido." },
-    ...STAGES.slice(1),
-  ];
+  const primeiro = aindaEsperando
+    ? STAGES[0]
+    : { ...STAGES[0], label: "Pedido aceito", msg: "A loja confirmou seu pedido." };
+
+  // RETIRADA NO LOCAL: não existe "Saiu para entrega" — ninguém sai com o
+  // pedido. Deixar o passo cinza na linha do tempo promete uma etapa que nunca
+  // vai acontecer, e o cliente fica esperando um entregador que não existe.
+  // Os textos dos outros passos também mudam: "aguardando um entregador
+  // retirar" é exatamente o oposto do que acontece aqui.
+  if (retirada) {
+    return [
+      primeiro,
+      STAGES[1],
+      { ...STAGES[2], label: "Pronto para retirada",
+        msg: "Pode vir buscar! Mostre o código no balcão." },
+      { ...STAGES[4], label: "Retirado!", msg: "Obrigado pela preferência! 😊" },
+    ];
+  }
+
+  return [primeiro, ...STAGES.slice(1)];
 }
+
+// Na retirada a linha do tempo tem 4 passos em vez de 5: 'delivered' é o
+// QUARTO (índice 3), não o quinto. Sem este mapa próprio o pedido entregue
+// apontaria para um passo que não existe e a linha ficaria sem o último aceso.
+const STATUS_TO_STAGE_RETIRADA = {
+  pending: 0, accepted: 1, preparing: 1,
+  ready: 2, accepted_by_delivery: 2,
+  delivered: 3,
+};
 
 // ─── Countdown ───────────────────────────────────────────────────────────────
 // Sem default para estimatedMinutes: o antigo "= 30" fazia a tela inventar um
@@ -167,8 +191,8 @@ function CountdownTimer({
 }
 
 // ─── Timeline ────────────────────────────────────────────────────────────────
-function Timeline({ currentStage, status }) {
-  const STAGES = estagiosPara(status);
+function Timeline({ currentStage, status, retirada = false }) {
+  const STAGES = estagiosPara(status, retirada);
   return (
     <div>
       {STAGES.map((stage, idx) => {
@@ -321,8 +345,11 @@ export function OrderTrackingPage() {
   const [chatOpen, setChatOpen] = useState(false);
   const [chatUnread, setChatUnread] = useState(0);
 
-  const applyStatus = useCallback((status) => {
-    setCurrentStage(STATUS_TO_STAGE[status] ?? 0);
+  // O mapa muda na retirada porque a linha do tempo tem um passo a menos.
+  // Recebe o pedido inteiro em vez de só o status: o índice depende dos dois.
+  const applyStatus = useCallback((status, ehRetirada = false) => {
+    const mapa = ehRetirada ? STATUS_TO_STAGE_RETIRADA : STATUS_TO_STAGE;
+    setCurrentStage(mapa[status] ?? 0);
   }, []);
 
   // Corta qualquer busca acessória em 8s. Sem isto, uma requisição pendurada
@@ -363,7 +390,7 @@ export function OrderTrackingPage() {
       const json = await res.json();
       const ord = json.data ?? json;
       setOrder(ord);
-      applyStatus(ord.status);
+      applyStatus(ord.status, !!ord.is_pickup);
       // ⚠️ A TELA JÁ PODE APARECER AQUI.
       //
       // `setLoading(false)` ficava lá embaixo, no finally — ou seja, só depois
@@ -782,15 +809,20 @@ export function OrderTrackingPage() {
         {order?.delivery_code && !isDelivered && !isFailed && (
           <div className="bg-gradient-to-br from-orange-500 to-red-500 rounded-2xl p-5 mb-5 text-white text-center shadow-lg shadow-orange-200">
             <p className="text-xs font-bold uppercase tracking-widest opacity-90 mb-1">
-              🔑 Código de entrega
+              {order?.is_pickup ? '🔑 Código de retirada' : '🔑 Código de entrega'}
             </p>
             <p className="text-4xl font-black tracking-[0.35em] pl-[0.35em] my-1">
               {String(order.delivery_code).toUpperCase()}
             </p>
             <p className="text-xs opacity-90 mt-1">
               {/* Pode ser entregador Inksa ou o motoboy da própria loja — o
-                  código confirma o recebimento nos dois casos. */}
-              Mostre este código a quem entregar o pedido para confirmar o recebimento.
+                  código confirma o recebimento nos dois casos. Na RETIRADA
+                  ninguém entrega: quem digita é o balcão, quando o cliente
+                  chega. Mandar "mostre a quem entregar" ali seria mandar a
+                  pessoa esperar alguém que nunca vai aparecer. */}
+              {order?.is_pickup
+                ? 'Mostre este código no balcão da loja ao retirar seu pedido.'
+                : 'Mostre este código a quem entregar o pedido para confirmar o recebimento.'}
             </p>
           </div>
         )}
@@ -857,7 +889,8 @@ export function OrderTrackingPage() {
         {/* Timeline */}
         <div className="bg-white rounded-2xl shadow-md p-5 mb-5 border border-gray-100">
           <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-5">Histórico do pedido</p>
-          <Timeline currentStage={currentStage} status={order.status} />
+          <Timeline currentStage={currentStage} status={order.status}
+                    retirada={!!order.is_pickup} />
         </div>
 
         {/* Order summary — separa os produtos da taxa de entrega (padrão iFood):
