@@ -33,6 +33,7 @@ function emojiIcon(emoji, ring) {
 const DRIVER_ICON = emojiIcon("\u{1F6F5}", "#FF6F00"); // 🛵
 const REST_ICON = emojiIcon("\u{1F3EA}", "#16a34a");   // 🏪
 const DEST_ICON = emojiIcon("\u{1F4CD}", "#dc2626");   // 📍
+const CLIENTE_ICON = emojiIcon("\u{1F9CD}", "#2563eb"); // 🧍 (retirada: quem anda é o cliente)
 
 // Distancia em km (Haversine)
 export function haversineKm(a, b) {
@@ -125,7 +126,10 @@ function metros(aLat, aLng, bLat, bLng) {
   return 2 * R * Math.asin(Math.sqrt(s));
 }
 
-export default function LiveTrackingMap({ driver, restaurant, destination }) {
+// `retirada`: não há entregador. A "origem" da rota passa a ser o CLIENTE e o
+// destino é a LOJA — o traço mostra o caminho que ele vai fazer. Sem trocar os
+// ícones, a pessoa veria uma moto parada em cima da própria casa.
+export default function LiveTrackingMap({ driver, restaurant, destination, retirada = false }) {
   const points = [driver, restaurant, destination].filter(Boolean);
   const center = driver || destination || restaurant || { lat: -27.2178, lng: -49.645 };
 
@@ -214,17 +218,20 @@ export default function LiveTrackingMap({ driver, restaurant, destination }) {
 
         {restaurant && (
           <Marker position={[restaurant.lat, restaurant.lng]} icon={REST_ICON}>
-            <Popup>Loja</Popup>
+            <Popup>{retirada ? 'Retire aqui' : 'Loja'}</Popup>
           </Marker>
         )}
-        {destination && (
+        {/* Na retirada o destino É a loja, e ela já tem marcador acima — pintar
+            outro pino em cima do mesmo ponto só polui o mapa. */}
+        {destination && !retirada && (
           <Marker position={[destination.lat, destination.lng]} icon={DEST_ICON}>
             <Popup>Voce</Popup>
           </Marker>
         )}
         {driver && (
-          <Marker position={[driver.lat, driver.lng]} icon={DRIVER_ICON}>
-            <Popup>Entregador</Popup>
+          <Marker position={[driver.lat, driver.lng]}
+                  icon={retirada ? CLIENTE_ICON : DRIVER_ICON}>
+            <Popup>{retirada ? 'Você está aqui' : 'Entregador'}</Popup>
           </Marker>
         )}
 

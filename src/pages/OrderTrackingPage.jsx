@@ -742,6 +742,19 @@ export function OrderTrackingPage() {
         )}
       </div>
 
+      {/* O NÚMERO DO PEDIDO, GRANDE. É o que a pessoa fala no balcão e o que o
+          suporte pede no telefone — e estava só em letra miúda no cabeçalho,
+          do lado de um ícone de relógio. Número que ninguém acha na tela vira
+          "não sei qual é o meu pedido" na hora de retirar. */}
+      <div className="mx-4 mt-4 rounded-2xl border border-orange-200 bg-orange-50 px-4 py-3 text-center">
+        <p className="text-xs font-semibold uppercase tracking-wide text-orange-700">
+          Seu pedido é o
+        </p>
+        <p className="text-3xl font-black text-orange-600 leading-tight">
+          {numeroPedido(order)}
+        </p>
+      </div>
+
       <div className="p-4 max-w-md mx-auto">
         {/* Entrega não realizada */}
         {isFailed && (
@@ -791,7 +804,17 @@ export function OrderTrackingPage() {
         {!isFailed && (
           <div className="mb-5">
             {hasLiveMap && !isDelivered ? (
-              <LiveTrackingMap driver={driverPos} restaurant={restaurantPos} destination={destPos} />
+              /* RETIRADA: a rota é do CLIENTE até a LOJA — é ele quem se
+                 desloca. Por isso a origem passa a ser a posição dele
+                 (destPos) e o destino, a loja. Com os papéis originais o mapa
+                 desenharia uma rota da loja até a casa dele, que é justamente
+                 o caminho que ninguém vai fazer. */
+              <LiveTrackingMap
+                driver={order.is_pickup ? destPos : driverPos}
+                restaurant={restaurantPos}
+                destination={order.is_pickup ? restaurantPos : destPos}
+                retirada={!!order.is_pickup}
+              />
             ) : (
               <TrackMap stage={currentStage} />
             )}
