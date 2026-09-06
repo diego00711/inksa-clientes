@@ -4,7 +4,7 @@
 // distancia entregador -> destino. Reutiliza o mesmo stack (Leaflet) do app
 // do entregador para manter consistencia.
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { MapContainer, TileLayer, Marker, Popup, Polyline, useMap } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
@@ -56,23 +56,63 @@ export function etaMinutes(driver, dest) {
   return Math.max(2, Math.round((km / 22) * 60));
 }
 
-// Enquadra o mapa em todos os pontos disponiveis e re-centra quando o
-// entregador se move.
-function FitBounds({ points, follow }) {
+// Enquadra o mapa em todos os pontos disponiveis, segue o entregador enquanto
+// o cliente nao mexer, e devolve o controle assim que ele mexer.
+//
+// ⚠️ ISTO ERA UM useMemo. useMemo roda DURANTE a renderizacao, e mexer no mapa
+// durante a renderizacao é efeito colateral no lugar errado: o React pode
+// descartar ou repetir esse trabalho, e o enquadramento saía antes do container
+// ter tamanho definitivo. Virou useEffect, que é onde efeito mora.
+function Controlador({ points, seguindo, setSeguindo, mapRef }) {
   const map = useMap();
-  useMemo(() => {
+  const programatico = useRef(false);
+
+  useEffect(() => { mapRef.current = map; }, [map, mapRef]);
+
+  // "O MAPA DEMOROU PRA ABRIR" — quase sempre é isto. O Leaflet mede o
+  // container UMA vez, no instante em que monta. Se nesse instante o container
+  // ainda estava crescendo (imagem carregando acima, transicao de layout,
+  // fonte trocando), ele guarda a medida errada e desenha um retangulo cinza
+  // até algo forçar nova medicao. Parece lentidao de rede e nao é.
+  //
+  // invalidateSize() remede. Chamamos logo e de novo depois que o layout
+  // assentou, e a cada resize da janela (girar o celular conta).
+  useEffect(() => {
+    const remedir = () => map.invalidateSize();
+    const t1 = setTimeout(remedir, 0);
+    const t2 = setTimeout(remedir, 300);
+    const t3 = setTimeout(remedir, 1200);
+    window.addEventListener('resize', remedir);
+    return () => {
+      clearTimeout(t1); clearTimeout(t2); clearTimeout(t3);
+      window.removeEventListener('resize', remedir);
+    };
+  }, [map]);
+
+  // Quem mexeu: o cliente ou nós? O mapa dispara movestart nos dois casos, e
+  // sem essa distincao o auto-enquadramento arrastaria o mapa de volta a cada
+  // atualizacao — o cliente tentaria olhar a rua dele e o mapa "fugiria".
+  useEffect(() => {
+    const aoMover = () => { if (!programatico.current) setSeguindo(false); };
+    const aoParar = () => { programatico.current = false; };
+    map.on('movestart', aoMover);
+    map.on('moveend', aoParar);
+    return () => { map.off('movestart', aoMover); map.off('moveend', aoParar); };
+  }, [map, setSeguindo]);
+
+  useEffect(() => {
+    if (!seguindo) return;
     const valid = points.filter(Boolean);
     if (valid.length === 0) return;
+    programatico.current = true;
     if (valid.length === 1) {
       map.setView([valid[0].lat, valid[0].lng], 15, { animate: true });
-    } else if (follow) {
-      // segue o entregador mantendo o destino visivel
-      map.fitBounds(valid.map((p) => [p.lat, p.lng]), { padding: [50, 50], maxZoom: 16 });
     } else {
       map.fitBounds(valid.map((p) => [p.lat, p.lng]), { padding: [50, 50], maxZoom: 16 });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [JSON.stringify(points), follow]);
+  }, [map, seguindo, JSON.stringify(points)]);
+
   return null;
 }
 
@@ -88,6 +128,11 @@ function metros(aLat, aLng, bLat, bLng) {
 export default function LiveTrackingMap({ driver, restaurant, destination }) {
   const points = [driver, restaurant, destination].filter(Boolean);
   const center = driver || destination || restaurant || { lat: -27.2178, lng: -49.645 };
+
+  // Comeca seguindo. O cliente pode arrastar pra olhar a rua dele sem o mapa
+  // brigar de volta, e o botao traz tudo pro enquadramento de novo.
+  const [seguindo, setSeguindo] = useState(true);
+  const mapRef = useRef(null);
 
   // ── ROTA PELA RUA, NÃO LINHA RETA ──────────────────────────────────────────
   //
@@ -183,8 +228,40 @@ export default function LiveTrackingMap({ driver, restaurant, destination }) {
           </Marker>
         )}
 
-        <FitBounds points={points} follow={!!driver} />
+        <Controlador
+          points={points}
+          seguindo={seguindo}
+          setSeguindo={setSeguindo}
+          mapRef={mapRef}
+        />
       </MapContainer>
+
+      {/* Recentralizar. Fica sempre visivel: botao que so aparece depois que a
+          pessoa se perdeu no mapa é botao que ela nao sabe que existe.
+          O z-index precisa passar dos paineis do Leaflet (vao ate 800). */}
+      <button
+        type="button"
+        onClick={() => setSeguindo(true)}
+        aria-label="Recentralizar o mapa"
+        title="Recentralizar"
+        style={{ zIndex: 1000 }}
+        className={`absolute bottom-3 right-3 h-10 w-10 rounded-full border shadow-md
+                    flex items-center justify-center transition-colors
+                    ${seguindo
+                      ? 'bg-white/90 border-gray-200 text-gray-400'
+                      : 'bg-white border-orange-300 text-orange-600'}`}
+      >
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
+             stroke="currentColor" strokeWidth="2" strokeLinecap="round"
+             aria-hidden="true">
+          <circle cx="12" cy="12" r="7" />
+          <circle cx="12" cy="12" r="1.8" fill="currentColor" stroke="none" />
+          <line x1="12" y1="1.5" x2="12" y2="4.5" />
+          <line x1="12" y1="19.5" x2="12" y2="22.5" />
+          <line x1="1.5" y1="12" x2="4.5" y2="12" />
+          <line x1="19.5" y1="12" x2="22.5" y2="12" />
+        </svg>
+      </button>
     </div>
   );
 }
