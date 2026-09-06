@@ -55,6 +55,9 @@ export function CartPage() {
   const [deliveryDistance, setDeliveryDistance] = useState(null);
   const [clientProfile, setClientProfile] = useState(null);
   const [restaurantInfo, setRestaurantInfo] = useState(null);
+  // RETIRADA NO LOCAL. Só existe se a loja tiver ligado; começa sempre em
+  // entrega, porque é o que a pessoa espera de um app de delivery.
+  const [retirada, setRetirada] = useState(false);
 
   // Endereços salvos
   const [addresses, setAddresses] = useState([]);
@@ -246,6 +249,16 @@ export function CartPage() {
   useEffect(() => {
     const fetchDeliveryFee = async () => {
       if (cartItems.length === 0) { setDeliveryFee(0); return; }
+      // RETIRADA NO LOCAL: não existe frete a calcular, e não existe endereço a
+      // exigir. Sai antes de tudo — inclusive antes da checagem de coordenada,
+      // que senão barraria com "escolha um endereço" quem nem vai receber nada.
+      if (retirada) {
+        setDeliveryFee(0);
+        setDeliveryDistance(0);
+        setFeeError(null);
+        setIsCalculatingFee(false);
+        return;
+      }
       // Sem coordenada nem adianta chamar: o backend responde 400 e o cliente
       // lê um "erro" genérico sem saber o que fazer. Melhor dizer a ele.
       if (semCoordenada) {
@@ -306,7 +319,9 @@ export function CartPage() {
       }
     };
     fetchDeliveryFee();
-  }, [cartItems, addToast, deliveryLat, deliveryLng, semCoordenada]);
+    // `retirada` PRECISA estar aqui: sem ela, trocar entrega↔retirada não
+    // recalcularia nada e o cliente ficaria vendo o frete da opção anterior.
+  }, [cartItems, addToast, deliveryLat, deliveryLng, semCoordenada, retirada]);
 
   const safeFee = Number(deliveryFee) || 0;
   const couponDiscount = (couponData?.valid && Number(couponData?.discount_amount) > 0)
@@ -457,7 +472,10 @@ export function CartPage() {
         total_amount_items: subTotal,
         delivery_fee: safeFee,
         total_amount: finalTotal,
-        delivery_address: deliveryAddressStr,
+        // RETIRADA: o servidor confere se a loja aceita antes de valer — esta
+        // flag é um pedido, não uma ordem (ver _eh_retirada no backend).
+        is_pickup: retirada,
+        delivery_address: retirada ? '' : deliveryAddressStr,
         client_latitude: deliveryLat,
         client_longitude: deliveryLng,
         delivery_distance_km: deliveryDistance || 0,
@@ -804,7 +822,53 @@ export function CartPage() {
             </div>
           </div>
 
-          {/* Endereço de entrega */}
+          {/* Entrega ou retirada. Só aparece quando a loja aceita retirada —
+              oferecer uma opção que a loja não faz é prometer o que não temos. */}
+          {restaurantInfo?.accepts_pickup && (
+            <div className="border-t pt-5 mt-5">
+              <p className="text-sm font-semibold text-gray-700 mb-2">Como você quer receber?</p>
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  onClick={() => setRetirada(false)}
+                  className={`rounded-xl border-2 px-3 py-3 text-left transition-colors ${
+                    !retirada ? 'border-orange-500 bg-orange-50' : 'border-gray-200 bg-white'}`}
+                >
+                  <span className="block text-sm font-bold text-gray-800">🛵 Entrega</span>
+                  <span className="block text-xs text-gray-500 mt-0.5">Levamos até você</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setRetirada(true)}
+                  className={`rounded-xl border-2 px-3 py-3 text-left transition-colors ${
+                    retirada ? 'border-orange-500 bg-orange-50' : 'border-gray-200 bg-white'}`}
+                >
+                  <span className="block text-sm font-bold text-gray-800">🛍️ Retirar no local</span>
+                  <span className="block text-xs text-green-700 font-semibold mt-0.5">Sem taxa de entrega</span>
+                </button>
+              </div>
+              {retirada && (
+                <div className="mt-3 rounded-xl bg-amber-50 border border-amber-200 p-3">
+                  <p className="text-xs font-bold text-amber-900 mb-1">Você retira em:</p>
+                  <p className="text-sm text-amber-900">
+                    {restaurantInfo?.restaurant_name}
+                  </p>
+                  <p className="text-xs text-amber-800 mt-0.5">
+                    {restaurantInfo?.full_address || restaurantInfo?.address || 'Endereço na tela da loja'}
+                  </p>
+                  <p className="text-xs text-amber-800 mt-2">
+                    Ao chegar, mostre o <strong>código de 6 números</strong> que aparece no
+                    acompanhamento do pedido.
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Endereço de entrega — não faz sentido na retirada: ninguém vai
+              até você. Esconder evita a pessoa cadastrar endereço à toa e
+              evita o "escolha um endereço" travar quem só vai buscar. */}
+          {!retirada && (
           <div className="border-t pt-5 mt-5">
             <p className="text-sm font-semibold text-gray-700 mb-2 flex items-center gap-1.5">
               <MapPin className="w-4 h-4 text-orange-500" /> Endereço de entrega
@@ -904,6 +968,7 @@ export function CartPage() {
               </div>
             )}
           </div>
+          )}
 
           {/* Payment method selector */}
           <PaymentMethodSelector
@@ -982,7 +1047,11 @@ export function CartPage() {
               // passa direto: o clique dele é "entrar", não "pedir".
               disabled={isAuthenticated && (
                 isProcessingOrder || isCalculatingFee || !!feeError
-                || deliveryFee === null || restauranteFechado || faltaComplemento
+                || deliveryFee === null || restauranteFechado
+                // O complemento do endereço só trava quem vai RECEBER. Na
+                // retirada não há endereço nenhum, e exigir complemento deixaria
+                // o botão morto sem explicação.
+                || (!retirada && faltaComplemento)
                 || (temItemRestrito && !maioridadeOk))}
             >
               {!isAuthenticated ? (
