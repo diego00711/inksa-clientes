@@ -253,7 +253,7 @@ export default function LiveTrackingMap({ driver, restaurant, destination }) {
       >
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
              stroke="currentColor" strokeWidth="2" strokeLinecap="round"
-             aria-hidden="true">
+             className="shrink-0" aria-hidden="true">
           <circle cx="12" cy="12" r="7" />
           <circle cx="12" cy="12" r="1.8" fill="currentColor" stroke="none" />
           <line x1="12" y1="1.5" x2="12" y2="4.5" />
