@@ -87,7 +87,7 @@ export function LoginForm() {
             <Label htmlFor="email">Email</Label>
             <Input
               id="email"
-              type="email"
+              type="email" autoCapitalize="none" autoCorrect="off" spellCheck={false}
               placeholder="seu@email.com"
               required
               value={email}

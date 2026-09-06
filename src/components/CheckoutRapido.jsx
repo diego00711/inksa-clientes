@@ -87,7 +87,7 @@ export default function CheckoutRapido({ onPronto, addToast }) {
         </div>
         <div>
           <label htmlFor="ck-email" className="text-sm font-medium text-gray-700">E-mail</label>
-          <input id="ck-email" className={campo} value={email} required type="email"
+          <input id="ck-email" className={campo} value={email} required type="email" autoCapitalize="none" autoCorrect="off" spellCheck={false}
                  autoComplete="email" placeholder="voce@email.com"
                  onChange={(e) => setEmail(e.target.value)} />
         </div>

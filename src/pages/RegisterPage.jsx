@@ -82,7 +82,7 @@ export default function RegisterPage() {
           </div>
           <div>
             <label htmlFor="email" className="block text-sm font-medium text-gray-700">E-mail</label>
-            <input id="email" name="email" type="email" autoComplete="email" required value={formData.email} onChange={handleChange} className="mt-1 w-full px-3 py-2 text-base border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+            <input id="email" name="email" type="email" autoCapitalize="none" autoCorrect="off" spellCheck={false} autoComplete="email" required value={formData.email} onChange={handleChange} className="mt-1 w-full px-3 py-2 text-base border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
           </div>
           <div>
             <label htmlFor="password" className="block text-sm font-medium text-gray-700">Senha</label>
