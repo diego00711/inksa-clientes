@@ -32,6 +32,7 @@ export function RestaurantCard({ restaurant }) {
   const category = primeiroTipo || segmentLabel(restaurant.segment);
   const isOpen = restaurant.is_open;
   const deliveryType = restaurant.delivery_type;
+  const aceitaRetirada = !!restaurant.accepts_pickup;
   const distance = restaurant.distance_km;
   const totalReviews = restaurant.total_reviews ?? 0;
 
@@ -182,8 +183,19 @@ export function RestaurantCard({ restaurant }) {
           <div className="space-y-2">
             {/* Primeira linha: Taxa de entrega e Distância */}
             <div className="flex items-center justify-between gap-2">
-              <DeliveryInfo />
-              
+              <div className="flex items-center gap-1.5 flex-wrap min-w-0">
+                <DeliveryInfo />
+                {/* RETIRADA NO LOCAL na vitrine, ao lado do frete. O cliente
+                    precisa saber que existem DUAS opções antes de entrar na
+                    loja — e hoje isso é o que salva a venda: quando não há
+                    entregador online a entrega trava, e a retirada não. */}
+                {aceitaRetirada && (
+                  <span className="flex items-center gap-1 font-semibold text-amber-800 bg-amber-100 px-2 py-1 rounded-full text-xs whitespace-nowrap">
+                    🛍️ Retira aqui
+                  </span>
+                )}
+              </div>
+
               {/* Distância ou informação sobre localização */}
               <div className="flex gap-2">
                 {distance !== undefined && distance !== null && distance !== "" && distance > 0 ? (

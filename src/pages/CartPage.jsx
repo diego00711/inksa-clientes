@@ -835,7 +835,16 @@ export function CartPage() {
                     !retirada ? 'border-orange-500 bg-orange-50' : 'border-gray-200 bg-white'}`}
                 >
                   <span className="block text-sm font-bold text-gray-800">🛵 Entrega</span>
-                  <span className="block text-xs text-gray-500 mt-0.5">Levamos até você</span>
+                  {/* Sem entregador online a entrega vai ser recusada no fim do
+                      checkout. Dizer AQUI evita a pessoa preencher tudo pra
+                      levar um "não" na última tela. */}
+                  {capazesOnline === 0 ? (
+                    <span className="block text-xs text-red-600 font-semibold mt-0.5">
+                      Sem entregador agora
+                    </span>
+                  ) : (
+                    <span className="block text-xs text-gray-500 mt-0.5">Levamos até você</span>
+                  )}
                 </button>
                 <button
                   type="button"
