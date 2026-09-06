@@ -1,22 +1,4 @@
-// v15 (05/09/2026): o activate abaixo apaga todo cache de nome diferente, entao
-// subir este numero e o que limpa as entradas envenenadas descritas em ehFallbackDeSPA.
-const CACHE_NAME = 'inksa-cliente-v15';
-
-// O host devolve o index.html — HTTP 200, content-type text/html — para
-// QUALQUER caminho que nao existe, inclusive /assets/*. Como `res.ok` e true
-// nesse caso, este worker guardava a PAGINA HTML no cache sob o nome de um
-// arquivo .js. E como a leitura de asset e cache-first, a partir dali o
-// navegador recebia HTML no lugar de JavaScript para sempre: tela branca
-// PERMANENTE, imune a recarregar, imune ao reload de vite:preloadError.
-//
-// Acontece na janela do deploy: o index novo entra no ar apontando para chunks
-// que ainda estao subindo. Quem carrega o app nesses segundos envenena o
-// proprio cache e fica travado depois que o deploy termina. Aqui isso e o
-// cliente que nao consegue mais abrir o app pra pedir, e nao reclama — some.
-//
-// Um asset com hash no nome NUNCA e text/html. Entao isso basta pra separar.
-const ehFallbackDeSPA = (res) =>
-  !!res && (res.headers.get('content-type') || '').includes('text/html');
+const CACHE_NAME = 'inksa-cliente-v14';
 
 self.addEventListener('install', (event) => {
   // Nao pre-cacheia o index: ele sera cacheado (atualizado) a cada navegacao com rede
@@ -59,17 +41,8 @@ self.addEventListener('fetch', (event) => {
 
   event.respondWith(
     caches.match(request).then(cached => {
-      // Entrada envenenada por uma versao anterior deste worker: descarta e
-      // trata como se nao existisse, senao a tela branca sobrevive ao upgrade.
-      if (ehFallbackDeSPA(cached)) {
-        caches.open(CACHE_NAME).then(c => c.delete(request)).catch(() => {});
-        cached = null;
-      }
       const network = fetch(request).then(res => {
-        // So guarda o que e mesmo um asset. HTML aqui e o 404 disfarcado.
-        if (res && res.ok && !ehFallbackDeSPA(res)) {
-          caches.open(CACHE_NAME).then(c => c.put(request, res.clone()));
-        }
+        if (res && res.ok) caches.open(CACHE_NAME).then(c => c.put(request, res.clone()));
         return res;
       }).catch(() => cached);
       return cached || network;
