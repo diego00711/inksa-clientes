@@ -251,8 +251,14 @@ export function CartPage() {
   }, [cartItems]);
 
   useEffect(() => {
+    // ⚠️ CANCELAMENTO. Sem isto acontecia o seguinte, e aconteceu de verdade em
+    // 06/09/2026: a busca do frete de ENTREGA saía, a tela pulava pra retirada,
+    // o ramo da retirada zerava o frete — e aí a resposta atrasada chegava e
+    // gravava R$ 7,11 por cima do zero. O cliente via "Retirar no local" e
+    // "Total R$ 27,11", cobrando frete de quem ia buscar na loja.
+    let vivo = true;
     const fetchDeliveryFee = async () => {
-      if (cartItems.length === 0) { setDeliveryFee(0); return; }
+      if (cartItems.length === 0) { if (vivo) setDeliveryFee(0); return; }
       // RETIRADA NO LOCAL: não existe frete a calcular, e não existe endereço a
       // exigir. Sai antes de tudo — inclusive antes da checagem de coordenada,
       // que senão barraria com "escolha um endereço" quem nem vai receber nada.
@@ -292,6 +298,10 @@ export function CartPage() {
         });
         // Loja de entrega própria que não alcança este endereço: para aqui.
         // deliveryFee fica null, e o botão de finalizar já é bloqueado por isso.
+        // A tela pode ter mudado enquanto a resposta vinha (troca pra retirada,
+        // outro endereço, carrinho alterado). Resposta velha não manda em tela
+        // nova: daqui pra baixo, nada é aplicado se o efeito já foi substituído.
+        if (!vivo) return;
         if (feeData?.error === 'fora_da_area') {
           setFeeError(feeData.message || 'Esta loja não entrega no seu endereço.');
           setDeliveryFee(null);
@@ -315,14 +325,17 @@ export function CartPage() {
         setCapazes(feeData.data.entregadores_capazes ?? null);
         setCapazesOnline(feeData.data.entregadores_online ?? null);
       } catch {
+        if (!vivo) return;
         addToast('error', "Não foi possível calcular o frete.");
         setFeeError("Não foi possível calcular o frete.");
         setDeliveryFee(null);
       } finally {
-        setIsCalculatingFee(false);
+        if (vivo) setIsCalculatingFee(false);
       }
     };
     fetchDeliveryFee();
+    // Ao trocar de opção/endereço, a busca anterior deixa de valer.
+    return () => { vivo = false; };
     // `retirada` PRECISA estar aqui: sem ela, trocar entrega↔retirada não
     // recalcularia nada e o cliente ficaria vendo o frete da opção anterior.
   }, [cartItems, addToast, deliveryLat, deliveryLng, semCoordenada, retirada]);
@@ -707,7 +720,11 @@ export function CartPage() {
                     de um problema que ele não tem — e nenhum valor inventado,
                     porque frete que muda depois de escolhido é o tipo de
                     surpresa que faz a pessoa desistir no checkout. */}
-                {!isAuthenticated ? (
+                {/* Na retirada não há frete a mostrar — e escrever "R$ 0,00"
+                    deixa a dúvida de se é grátis ou se ainda vai calcular. */}
+                {retirada ? (
+                  <span className="text-green-700 font-semibold">Grátis (você retira)</span>
+                ) : !isAuthenticated ? (
                   <span className="text-sm text-gray-500">calculado ao entrar</span>
                 ) : (
                   <>
@@ -718,7 +735,9 @@ export function CartPage() {
                 )}
               </span>
             </div>
-            {deliveryDistance > 0 && (
+            {/* Distância só existe pra quem vai receber. Na retirada, quem se
+                desloca é o cliente — e ele já sabe onde fica a loja. */}
+            {!retirada && deliveryDistance > 0 && (
               <div className="flex justify-between items-center text-sm text-gray-500">
                 <span>Distância</span>
                 <span>{deliveryDistance.toFixed(1)} km</span>
