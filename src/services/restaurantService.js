@@ -60,7 +60,12 @@ const RestaurantService = {
       const data = await processResponse(response);
       const items = Array.isArray(data) ? data : (data.data || []);
       const hasMore = typeof data?.has_more === 'boolean' ? data.has_more : false;
-      return { items, hasMore };
+      // Sem localização e com a plataforma em mais de uma cidade, o backend
+      // devolve lista vazia e este aviso: mostrar loja de outra cidade levaria
+      // o cliente até o fim do carrinho pra só então descobrir que não dá.
+      // A tela precisa pedir a cidade em vez de dizer "nenhuma loja".
+      const precisaEscolherCidade = data?.precisa_escolher_cidade === true;
+      return { items, hasMore, precisaEscolherCidade };
     } catch (err) {
       console.error('❌ Erro ao listar restaurantes:', err);
       throw err;

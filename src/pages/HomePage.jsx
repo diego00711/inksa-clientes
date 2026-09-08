@@ -422,6 +422,9 @@ export function HomePage() {
   const [cities, setCities] = useState([]);
   const [selectedState, setSelectedState] = useState('');
   const [selectedCity, setSelectedCity] = useState('');
+  // Ligado pelo backend quando não há como saber a cidade do cliente e a
+  // plataforma tem duas ou mais. Ver o comentário em public_restaurants.py.
+  const [precisaCidade, setPrecisaCidade] = useState(false);
   const [showCityMenu, setShowCityMenu] = useState(false);
   // Em qual degrau o menu está. Só importa quando há 2+ estados.
   const [menuNivel, setMenuNivel] = useState('estado');
@@ -473,9 +476,15 @@ export function HomePage() {
     const offset = reset ? 0 : offsetRef.current;
     if (reset) setIsLoading(true); else setLoadingMore(true);
     try {
-      const { items, hasMore: more } = await RestaurantService.getAllRestaurants(
-        location, { limit: PAGE_SIZE, offset, city: selectedCity, state: selectedState }
-      );
+      const { items, hasMore: more, precisaEscolherCidade } =
+        await RestaurantService.getAllRestaurants(
+          location, { limit: PAGE_SIZE, offset, city: selectedCity, state: selectedState }
+        );
+      // Backend não sabe onde o cliente está e a plataforma tem mais de uma
+      // cidade: ele devolve vazio de propósito. Sem esta flag a tela diria
+      // "nenhuma loja encontrada", que é mentira — tem loja, só não dá pra
+      // saber quais servem esta pessoa.
+      setPrecisaCidade(!!precisaEscolherCidade);
       setAllRestaurants((prev) => {
         const base = reset ? [] : prev;
         const seen = new Set(base.map((r) => r.id));
@@ -806,6 +815,28 @@ export function HomePage() {
 
           {isLoading || locationLoading ? (
             <RestaurantSkeletonGrid count={6} />
+          ) : precisaCidade ? (
+            /* A plataforma atende mais de uma cidade e não sabemos onde esta
+               pessoa está. Mostrar tudo faria ela escolher uma loja que não
+               atende o endereço dela e descobrir só no fim do carrinho.
+               Perguntar é mais honesto que adivinhar. */
+            <div className="text-center py-16 bg-white rounded-2xl border border-gray-100 shadow-sm">
+              <div className="text-5xl mb-4">📍</div>
+              <p className="text-gray-800 font-bold text-lg">De qual cidade você é?</p>
+              <p className="text-gray-500 text-sm mt-2 max-w-sm mx-auto">
+                O Inksa já atende mais de uma cidade. Escolha a sua para ver
+                só as lojas que entregam até você.
+              </p>
+              <button
+                onClick={() => setShowCityMenu(true)}
+                className="mt-5 px-6 py-3 min-h-[44px] bg-orange-500 text-white text-sm font-bold rounded-full hover:bg-orange-600 transition-colors"
+              >
+                Escolher minha cidade
+              </button>
+              <p className="text-gray-400 text-xs mt-4">
+                Ou permita a localização para a gente descobrir sozinho.
+              </p>
+            </div>
           ) : filteredRestaurants.length === 0 ? (
             <div className="text-center py-16 bg-white rounded-2xl border border-gray-100 shadow-sm">
               <div className="text-5xl mb-4">🍽️</div>
