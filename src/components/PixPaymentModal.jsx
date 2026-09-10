@@ -73,7 +73,7 @@ export default function PixPaymentModal({ pix, orderId, amount, checkoutLink, on
         </button>
 
         <div className="p-5 sm:p-6 text-center">
-          <div className="inline-flex items-center gap-2 text-[#FF6F00] font-bold">
+          <div className="inline-flex items-center gap-2 text-orange-500 font-bold">
             <QrCode className="w-5 h-5" /> Pague com PIX
           </div>
           <p className="text-2xl font-black text-gray-900 mt-1">{money(amount)}</p>
@@ -93,7 +93,7 @@ export default function PixPaymentModal({ pix, orderId, amount, checkoutLink, on
 
           <button
             onClick={copy}
-            className="mt-4 w-full flex items-center justify-center gap-2 bg-[#FF6F00] hover:bg-[#e56500] text-white font-bold rounded-xl py-3 transition-colors"
+            className="mt-4 w-full flex items-center justify-center gap-2 bg-orange-500 hover:bg-orange-500 text-white font-bold rounded-xl py-3 transition-colors"
           >
             {copied ? <Check className="w-5 h-5" /> : <Copy className="w-5 h-5" />}
             {copied ? 'Código copiado!' : 'Copiar código PIX'}
@@ -109,7 +109,7 @@ export default function PixPaymentModal({ pix, orderId, amount, checkoutLink, on
           <button
             onClick={checkNow}
             disabled={checking}
-            className="mt-3 text-sm font-medium text-[#FF6F00] hover:underline disabled:opacity-50"
+            className="mt-3 text-sm font-medium text-orange-500 hover:underline disabled:opacity-50"
           >
             {checking ? 'Verificando…' : 'Já paguei — verificar agora'}
           </button>

@@ -491,7 +491,7 @@ const MyOrdersPage = () => {
     <div className="bg-amber-50 min-h-screen py-8 px-4">
       {(pulling || refreshing) && (
         <div className="flex justify-center py-3">
-          <div className="w-6 h-6 border-2 border-[#FF6F00] border-t-transparent rounded-full animate-spin" />
+          <div className="w-6 h-6 border-2 border-orange-500 border-t-transparent rounded-full animate-spin" />
         </div>
       )}
       <div className="max-w-4xl mx-auto">

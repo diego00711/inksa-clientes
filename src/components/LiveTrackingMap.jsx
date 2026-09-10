@@ -30,7 +30,7 @@ function emojiIcon(emoji, ring) {
   });
 }
 
-const DRIVER_ICON = emojiIcon("\u{1F6F5}", "#FF6F00"); // 🛵
+const DRIVER_ICON = emojiIcon("\u{1F6F5}", "#F97316"); // 🛵
 const REST_ICON = emojiIcon("\u{1F3EA}", "#16a34a");   // 🏪
 const DEST_ICON = emojiIcon("\u{1F4CD}", "#dc2626");   // 📍
 const CLIENTE_ICON = emojiIcon("\u{1F9CD}", "#2563eb"); // 🧍 (retirada: quem anda é o cliente)
@@ -210,7 +210,7 @@ export default function LiveTrackingMap({ driver, restaurant, destination, retir
         {routeLine && (
           <Polyline
             positions={routeLine}
-            pathOptions={{ color: "#FF6F00", weight: rotaReal ? 5 : 4,
+            pathOptions={{ color: "#F97316", weight: rotaReal ? 5 : 4,
                           opacity: rotaReal ? 0.85 : 0.6,
                           dashArray: rotaReal ? undefined : "8 8" }}
           />

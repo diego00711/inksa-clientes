@@ -824,7 +824,7 @@ export function CartPage() {
                 <button
                   onClick={() => applyCoupon()}
                   disabled={couponLoading}
-                  className="bg-[#FF6F00] text-white px-4 rounded-lg min-h-[44px] text-sm font-medium disabled:opacity-50"
+                  className="bg-orange-500 text-white px-4 rounded-lg min-h-[44px] text-sm font-medium disabled:opacity-50"
                 >
                   {couponLoading ? '...' : 'Aplicar'}
                 </button>

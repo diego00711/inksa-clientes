@@ -35,7 +35,7 @@ export default function FirstOrderCelebration({ onComplete }) {
         <div className="text-6xl mb-4 select-none">🎉</div>
 
         {/* Título */}
-        <h2 className="text-2xl font-bold text-[#FF6F00] mb-2 leading-tight">
+        <h2 className="text-2xl font-bold text-orange-500 mb-2 leading-tight">
           Seu primeiro pedido foi feito!
         </h2>
 
@@ -47,7 +47,7 @@ export default function FirstOrderCelebration({ onComplete }) {
         {/* Botão de ação */}
         <button
           onClick={finish}
-          className="w-full bg-[#FF6F00] text-white font-semibold text-base rounded-full min-h-[44px] py-3 active:opacity-80 transition-opacity"
+          className="w-full bg-orange-500 text-white font-semibold text-base rounded-full min-h-[44px] py-3 active:opacity-80 transition-opacity"
         >
           Acompanhar pedido
         </button>

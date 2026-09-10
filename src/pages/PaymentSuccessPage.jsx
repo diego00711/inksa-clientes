@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 
-const CONFETTI_COLORS = ['#FF6F00', '#4CAF50', '#2196F3', '#FFEB3B', '#E91E63', '#9C27B0'];
+const CONFETTI_COLORS = ['#F97316', '#4CAF50', '#2196F3', '#FFEB3B', '#E91E63', '#9C27B0'];
 
 function useConfetti(containerRef) {
   useEffect(() => {

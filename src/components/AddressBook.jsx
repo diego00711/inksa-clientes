@@ -151,7 +151,7 @@ function AddressForm({ initial, onCancel, onSaved }) {
         <button onClick={onCancel} className="px-4 py-2 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-100 flex items-center gap-1">
           <X className="w-4 h-4" /> Cancelar
         </button>
-        <button onClick={submit} disabled={saving} className="px-4 py-2 rounded-lg text-sm font-bold bg-[#FF6F00] text-white flex items-center gap-1 disabled:opacity-60">
+        <button onClick={submit} disabled={saving} className="px-4 py-2 rounded-lg text-sm font-bold bg-orange-500 text-white flex items-center gap-1 disabled:opacity-60">
           {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />} Salvar
         </button>
       </div>
@@ -207,7 +207,7 @@ export default function AddressBook() {
           <MapPin className="w-5 h-5 text-orange-500" /> Meus Endereços
         </h2>
         {editing === null && (
-          <button onClick={() => setEditing("new")} className="px-3 py-2 rounded-lg text-sm font-bold bg-[#FF6F00] text-white flex items-center gap-1">
+          <button onClick={() => setEditing("new")} className="px-3 py-2 rounded-lg text-sm font-bold bg-orange-500 text-white flex items-center gap-1">
             <Plus className="w-4 h-4" /> Adicionar
           </button>
         )}

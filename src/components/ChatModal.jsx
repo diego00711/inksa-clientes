@@ -155,7 +155,7 @@ export default function ChatModal({ orderId, isOpen, onClose, senderType = 'clie
     // do chat aberto.
     <div className="fixed inset-0 z-[1100] flex flex-col bg-white">
       {/* Header */}
-      <div className="flex items-center justify-between p-4 border-b bg-[#FF6F00] text-white">
+      <div className="flex items-center justify-between p-4 border-b bg-orange-500 text-white">
         <h2 className="font-bold text-lg">Chat com Entregador</h2>
         <button
           onClick={onClose}
@@ -179,7 +179,7 @@ export default function ChatModal({ orderId, isOpen, onClose, senderType = 'clie
             <div
               className={`max-w-[75%] rounded-2xl px-4 py-2 text-sm transition-opacity ${
                 msg.sender_type === senderType
-                  ? 'bg-[#FF6F00] text-white rounded-br-sm'
+                  ? 'bg-orange-500 text-white rounded-br-sm'
                   : 'bg-gray-100 text-gray-800 rounded-bl-sm'
               } ${msg._pending ? 'opacity-60' : ''}`}
             >
@@ -201,12 +201,12 @@ export default function ChatModal({ orderId, isOpen, onClose, senderType = 'clie
           onChange={e => setNewMessage(e.target.value)}
           onKeyDown={e => e.key === 'Enter' && sendMessage()}
           placeholder="Digite uma mensagem..."
-          className="flex-1 border rounded-full px-4 py-2 text-base outline-none focus:border-[#FF6F00]"
+          className="flex-1 border rounded-full px-4 py-2 text-base outline-none focus:border-orange-500"
         />
         <button
           onClick={sendMessage}
           disabled={!newMessage.trim()}
-          className="bg-[#FF6F00] text-white rounded-full p-3 min-h-[44px] min-w-[44px] flex items-center justify-center disabled:opacity-50 hover:bg-orange-600 transition-colors"
+          className="bg-orange-500 text-white rounded-full p-3 min-h-[44px] min-w-[44px] flex items-center justify-center disabled:opacity-50 hover:bg-orange-600 transition-colors"
           aria-label="Enviar mensagem"
         >
           <Send size={18} />

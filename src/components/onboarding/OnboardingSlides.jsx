@@ -71,7 +71,7 @@ export default function OnboardingSlides({ onComplete }) {
         }`}
       >
         <div className="text-8xl mb-8 select-none">{slide.emoji}</div>
-        <h1 className="text-2xl font-bold text-[#FF6F00] mb-4 leading-tight">
+        <h1 className="text-2xl font-bold text-orange-500 mb-4 leading-tight">
           {slide.title}
         </h1>
         <p className="text-gray-600 text-base leading-relaxed">{slide.desc}</p>
@@ -84,7 +84,7 @@ export default function OnboardingSlides({ onComplete }) {
             key={i}
             className={`block rounded-full transition-all duration-300 ${
               i === current
-                ? 'w-6 h-2 bg-[#FF6F00]'
+                ? 'w-6 h-2 bg-orange-500'
                 : 'w-2 h-2 bg-gray-300'
             }`}
           />
@@ -95,7 +95,7 @@ export default function OnboardingSlides({ onComplete }) {
       <div className="px-6 pb-10">
         <button
           onClick={goNext}
-          className="w-full bg-[#FF6F00] text-white font-semibold text-base rounded-full min-h-[44px] py-3 active:opacity-80 transition-opacity"
+          className="w-full bg-orange-500 text-white font-semibold text-base rounded-full min-h-[44px] py-3 active:opacity-80 transition-opacity"
         >
           {isLast ? 'Começar' : 'Próximo'}
         </button>

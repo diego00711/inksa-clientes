@@ -75,7 +75,7 @@ export default function GuidedTour({ onComplete }) {
             <span
               key={i}
               className={`block h-1.5 rounded-full flex-1 transition-colors duration-300 ${
-                i <= current ? 'bg-[#FF6F00]' : 'bg-gray-200'
+                i <= current ? 'bg-orange-500' : 'bg-gray-200'
               }`}
             />
           ))}
@@ -91,7 +91,7 @@ export default function GuidedTour({ onComplete }) {
           </button>
           <button
             onClick={goNext}
-            className="bg-[#FF6F00] text-white font-semibold text-sm px-6 py-2 rounded-full min-h-[40px] active:opacity-80 transition-opacity"
+            className="bg-orange-500 text-white font-semibold text-sm px-6 py-2 rounded-full min-h-[40px] active:opacity-80 transition-opacity"
           >
             {isLast ? 'Concluir' : 'Próximo'}
           </button>

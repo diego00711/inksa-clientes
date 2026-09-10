@@ -109,7 +109,7 @@ export default function RestaurantReviewForm({ restaurantId, orderId, onSuccess 
         className={`w-full min-h-[48px] flex items-center justify-center gap-2 py-3 px-4 rounded-xl font-bold text-sm transition-all ${
           loading
             ? "bg-gray-400 cursor-not-allowed text-white"
-            : "bg-[#FF6F00] hover:bg-orange-600 text-white shadow-md"
+            : "bg-orange-500 hover:bg-orange-600 text-white shadow-md"
         }`}
       >
         {loading ? (

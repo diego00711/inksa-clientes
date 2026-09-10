@@ -53,7 +53,7 @@ export default function MyRedemptions({ refreshKey = 0 }) {
   return (
     <div className="bg-white rounded-2xl shadow-sm p-5">
       <div className="flex items-center gap-2 mb-4">
-        <Gift className="h-5 w-5 text-[#FF6F00]" />
+        <Gift className="h-5 w-5 text-orange-500" />
         <h3 className="text-base font-bold text-gray-800">Meus resgates</h3>
         {items.length > 0 && (
           <span className="ml-auto text-xs font-semibold text-gray-500">{items.length}</span>
@@ -85,14 +85,14 @@ export default function MyRedemptions({ refreshKey = 0 }) {
                   <span className="text-3xl leading-none shrink-0">{it.icon}</span>
                 ) : (
                   <div className="w-11 h-11 rounded-lg bg-orange-100 flex items-center justify-center shrink-0">
-                    <Gift className="h-5 w-5 text-[#FF6F00]" />
+                    <Gift className="h-5 w-5 text-orange-500" />
                   </div>
                 )}
 
                 <div className="min-w-0 flex-1">
                   <p className="text-sm font-bold text-gray-800 truncate">{it.reward_name}</p>
                   <p className="text-xs text-gray-500">
-                    {fmtData(it.created_at)} · <span className="font-semibold text-[#FF6F00]">-{it.points_used} pts</span>
+                    {fmtData(it.created_at)} · <span className="font-semibold text-orange-500">-{it.points_used} pts</span>
                   </p>
                 </div>
 

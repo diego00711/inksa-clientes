@@ -616,7 +616,7 @@ export function HomePage() {
     >
       {(pulling || refreshing) && (
         <div className="flex justify-center py-3">
-          <div className="w-6 h-6 border-2 border-[#FF6F00] border-t-transparent rounded-full animate-spin" />
+          <div className="w-6 h-6 border-2 border-orange-500 border-t-transparent rounded-full animate-spin" />
         </div>
       )}
       {/* ── 1. Sticky Location + Search Bar ─────────────────────────── */}

@@ -888,7 +888,7 @@ export function OrderTrackingPage() {
         {order?.delivery_id && !isDelivered && !isFailed && (
           <button
             onClick={() => { setChatOpen(true); setChatUnread(0); }}
-            className="w-full flex items-center justify-center gap-2 bg-white border-2 border-[#FF6F00] text-[#FF6F00] font-bold py-3 min-h-[44px] rounded-2xl mb-5 hover:bg-orange-50 transition-colors shadow-sm relative"
+            className="w-full flex items-center justify-center gap-2 bg-white border-2 border-orange-500 text-orange-500 font-bold py-3 min-h-[44px] rounded-2xl mb-5 hover:bg-orange-50 transition-colors shadow-sm relative"
           >
             <MessageCircle className="w-5 h-5" />
             Falar com entregador
