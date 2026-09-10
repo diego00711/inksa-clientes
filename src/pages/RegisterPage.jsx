@@ -64,7 +64,7 @@ export default function RegisterPage() {
     <div className="flex items-center justify-center min-h-screen bg-orange-50">
       <div className="w-full max-w-md p-4 sm:p-8 space-y-6 bg-white rounded-xl shadow-lg mx-4 sm:mx-0">
         <div className="text-center">
-          <img src="/inka-logo.png" alt="Inksa Logo" className="h-10 w-auto mx-auto" />
+          <img src="/inksa-marca.png" alt="Inksa Logo" className="h-10 w-auto mx-auto" />
           <h2 className="mt-4 text-2xl font-bold text-center text-gray-900">
             Crie a sua Conta
           </h2>

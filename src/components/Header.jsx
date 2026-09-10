@@ -107,7 +107,7 @@ export function Header() {
         )}
 
         <Link to="/" className="flex items-center gap-2 min-h-[44px]">
-          <img src="/inka-logo.png" alt="Inksa Delivery Logo" className="h-9 w-9 rounded-lg object-cover" />
+          <img src="/inksa-marca.png" alt="Inksa Delivery Logo" className="h-9 w-auto" />
           <span className="text-lg font-bold text-white">
             Inksa Delivery
           </span>

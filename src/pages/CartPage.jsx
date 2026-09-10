@@ -670,7 +670,7 @@ export function CartPage() {
           <div className="space-y-6 mb-8">
             {cartItems.map(item => (
               <div key={chaveDaLinha(item)} className="flex items-start gap-3">
-                <img src={item.image_url || '/inka-logo.png'} alt={item.name}
+                <img src={item.image_url || '/inksa-marca.png'} alt={item.name}
                   className="w-16 h-16 sm:w-20 sm:h-20 rounded-md object-cover shrink-0" />
                 <div className="flex-grow min-w-0">
                   <h3 className="font-semibold text-sm sm:text-base truncate">{item.name}</h3>

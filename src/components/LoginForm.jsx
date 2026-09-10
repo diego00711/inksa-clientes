@@ -74,7 +74,7 @@ export function LoginForm() {
     <Card className="w-full max-w-sm shadow-lg mx-4">
       <CardHeader className="items-center text-center">
         <div className="flex justify-center w-full mb-2">
-          <img src="/inka-logo.png" alt="Inksa Delivery Logo" className="w-24 h-auto" />
+          <img src="/inksa-marca.png" alt="Inksa Delivery Logo" className="w-24 h-auto" />
         </div>
         <CardTitle className="text-2xl">Acesse sua Conta</CardTitle>
         <CardDescription>
