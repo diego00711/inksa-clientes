@@ -33,6 +33,7 @@ import { lerLocal, salvarLocal, rotuloDoLocal } from '../utils/localCliente';
 import { calculateDeliveryFee } from '../services/orderService';
 import { useAuth } from '../context/AuthContext';
 import AddressService, { formatAddress } from '../services/addressService';
+import { brl } from '../utils/dinheiro';
 
 export default function BarraLocalizacao({ restaurantId, deliveryType = 'platform' }) {
   const { isAuthenticated } = useAuth();
@@ -155,7 +156,7 @@ export default function BarraLocalizacao({ restaurantId, deliveryType = 'platfor
           <div className="min-w-0 flex-1">
             {cotacao ? (
               <p className="text-sm text-gray-900">
-                Frete <strong>a partir de R$ {cotacao.frete.toFixed(2).replace('.', ',')}</strong>
+                Frete <strong>a partir de {brl(cotacao.frete)}</strong>
                 {cotacao.km != null && (
                   <span className="text-gray-500"> · {cotacao.km.toFixed(1).replace('.', ',')} km</span>
                 )}

@@ -6,12 +6,11 @@
 import React, { useState } from 'react';
 import { Ticket, Check, Copy } from 'lucide-react';
 import { useToast } from '../context/ToastContext';
+import { brl } from '../utils/dinheiro';
 
 // O carrinho lê esta chave e já preenche o campo de cupom.
 export const PENDING_COUPON_KEY = 'inksa.pending_coupon';
 
-const brl = (v) =>
-  new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(Number(v) || 0);
 
 export default function StoreCoupons({ coupons }) {
   const { addToast } = useToast();

@@ -7,6 +7,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Star, MapPin, Clock, Heart, Info, Ticket } from "lucide-react";
 import { useToast } from "../context/ToastContext";
 import { segmentLabel } from "../utils/segments";
+import { brl } from '../utils/dinheiro';
 
 const FAVORITES_KEY = 'inksa.favorites';
 
@@ -44,7 +45,7 @@ export function RestaurantCard({ restaurant }) {
     if (deliveryFee > 0 && deliveryType !== 'platform') {
       return (
         <span className="flex items-center gap-1 font-medium text-gray-600 bg-gray-50 px-2 py-1 rounded-full text-xs">
-          R$ {parseFloat(deliveryFee).toFixed(2)}
+          {brl(parseFloat(deliveryFee))}
         </span>
       );
     }

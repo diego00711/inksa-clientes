@@ -14,6 +14,7 @@ import { supabase } from '../services/restaurantService';
 import { useNavigate } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
 import { usePedirDeNovo } from '../hooks/usePedirDeNovo';
+import { brl } from '../utils/dinheiro';
 
 const API_URL = `${CLIENT_API_URL}/api`;
 
@@ -423,7 +424,7 @@ const MyOrdersPage = () => {
 
           <div className="mt-4 border-t border-gray-100 pt-4 space-y-1">
             {/* FIX: guard against NaN when total_amount is undefined */}
-            <p className="text-gray-700 text-sm"><strong>Total:</strong> R$ {(parseFloat(order.total_amount) || 0).toFixed(2)}</p>
+            <p className="text-gray-700 text-sm"><strong>Total:</strong> {brl(parseFloat(order.total_amount) || 0)}</p>
             <p className="text-gray-700 text-sm">
               <strong>Data:</strong>{' '}
               {order.created_at ? new Date(order.created_at).toLocaleString('pt-BR') : '--'}

@@ -12,8 +12,8 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { Gift, Copy, Check, Share2, Loader2, Users, Ticket } from 'lucide-react';
 import { CLIENT_API_URL, createAuthHeaders } from '../services/api';
+import { brl } from '../utils/dinheiro';
 
-const brl = (v) => Number(v || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
 export default function IndiqueGanhePage() {
   const [dados, setDados] = useState(null);

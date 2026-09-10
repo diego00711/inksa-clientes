@@ -1,5 +1,6 @@
 // src/components/PaymentMethodSelector.jsx
 import React from 'react';
+import { brl } from '../utils/dinheiro';
 
 const PAYMENT_OPTIONS = [
   { id: 'credit', label: 'Crédito',  icon: '💳' },
@@ -80,7 +81,7 @@ export function PaymentMethodSelector({
                 className="w-full border border-gray-300 rounded-lg px-3 py-2 text-base focus:outline-none focus:ring-2 focus:ring-yellow-400"
               />
               <p className="text-xs text-gray-500 mt-1">
-                Valor maior que R$ {total.toFixed(2)}
+                Valor maior que {brl(total)}
               </p>
             </div>
           )}

@@ -16,8 +16,8 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { X, Loader2, Check } from 'lucide-react';
 import { CLIENT_API_URL, createAuthHeaders } from '../services/api';
+import { brl } from '../utils/dinheiro';
 
-const brl = (v) => `R$ ${Number(v || 0).toFixed(2).replace('.', ',')}`;
 
 export default function EscolherOpcoes({ item, quantidade = 1, onConfirmar, onFechar }) {
   const [grupos, setGrupos] = useState(null);   // null = carregando

@@ -11,6 +11,7 @@ import EscolherOpcoes from '../components/EscolherOpcoes';
 import { DescricaoExpandivel } from '../components/DescricaoExpandivel';
 import BarraLocalizacao from '../components/BarraLocalizacao';
 import FotoAmpliada from '../components/FotoAmpliada';
+import { brl } from '../utils/dinheiro';
 
 export function RestaurantDetailsPage() {
   const { id } = useParams();
@@ -297,7 +298,7 @@ export function RestaurantDetailsPage() {
               <div className="flex items-center gap-2 text-gray-600">
                 <span className="text-sm font-medium">
                   {temTaxaPropria ? (
-                    `Entrega: R$ ${parseFloat(deliveryFee).toFixed(2)}`
+                    `Entrega: ${brl(parseFloat(deliveryFee))}`
                   ) : (
                     <span className="text-blue-600 font-medium">Frete calculado no seu endereço</span>
                   )}
@@ -415,12 +416,12 @@ export function RestaurantDetailsPage() {
                             riscado. Ver utils/precos.py no backend. */}
                         <div className="flex items-baseline gap-2 flex-wrap mb-2">
                           <p className="text-lg sm:text-xl font-bold text-orange-600">
-                            R$ {parseFloat(item.price ?? 0).toFixed(2)}
+                            {brl(parseFloat(item.price ?? 0))}
                           </p>
                           {item.original_price ? (
                             <>
                               <span className="text-sm text-gray-400 line-through">
-                                R$ {parseFloat(item.original_price).toFixed(2)}
+                                {brl(parseFloat(item.original_price))}
                               </span>
                               <span className="text-[11px] font-bold text-green-700 bg-green-100 px-1.5 py-0.5 rounded">
                                 {item.discount_percent}% OFF
@@ -518,7 +519,7 @@ export function RestaurantDetailsPage() {
                 </span>
                 Ver carrinho
               </span>
-              <span className="font-bold">R$ {Number(subTotal || 0).toFixed(2)}</span>
+              <span className="font-bold">{brl(Number(subTotal || 0))}</span>
             </Link>
           </div>
         </div>

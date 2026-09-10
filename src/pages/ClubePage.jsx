@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react';
 import { CLIENT_API_URL } from '../services/api';
 import { useAuth } from '../context/AuthContext';
+import { brl } from '../utils/dinheiro';
 
 const LEVEL_STYLES = {
   bronze:   { bg: 'bg-amber-50',    border: 'border-amber-300',   text: 'text-amber-700',   bar: 'bg-amber-500',   ring: 'ring-amber-300' },
@@ -162,7 +163,7 @@ export default function ClubePage() {
               <li key={i} className="flex items-center justify-between text-sm text-gray-700">
                 <span className="text-gray-500 text-xs">{new Date(o.created_at).toLocaleDateString('pt-BR')}</span>
                 <span className="font-semibold">
-                  {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(o.total_amount || 0)}
+                  {brl(o.total_amount || 0)}
                 </span>
               </li>
             ))}

@@ -8,6 +8,7 @@ import { CLIENT_API_URL, createAuthHeaders } from "../services/api";
 import ChatModal from "../components/ChatModal";
 import LiveTrackingMap, { etaMinutes } from "../components/LiveTrackingMap";
 import { numeroPedido } from '../utils/pedidoNumero';
+import { brl } from '../utils/dinheiro';
 
 // Extrai {lat,lng} de varias formas possiveis (objeto JSON ou campos soltos)
 function parseCoord(...candidates) {
@@ -942,24 +943,24 @@ export function OrderTrackingPage() {
                   return (
                     <div key={i} className="flex justify-between gap-2 text-sm text-gray-700">
                       <span className="min-w-0 break-words">{qtd}× {nome}</span>
-                      <span className="font-semibold whitespace-nowrap">R$ {lineTotal(item).toFixed(2)}</span>
+                      <span className="font-semibold whitespace-nowrap">{brl(lineTotal(item))}</span>
                     </div>
                   );
                 })}
 
                 <div className="border-t pt-2 flex justify-between text-sm text-gray-600">
                   <span>Subtotal</span>
-                  <span>R$ {subtotal.toFixed(2)}</span>
+                  <span>{brl(subtotal)}</span>
                 </div>
                 {deliveryFee > 0 && (
                   <div className="flex justify-between text-sm text-gray-600">
                     <span>Taxa de entrega</span>
-                    <span>R$ {deliveryFee.toFixed(2)}</span>
+                    <span>{brl(deliveryFee)}</span>
                   </div>
                 )}
                 <div className="border-t pt-2 flex justify-between font-bold text-gray-800">
                   <span>Total</span>
-                  <span>R$ {total.toFixed(2)}</span>
+                  <span>{brl(total)}</span>
                 </div>
               </div>
             </div>

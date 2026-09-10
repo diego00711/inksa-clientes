@@ -6,9 +6,8 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { Copy, Check, Loader2, QrCode, X, ExternalLink } from 'lucide-react';
 import { getOrderCodes } from '../services/orderService';
+import { brl } from '../utils/dinheiro';
 
-const money = (v) =>
-  (Number(v) || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
 export default function PixPaymentModal({ pix, orderId, amount, checkoutLink, onPaid, onClose }) {
   const [copied, setCopied] = useState(false);
@@ -76,7 +75,7 @@ export default function PixPaymentModal({ pix, orderId, amount, checkoutLink, on
           <div className="inline-flex items-center gap-2 text-orange-500 font-bold">
             <QrCode className="w-5 h-5" /> Pague com PIX
           </div>
-          <p className="text-2xl font-black text-gray-900 mt-1">{money(amount)}</p>
+          <p className="text-2xl font-black text-gray-900 mt-1">{brl(amount)}</p>
           <p className="text-sm text-gray-500 mt-1">Escaneie o QR Code ou use o copia-e-cola.</p>
 
           {img ? (

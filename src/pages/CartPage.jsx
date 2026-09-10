@@ -18,6 +18,7 @@ import { obterCoordenadas, PRECISAO_DUVIDOSA, qualidade } from '../utils/localiz
 import { lerLocal, salvarLocal } from '../utils/localCliente';
 import { CLIENT_API_URL, createAuthHeaders } from '../services/api';
 import { PENDING_COUPON_KEY } from '../components/StoreCoupons';
+import { brl } from '../utils/dinheiro';
 
 const MP_PUBLIC_KEY = import.meta.env.VITE_MERCADOPAGO_PUBLIC_KEY;
 
@@ -474,7 +475,7 @@ export function CartPage() {
     if (paymentMethod === 'cash' && needsChange) {
       const changeVal = parseFloat(changeFor);
       if (!changeVal || changeVal <= finalTotal) {
-        addToast('warning', `O valor do troco deve ser maior que R$ ${finalTotal.toFixed(2)}.`); return;
+        addToast('warning', `O valor do troco deve ser maior que ${brl(finalTotal)}.`); return;
       }
     }
 
@@ -622,12 +623,12 @@ export function CartPage() {
         <h2 className="text-xl sm:text-2xl font-bold text-gray-800 mb-3">Pedido Confirmado!</h2>
         <div className="bg-yellow-50 border border-yellow-200 rounded-2xl p-4 sm:p-6 mb-6">
           <p className="text-gray-700 mb-2">
-            Pague <span className="font-black text-xl sm:text-2xl text-yellow-700">R$ {confirmedTotal.toFixed(2)}</span>
+            Pague <span className="font-black text-xl sm:text-2xl text-yellow-700">{brl(confirmedTotal)}</span>
           </p>
           <p className="text-gray-600 text-sm">em dinheiro ao entregador na entrega</p>
           {needsChange && changeFor && (
             <p className="text-xs text-gray-500 mt-3">
-              O entregador levará troco para R$ {parseFloat(changeFor).toFixed(2)}
+              O entregador levará troco para {brl(parseFloat(changeFor))}
             </p>
           )}
         </div>
@@ -682,7 +683,7 @@ export function CartPage() {
                       {item.opcoes.map((o) => (o.qtd > 1 ? `${o.qtd}x ${o.nome}` : o.nome)).join(' · ')}
                     </p>
                   )}
-                  <p className="text-sm text-gray-600">R$ {parseFloat(item.price ?? 0).toFixed(2)}</p>
+                  <p className="text-sm text-gray-600">{brl(parseFloat(item.price ?? 0))}</p>
                   <div className="flex items-center gap-1 mt-1">
                     <Button variant="ghost" size="icon" className="h-8 w-8 min-h-[32px]" onClick={() => removeItemFromCart(chaveDaLinha(item))}>
                       <MinusCircle className="h-4 w-4" />
@@ -695,7 +696,7 @@ export function CartPage() {
                 </div>
                 <div className="flex flex-col items-end gap-1 shrink-0">
                   <span className="font-bold text-sm">
-                    R$ {(parseFloat(item.price ?? 0) * item.quantity).toFixed(2)}
+                    {brl(parseFloat(item.price ?? 0) * item.quantity)}
                   </span>
                   <Button variant="ghost" size="icon" className="h-8 w-8 min-h-[32px]"
                     onClick={() => handleRemoveItem(item.id)}>
@@ -710,7 +711,7 @@ export function CartPage() {
           <div className="border-t pt-6 space-y-2">
             <div className="flex justify-between items-center text-gray-600">
               <span>Subtotal dos produtos</span>
-              <span>R$ {subTotal.toFixed(2)}</span>
+              <span>{brl(subTotal)}</span>
             </div>
             <div className="flex justify-between items-center text-gray-600">
               <span>Frete</span>
@@ -730,7 +731,7 @@ export function CartPage() {
                   <>
                     {isCalculatingFee && <Loader2 className="h-4 w-4 animate-spin inline-block" />}
                     {feeError && <span className="text-red-500">{feeError}</span>}
-                    {deliveryFee !== null && !isCalculatingFee && !feeError && `R$ ${safeFee.toFixed(2)}`}
+                    {deliveryFee !== null && !isCalculatingFee && !feeError && brl(safeFee)}
                   </>
                 )}
               </span>
@@ -800,7 +801,7 @@ export function CartPage() {
                           </span>
                         </span>
                         <span className="shrink-0 text-sm font-bold text-green-700">
-                          − R$ {Number(c.desconto).toFixed(2).replace('.', ',')}
+                          − {brl(Number(c.desconto))}
                         </span>
                       </button>
                     );
@@ -832,7 +833,7 @@ export function CartPage() {
               {couponData && (
                 <p className={`text-sm mt-1 ${couponData.valid ? 'text-green-600' : 'text-red-500'}`}>
                   {couponData.valid
-                    ? `✓ Desconto de R$ ${Number(couponData.discount_amount).toFixed(2)} aplicado!`
+                    ? `✓ Desconto de ${brl(Number(couponData.discount_amount))} aplicado!`
                     : couponData.message}
                 </p>
               )}
@@ -855,13 +856,13 @@ export function CartPage() {
             {couponDiscount > 0 && (
               <div className="flex justify-between items-center text-green-600 text-sm">
                 <span>Desconto do cupom</span>
-                <span>- R$ {couponDiscount.toFixed(2)}</span>
+                <span>- {brl(couponDiscount)}</span>
               </div>
             )}
 
             <div className="flex justify-between items-center text-lg font-bold mt-2">
               <span>Total</span>
-              <span>R$ {finalTotal.toFixed(2)}</span>
+              <span>{brl(finalTotal)}</span>
             </div>
           </div>
 

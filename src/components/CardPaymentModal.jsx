@@ -8,6 +8,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { X, Loader2 } from 'lucide-react';
 import { processCardPayment } from '../services/orderService';
+import { brl } from '../utils/dinheiro';
 
 const PUBLIC_KEY = import.meta.env.VITE_MERCADOPAGO_PUBLIC_KEY;
 const SDK_URL = 'https://sdk.mercadopago.com/js/v2';
@@ -113,7 +114,7 @@ export default function CardPaymentModal({ isOpen, amount, orderPayload, onAppro
 
         <div className="p-4">
           <p className="text-sm text-gray-500 mb-3">
-            Total: <span className="font-bold text-gray-800">R$ {Number(amount).toFixed(2)}</span>
+            Total: <span className="font-bold text-gray-800">{brl(Number(amount))}</span>
           </p>
 
           {!PUBLIC_KEY ? (
