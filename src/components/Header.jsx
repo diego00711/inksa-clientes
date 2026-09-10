@@ -107,8 +107,21 @@ export function Header() {
         )}
 
         <Link to="/" className="flex items-center gap-2 min-h-[44px]">
-          <img src="/inksa-marca.png" alt="Inksa Delivery Logo" className="h-9 w-auto" />
-          <span className="text-lg font-bold text-white">
+          {/* ⚠️ VERSÃO BRANCA. O <header> lá em cima (linha ~40) é
+              `bg-gradient-to-r from-orange-500 to-orange-600` — marca laranja
+              sobre barra laranja não se lê. O Diego marcou no print em
+              10/09/2026, depois de eu já ter corrigido o Parceiro e o
+              Entregador e deixar este passar: procurei o fundo olhando as
+              linhas vizinhas do <img>, e aqui o <header> está 70 linhas acima.
+              Em fundo claro (login, cadastro, carrinho) a laranja continua. */}
+          <img src="/inksa-marca-branca.png" alt="Inksa Delivery" className="h-9 w-auto" />
+          {/* Some no celular, aparece do tablet pra cima. Duas razões:
+              1. o logo AGORA é legível (antes vinha cortado num quadrado de
+                 36px, e aí o texto era o que identificava a marca) — repetir
+                 "Inksa" ao lado dele é dizer a mesma coisa duas vezes;
+              2. com o logo no tamanho certo, o texto passou a quebrar em duas
+                 linhas na barra e a engordar o cabeçalho. */}
+          <span className="hidden sm:inline text-lg font-bold text-white whitespace-nowrap">
             Inksa Delivery
           </span>
         </Link>
