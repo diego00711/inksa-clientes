@@ -10,6 +10,7 @@ import { PasswordInput } from "@/components/ui/password-input";
 import { Label } from "@/components/ui/label";
 import { Capacitor } from "@capacitor/core";
 import { GoogleSignInButton } from "./GoogleSignInButton";
+import { mensagemDeErro } from '../utils/mensagemDeErro.js';
 
 export function LoginForm() {
   const [email, setEmail] = useState("");
@@ -48,7 +49,7 @@ export function LoginForm() {
 
     } catch (err) {
       console.error("Falha no login:", err);
-      setError(err.message || "E-mail ou senha inválidos.");
+      setError(mensagemDeErro(err, "E-mail ou senha inválidos."));
     } finally {
       setIsLoading(false);
     }
@@ -62,7 +63,7 @@ export function LoginForm() {
       navigate(voltarPara);
     } catch (err) {
       console.error("Falha no login com Google:", err);
-      setError(err.message || "Não foi possível entrar com o Google.");
+      setError(mensagemDeErro(err, "Não foi possível entrar com o Google."));
     } finally {
       setIsLoading(false);
     }
@@ -130,7 +131,7 @@ export function LoginForm() {
             </div>
             <GoogleSignInButton
               onCredential={handleGoogleCredential}
-              onError={(e) => setError(e?.message || "Falha ao carregar o Google.")}
+              onError={(e) => setError(mensagemDeErro(e, "Falha ao carregar o Google."))}
               text="signin_with"
             />
           </>

@@ -12,6 +12,7 @@ import { DescricaoExpandivel } from '../components/DescricaoExpandivel';
 import BarraLocalizacao from '../components/BarraLocalizacao';
 import FotoAmpliada from '../components/FotoAmpliada';
 import { brl } from '../utils/dinheiro';
+import { mensagemDeErro } from '../utils/mensagemDeErro.js';
 
 export function RestaurantDetailsPage() {
   const { id } = useParams();
@@ -90,7 +91,8 @@ export function RestaurantDetailsPage() {
         setMenuItems(items);
         setRanking(data.ranking || { itens_com_venda: 0, janela_dias: 0 });
       } catch (err) {
-        setError(err.message);
+        setError(mensagemDeErro(err, 'Não consegui carregar a loja.',
+        'Sem conexão. A loja carrega assim que o sinal voltar.'));
       } finally {
         setIsLoading(false);
       }

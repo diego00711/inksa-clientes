@@ -22,6 +22,7 @@ import { apiFetch } from '../services/apiClient';
 import authService from '../services/authService';
 import { useToast } from '../context/ToastContext';
 import MyRedemptions from '../components/MyRedemptions';
+import { mensagemDeErro } from '../utils/mensagemDeErro.js';
 
 // ─── Level config ──────────────────────────────────────────────────────────────
 
@@ -751,7 +752,7 @@ export default function GamificationPage() {
       fetchHistory();
       setRedemptionsKey(k => k + 1);
     } catch (err) {
-      addToast('error', err.message || 'Erro ao resgatar recompensa.');
+      addToast('error', mensagemDeErro(err, 'Erro ao resgatar recompensa.'));
     } finally {
       setRedeemingId(null);
     }

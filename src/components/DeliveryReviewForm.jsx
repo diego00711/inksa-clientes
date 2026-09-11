@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import { Star, Send, CheckCircle, MessageSquare } from "lucide-react";
 import { postDeliveryReview } from '../services/reviewService';
+import { mensagemDeErro } from '../utils/mensagemDeErro.js';
 
 const StarRating = ({ rating, onRatingChange }) => (
   <div className="flex items-center gap-1">
@@ -51,7 +52,7 @@ export default function DeliveryReviewForm({ deliverymanId, orderId, onSuccess }
       setSuccess(true);
       setTimeout(() => { onSuccess?.(); }, 1500);
     } catch (error) {
-      setSubmitError(error.message || 'Erro ao enviar avaliação. Tente novamente.');
+      setSubmitError(mensagemDeErro(error, 'Erro ao enviar avaliação. Tente novamente.'));
     } finally {
       setLoading(false);
     }

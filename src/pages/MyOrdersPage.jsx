@@ -15,6 +15,7 @@ import { useNavigate } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
 import { usePedirDeNovo } from '../hooks/usePedirDeNovo';
 import { brl } from '../utils/dinheiro';
+import { mensagemDeErro } from '../utils/mensagemDeErro.js';
 
 const API_URL = `${CLIENT_API_URL}/api`;
 
@@ -253,8 +254,9 @@ const MyOrdersPage = () => {
       if (!response.ok) throw new Error(result.error || 'Não foi possível buscar os pedidos.');
       setOrders(Array.isArray(result) ? result : (result.data || []));
     } catch (err) {
-      setError(err.message);
-      addToast('error', err.message || 'Erro ao carregar os pedidos.');
+      setError(mensagemDeErro(err, 'Não consegui carregar seus pedidos.',
+        'Sem conexão. Seus pedidos aparecem assim que o sinal voltar.'));
+      addToast('error', mensagemDeErro(err, 'Erro ao carregar os pedidos.'));
     } finally {
       setLoading(false);
     }
@@ -286,7 +288,7 @@ const MyOrdersPage = () => {
       setOrders(prev => prev.filter(o => o.id !== orderId));
       addToast('success', 'Pedido excluído com sucesso!');
     } catch (err) {
-      addToast('error', err.message || 'Falha ao excluir o pedido.');
+      addToast('error', mensagemDeErro(err, 'Falha ao excluir o pedido.'));
     }
   };
 
@@ -299,7 +301,7 @@ const MyOrdersPage = () => {
       setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status: 'cancelled' } : o));
       addToast('success', 'Pedido cancelado com sucesso.');
     } catch (err) {
-      addToast('error', err.message || 'Não foi possível cancelar o pedido.');
+      addToast('error', mensagemDeErro(err, 'Não foi possível cancelar o pedido.'));
     } finally {
       setCancelingId(null);
     }

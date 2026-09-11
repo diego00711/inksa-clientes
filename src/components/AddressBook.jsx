@@ -9,6 +9,7 @@ import { CLIENT_API_URL } from "../services/api";
 import AddressMapPicker from "./AddressMapPicker";
 import { useToast } from "../context/ToastContext";
 import { useConfirm } from "./ConfirmProvider.jsx";
+import { mensagemDeErro } from '../utils/mensagemDeErro.js';
 
 const EMPTY = {
   label: "Casa", street: "", number: "", complement: "",
@@ -92,7 +93,7 @@ function AddressForm({ initial, onCancel, onSaved }) {
       addToast("success", "Endereço salvo!");
       onSaved();
     } catch (e) {
-      addToast("error", e.message || "Erro ao salvar endereço.");
+      addToast("error", mensagemDeErro(e, "Erro ao salvar endereço."));
     } finally {
       setSaving(false);
     }
@@ -171,7 +172,7 @@ export default function AddressBook() {
     try {
       setAddresses(await AddressService.list());
     } catch (e) {
-      addToast("error", e.message || "Erro ao carregar endereços.");
+      addToast("error", mensagemDeErro(e, "Erro ao carregar endereços."));
     } finally {
       setLoading(false);
     }
@@ -187,7 +188,7 @@ export default function AddressBook() {
       await AddressService.remove(id);
       load();
     } catch (e) {
-      addToast("error", e.message || "Erro ao remover.");
+      addToast("error", mensagemDeErro(e, "Erro ao remover."));
     }
   };
 
@@ -196,7 +197,7 @@ export default function AddressBook() {
       await AddressService.setDefault(id);
       load();
     } catch (e) {
-      addToast("error", e.message || "Erro ao definir padrão.");
+      addToast("error", mensagemDeErro(e, "Erro ao definir padrão."));
     }
   };
 

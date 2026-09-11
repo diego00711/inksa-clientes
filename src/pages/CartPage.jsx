@@ -19,6 +19,7 @@ import { lerLocal, salvarLocal } from '../utils/localCliente';
 import { CLIENT_API_URL, createAuthHeaders } from '../services/api';
 import { PENDING_COUPON_KEY } from '../components/StoreCoupons';
 import { brl } from '../utils/dinheiro';
+import { mensagemDeErro } from '../utils/mensagemDeErro.js';
 
 const MP_PUBLIC_KEY = import.meta.env.VITE_MERCADOPAGO_PUBLIC_KEY;
 
@@ -603,7 +604,7 @@ export function CartPage() {
       if (error.code === 'FRETE_DIVERGENTE' && error.data?.delivery_fee_correto != null) {
         setDeliveryFee(Number(error.data.delivery_fee_correto));
       }
-      addToast('error', error.message || 'Erro ao finalizar pedido.');
+      addToast('error', mensagemDeErro(error, 'Erro ao finalizar pedido.'));
     } finally {
       setIsProcessingOrder(false);
     }

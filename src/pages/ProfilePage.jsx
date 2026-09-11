@@ -13,6 +13,7 @@ import { useToast } from "../context/ToastContext";
 import { useAuth } from '../context/AuthContext';
 import AddressBook from '../components/AddressBook';
 import { NotificationSettings } from '../components/NotificationSettings';
+import { mensagemDeErro } from '../utils/mensagemDeErro.js';
 
 export function ProfilePage() {
   const { addToast } = useToast();
@@ -90,7 +91,7 @@ export function ProfilePage() {
           if (normalized.avatar_url) setPreview(normalized.avatar_url);
         }
       } catch (error) {
-        addToast('error', error.message || 'Falha ao carregar perfil.');
+        addToast('error', mensagemDeErro(error, 'Falha ao carregar perfil.'));
       } finally {
         setIsLoading(false);
       }
@@ -152,7 +153,7 @@ export function ProfilePage() {
 
       addToast('success', 'Perfil atualizado com sucesso!');
     } catch (error) {
-      addToast('error', error.message || 'Falha ao atualizar perfil.');
+      addToast('error', mensagemDeErro(error, 'Falha ao atualizar perfil.'));
     } finally {
       setIsSaving(false);
     }

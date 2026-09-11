@@ -13,6 +13,7 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { Gift, Copy, Check, Share2, Loader2, Users, Ticket } from 'lucide-react';
 import { CLIENT_API_URL, createAuthHeaders } from '../services/api';
 import { brl } from '../utils/dinheiro';
+import { mensagemDeErro } from '../utils/mensagemDeErro.js';
 
 
 export default function IndiqueGanhePage() {
@@ -30,7 +31,7 @@ export default function IndiqueGanhePage() {
       if (!r.ok) throw new Error(j?.error || 'Não consegui carregar.');
       setDados(j.data);
     } catch (e) {
-      setErro(e.message || 'Não consegui carregar.');
+      setErro(mensagemDeErro(e, 'Não consegui carregar.'));
     }
   }, []);
 

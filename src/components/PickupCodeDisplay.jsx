@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Shield, Package, Truck, CheckCircle, Clock, Loader2 } from 'lucide-react'; // FIX: import Loader2 for spinner
 import AuthService from '../services/authService';
 import { CLIENT_API_URL } from '../services/api';
+import { mensagemDeErro } from '../utils/mensagemDeErro.js';
 
 const API_URL = `${CLIENT_API_URL}/api`;
 
@@ -42,7 +43,8 @@ export const PickupCodeDisplay = ({ orderId, orderStatus }) => {
         setCodes(data);
       } catch (err) {
         console.error('Erro ao buscar códigos:', err);
-        setError(err.message);
+        setError(mensagemDeErro(err, 'Não consegui buscar o código agora.',
+        'Sem conexão. O código aparece assim que o sinal voltar.'));
       } finally {
         setLoading(false);
       }

@@ -20,6 +20,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { HeartHandshake, Check, Loader2, X, Pencil, List } from 'lucide-react';
 import { createAuthHeaders } from '../services/api';
+import { mensagemDeErro } from '../utils/mensagemDeErro.js';
 
 const API = import.meta.env.VITE_API_URL || 'https://inksa-auth-flask-dev.onrender.com';
 const ROTA = `${API}/api/admin/social/nominations`;
@@ -100,7 +101,7 @@ export default function IndicarInstituicao() {
       setTrocando(false);
       setNome(''); setMotivo('');
     } catch (e2) {
-      setErro(e2.message || 'Não consegui registrar agora.');
+      setErro(mensagemDeErro(e2, 'Não consegui registrar agora.'));
     } finally {
       setEnviando(false);
     }

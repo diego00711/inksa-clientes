@@ -30,6 +30,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { Store, Check, Loader2, Users } from 'lucide-react';
 import { CLIENT_API_URL, createAuthHeaders } from '../services/api';
 import { useAuth } from '../context/AuthContext';
+import { mensagemDeErro } from '../utils/mensagemDeErro.js';
 
 // Mesma normalização do servidor, só pra filtrar a lista enquanto digita.
 // Quem decide o agrupamento continua sendo o backend.
@@ -91,7 +92,7 @@ export default function SugerirRestaurante({ compacto = false }) {
       setPronto({ pedidos: d.pedidos || 1, jaTinha: Boolean(d.ja_tinha), nome: limpo });
       setNome('');
     } catch (e2) {
-      setErro(e2.message || 'Não consegui registrar agora.');
+      setErro(mensagemDeErro(e2, 'Não consegui registrar agora.'));
     } finally {
       setEnviando(false);
     }
