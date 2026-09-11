@@ -54,8 +54,14 @@ class BannerService {
       return data.data || [];
     } catch (error) {
       console.error('Erro ao buscar banners:', error);
-      // Retornar banners padrão em caso de erro
-      return this.getDefaultBanners();
+      // VAZIO, NÃO INVENTADO. Aqui devolvia dois banners de mentira apontando
+      // pra /default-banner-1.jpg e -2.jpg — arquivos que NÃO EXISTEM no
+      // public/. Como o host responde index.html em qualquer caminho, a <img>
+      // quebrava e sobrava o texto por cima: "Promoções Especiais — Descontos
+      // incríveis te esperando". Ou seja: justo quando a API falhava, o cliente
+      // via uma promessa inventada em cima de uma imagem quebrada.
+      // Sem banner o carrossel simplesmente não aparece, que é o certo.
+      return [];
     }
   }
 
@@ -236,29 +242,10 @@ class BannerService {
     }
   }
 
-  // ========== FALLBACKS ==========
-
-  // Banners padrão caso a API falhe
-  getDefaultBanners() {
-    return [
-      {
-        id: 'default-1',
-        title: 'Bem-vindo ao Inksa Delivery!',
-        subtitle: 'Peça comida deliciosa com facilidade',
-        image_url: '/default-banner-1.jpg',
-        link_url: '/',
-        display_order: 0
-      },
-      {
-        id: 'default-2',
-        title: 'Promoções Especiais',
-        subtitle: 'Descontos incríveis te esperando',
-        image_url: '/default-banner-2.jpg',
-        link_url: '/promocoes',
-        display_order: 1
-      }
-    ];
-  }
+  // ⚠️ NÃO recrie um `getDefaultBanners()` aqui. Existia um, com dois banners
+  // inventados ("Descontos incríveis te esperando") apontando pra imagens que
+  // nunca existiram. Banner é conteúdo comercial: se não veio do admin, não
+  // existe. Vazio é a resposta honesta.
 
   // Validar dados do banner antes do envio
   validateBannerData(data) {

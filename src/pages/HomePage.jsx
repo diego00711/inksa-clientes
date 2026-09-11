@@ -20,36 +20,12 @@ import SugerirRestaurante from '../components/SugerirRestaurante';
 
 // ─── Constants ─────────────────────────────────────────────────────────────
 
-const FALLBACK_BANNERS = [
-  {
-    id: "fb1",
-    title: "Fome de quê?",
-    subtitle: "Peça agora e receba em minutos",
-    gradient: "from-orange-500 via-orange-400 to-red-500",
-    emoji: "🍔",
-  },
-  {
-    id: "fb2",
-    title: "Entrega Rápida",
-    subtitle: "Os melhores sabores da sua cidade",
-    gradient: "from-purple-600 via-purple-500 to-indigo-500",
-    emoji: "🚀",
-  },
-  {
-    id: "fb3",
-    title: "Novidades do Dia",
-    subtitle: "Descubra lojas que você vai amar",
-    gradient: "from-emerald-500 via-teal-500 to-cyan-500",
-    emoji: "✨",
-  },
-  {
-    id: "fb4",
-    title: "Peça com Facilidade",
-    subtitle: "Tudo o que você precisa, pertinho de você",
-    gradient: "from-blue-600 via-blue-500 to-sky-400",
-    emoji: "🛵",
-  },
-];
+// ⚠️ AQUI HAVIA `FALLBACK_BANNERS`: quatro banners inventados ("Fome de quê?",
+// "Entrega Rápida", "Novidades do Dia", "Peça com Facilidade") que entravam
+// sempre que a lista voltava vazia. Quando o Diego desligou dois dos três
+// banners reais, ficou a um clique de o cliente ver só propaganda de mentira.
+// Banner é conteúdo comercial: quem decide o que aparece é o admin. Sem banner
+// cadastrado, o carrossel não aparece — e a home começa direto nas categorias.
 
 const FAVORITES_KEY = "inksa.favorites";
 
@@ -397,8 +373,8 @@ export function HomePage() {
   // pra quem está em São Paulo).
   useEffect(() => {
     BannerService.getBanners({ lat: location?.lat, lng: location?.lng })
-      .then((data) => setBanners(Array.isArray(data) && data.length ? data : FALLBACK_BANNERS))
-      .catch(() => setBanners(FALLBACK_BANNERS));
+      .then((data) => setBanners(Array.isArray(data) ? data : []))
+      .catch(() => setBanners([]));
   }, [location?.lat, location?.lng]);
 
   const toggleQuickFilter = useCallback((key) => {
@@ -753,13 +729,18 @@ export function HomePage() {
         <SocialDayBanner />
 
         {/* ── 2. Hero Banner ──────────────────────────────────────────── */}
-        <div
-          className={`mt-5 transition-all duration-700 delay-100 ${
-            mounted ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
-          }`}
-        >
-          <BannerCarousel banners={banners} />
-        </div>
+        {/* O `banners.length > 0` está no PAI de propósito: o BannerCarousel já
+            devolve null quando a lista é vazia, mas esta <div> tem `mt-5`, e
+            div vazia com margem deixa um vão de 20px sem nada dentro. */}
+        {banners.length > 0 && (
+          <div
+            className={`mt-5 transition-all duration-700 delay-100 ${
+              mounted ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
+            }`}
+          >
+            <BannerCarousel banners={banners} />
+          </div>
+        )}
 
         {/* ── 3. Categories ───────────────────────────────────────────── */}
         <div
