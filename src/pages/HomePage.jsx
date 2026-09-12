@@ -1,6 +1,6 @@
 // src/pages/HomePage.jsx — Redesign iFood/Rappi style
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import {
   MapPin, Search, ChevronRight, History,
   ChevronLeft, Star, Clock, Bike,
@@ -17,6 +17,10 @@ import { RestaurantSkeleton as RestaurantSkeletonGrid } from "../components/skel
 import SocialDayBanner from "../components/SocialDayBanner";
 import { SEGMENTS } from "../utils/segments";
 import SugerirRestaurante from '../components/SugerirRestaurante';
+// ⚠️ Import na MESMA edição em que o uso entrou — este projeto já teve DUAS
+// telas brancas por símbolo usado sem importar (o ícone Lightbulb e a
+// PrecificacaoPage). O build passa, o deploy passa, e o app morre em produção.
+import { reservarOferta } from '../services/ofertaRelampago.js';
 
 // ─── Constants ─────────────────────────────────────────────────────────────
 
@@ -78,7 +82,39 @@ function QuickFiltersBar({ selected, onToggle }) {
 function BannerCarousel({ banners }) {
   const DEFAULT_SECS = 5; // tempo padrão quando o banner não define duração
   const [current, setCurrent] = useState(0);
+  const [ativando, setAtivando] = useState(false);
   const touchStartX = useRef(null);
+  const navigate = useNavigate();
+
+  // Toque num banner de OFERTA RELÂMPAGO: reserva a oferta pra este cliente e
+  // já abre a loja com o cupom armado.
+  //
+  // O código do cupom NÃO vem no banner — ele nasce da reserva. Por isso é uma
+  // chamada, e não um link direto.
+  //
+  // ⚠️ Uma reserva por cliente, sem renovar: tocar de novo depois de expirar
+  // não devolve tempo novo. Quem garante é o banco, não esta tela.
+  const tocarNoBanner = useCallback(async (b) => {
+    if (!b?.tem_relampago) return;      // banner comum segue pelo link normal
+    if (ativando) return;               // dedo duplo não dispara duas reservas
+    setAtivando(true);
+    try {
+      const r = await reservarOferta(b.id);
+      if (r.ok) {
+        navigate(r.slug ? `/${r.slug}` : "/");
+        return;
+      }
+      if (r.erro === "sem_login") {
+        // Guarda pra onde ele queria ir: depois do login, cai direto na oferta.
+        try { sessionStorage.setItem("inksa.apos_login", `/banner/${b.id}`); } catch { /* modo privado */ }
+        navigate("/login");
+        return;
+      }
+      window.alert(r.erro || "Não foi possível ativar a oferta agora.");
+    } finally {
+      setAtivando(false);
+    }
+  }, [ativando, navigate]);
 
   // Cada banner fica o SEU próprio tempo na tela (duration_seconds) antes de
   // girar. Assim quem paga mais pode ficar 30s enquanto os outros ficam 15s.
@@ -125,9 +161,26 @@ function BannerCarousel({ banners }) {
       {banners.map((b, i) => (
         <div
           key={b.id}
-          className="absolute inset-0 transition-opacity duration-700"
+          className={`absolute inset-0 transition-opacity duration-700${b.tem_relampago ? " cursor-pointer" : ""}`}
           style={{ opacity: i === current ? 1 : 0, pointerEvents: i === current ? "auto" : "none" }}
+          // Só banner de oferta vira botão. Banner comum continua sendo imagem:
+          // transformar tudo em clicável faria o cliente tocar sem querer no
+          // carrossel e ser jogado pra algum lugar.
+          role={b.tem_relampago ? "button" : undefined}
+          tabIndex={b.tem_relampago ? 0 : undefined}
+          onClick={b.tem_relampago ? () => tocarNoBanner(b) : undefined}
+          onKeyDown={b.tem_relampago ? (e) => {
+            if (e.key === "Enter" || e.key === " ") { e.preventDefault(); tocarNoBanner(b); }
+          } : undefined}
         >
+          {/* Selo da oferta. Sem contador — decisão do Diego: o cliente não vê
+              relógio, só descobre que expirou se tentar usar depois. A recusa
+              no carrinho é que explica ("Sua oferta relâmpago expirou"). */}
+          {b.tem_relampago && (
+            <span className="absolute top-3 left-3 z-10 rounded-full bg-orange-500 px-3 py-1 text-xs font-extrabold uppercase tracking-wide text-white shadow-lg">
+              {ativando ? "Ativando…" : "⚡ Relâmpago"}
+            </span>
+          )}
           {b.image_url ? (
             <img src={b.image_url} alt={b.title || ""} className="w-full h-full object-contain" />
           ) : (
