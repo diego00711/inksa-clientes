@@ -422,7 +422,22 @@ export function CartPage() {
     try {
       const res = await fetch(`${CLIENT_API_URL}/api/coupons/validate`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        // ⚠️ O TOKEN VAI JUNTO. Esta chamada nasceu sem ele e a rota não tinha
+        // como saber QUEM estava pedindo — o que deixava três coisas quebradas
+        // de um jeito que não aparecia como erro:
+        //
+        //   • oferta relâmpago: sem `client_id` o servidor respondia "Entre na
+        //     sua conta para usar esta oferta relâmpago" pra quem ESTAVA logado
+        //     (13/09/2026, no teste do Diego)
+        //   • a reserva do cliente nunca era lida, então o relógio de 5 min não
+        //     valia nada aqui
+        //   • "você já usou este cupom" só aparecia no fechamento: o preview
+        //     contava 0 usos pra todo mundo e dizia que valia
+        //
+        // O header é opcional na rota de propósito (cupom comum funciona
+        // deslogado), e é por isso que a falta dele não dava 401 — só fazia o
+        // preview mentir.
+        headers: { 'Content-Type': 'application/json', ...createAuthHeaders() },
         // A loja do carrinho vai junto: cupom criado por um parceiro só vale na
         // loja dele. Sem isso o cliente veria "válido" aqui e levaria a recusa
         // só no fechamento do pedido.
