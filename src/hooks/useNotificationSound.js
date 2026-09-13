@@ -80,28 +80,47 @@ function bindUnlockOnce() {
 // depender do TTS do aparelho (que no WebView costuma ficar mudo). Tocamos pelo
 // MESMO AudioContext do jingle — que já é desbloqueado no 1º gesto — então o
 // autoplay não bloqueia. Se o arquivo não existir, cai no TTS/silêncio.
-const BRAND_VOICE_URL = '/sons/novo-pedido.mp3';
-let _voiceBuffer = null;
-let _voiceTried = false;
+//
+// ⚠️ UM CLIPE POR MOTIVO, e não um só. Este arquivo veio do app do Parceiro,
+// onde só existe "novo pedido" — e lá a URL era fixa. Trazendo assim pro
+// cliente, a OFERTA RELÂMPAGO anunciaria "Novo pedido no Inksa!", que é a frase
+// errada na hora errada. O motivo escolhe o áudio.
+const VOZES = {
+  new_order:  '/sons/novo-pedido.mp3',
+  relampago:  '/sons/oferta-relampago.mp3',
+};
+const _buffers = {};   // motivo -> AudioBuffer decodificado
+const _tentados = {};  // motivo -> já tentamos buscar (não insiste em 404)
 let _voicePlaying = false; // trava anti-sobreposição (não empilha 2 vozes)
 
-function loadVoiceBuffer() {
-  if (_voiceBuffer || _voiceTried) return;
-  _voiceTried = true; // tenta uma vez; se não houver arquivo, não insiste
+function loadVoiceBuffer(motivo = 'new_order') {
+  const url = VOZES[motivo];
+  if (!url || _buffers[motivo] || _tentados[motivo]) return;
+  _tentados[motivo] = true; // tenta uma vez; sem arquivo, não insiste
   const ctx = getAudioCtx();
-  if (!ctx) { _voiceTried = false; return; }
-  fetch(BRAND_VOICE_URL)
-    .then((r) => (r.ok ? r.arrayBuffer() : Promise.reject(new Error('sem clipe'))))
+  if (!ctx) { _tentados[motivo] = false; return; }
+  fetch(url)
+    .then((r) => {
+      // ⚠️ STATUS NÃO BASTA. Este host devolve a página inicial com HTTP 200
+      // para arquivo que não existe — conferido em 13/09/2026: pedir
+      // /sons/novo-pedido.mp3 no app do cliente responde 200 com text/html.
+      // Sem checar o tipo, o decodeAudioData receberia HTML e falharia de um
+      // jeito confuso, em vez de cair limpo no TTS.
+      const tipo = r.headers.get('content-type') || '';
+      if (!r.ok || !tipo.includes('audio')) throw new Error('sem clipe de voz');
+      return r.arrayBuffer();
+    })
     .then((buf) => ctx.decodeAudioData(buf))
-    .then((decoded) => { _voiceBuffer = decoded; })
+    .then((decoded) => { _buffers[motivo] = decoded; })
     .catch(() => { /* sem MP3 -> segue com TTS/jingle */ });
 }
 
 // Toca o clipe gravado. Retorna true se tocou OU se já está tocando (pra o
 // chamador não cair no TTS); false só se ainda não há buffer.
-function playVoiceBuffer() {
+function playVoiceBuffer(motivo = 'new_order') {
   try {
     const ctx = getAudioCtx();
+    const _voiceBuffer = _buffers[motivo];
     if (!ctx || !_voiceBuffer) return false;
     if (_voicePlaying) return true; // já falando -> não sobrepõe
     const src = ctx.createBufferSource();
@@ -140,7 +159,8 @@ function speakInksa(text) {
 export function useNotificationSound() {
   // liga o desbloqueio na 1ª vez que algum componente usa o hook
   bindUnlockOnce();
-  loadVoiceBuffer(); // pré-carrega o clipe de voz (se existir em /sons/)
+  loadVoiceBuffer('new_order');
+  loadVoiceBuffer('relampago'); // pré-carrega o clipe de voz (se existir em /sons/)
 
   const beep = useCallback((notes, duration = 0.18, waveType = 'sine') => {
     const ctx = getAudioCtx();
@@ -174,7 +194,7 @@ export function useNotificationSound() {
           // …e a voz da marca logo após o jingle. Grafia FONÉTICA de propósito
           // ("Incasa" em vez de "Inksa"): o TTS pt-BR lê "Inksa" com o K
           // travado; "Incasa" sai com a dicção certa da marca. Não trocar.
-          setTimeout(() => { if (!playVoiceBuffer()) speakInksa('Novo pedido no Incasa!'); }, 680);
+          setTimeout(() => { if (!playVoiceBuffer('new_order')) speakInksa('Novo pedido no Incasa!'); }, 680);
           break;
         case 'relampago':
           // OFERTA RELÂMPAGO chegando com o app aberto.
@@ -189,7 +209,7 @@ export function useNotificationSound() {
             { f: 1047, t: 0.20 },  // C6
             { f: 1319, t: 0.32 },  // E6  — sobe, de propósito: é boa notícia
           ], 0.24, 'triangle');
-          setTimeout(() => { if (!playVoiceBuffer()) speakInksa('Oferta relâmpago no Incasa!'); }, 620);
+          setTimeout(() => { if (!playVoiceBuffer('relampago')) speakInksa('Oferta relâmpago no Incasa!'); }, 620);
           break;
         case 'accepted':
           beep([{ f: 440, t: 0 }, { f: 554, t: 0.12 }, { f: 659, t: 0.24 }], 0.28);
