@@ -157,9 +157,21 @@ export async function configurarAcoesDePush(navegarPara) {
     //
     // ⚠️ Canal é IMUTÁVEL depois de criado: mudar importância ou som aqui não
     // tem efeito em quem já tem o app. Pra mudar de verdade, ID novo.
+    // ⚠️ `_som` NO ID, e não `inksa_ofertas` de novo.
+    //
+    // O canal `inksa_ofertas` foi criado hoje mais cedo, SEM som. Canal é
+    // imutável: acrescentar som ao mesmo id não teria efeito em nenhum aparelho
+    // que já abriu o app. Id novo é a única forma.
+    //
+    // `sound` aponta pro arquivo em res/raw SEM extensão. O nome lá é
+    // `oferta_relampago.mp3` com UNDERSCORE — recurso do Android não aceita
+    // hífen, e o projeto compila com erro se tiver.
+    //
+    // Isto só vale no APK. No PWA do iPhone o som da notificação é do sistema.
     const canais = [
       { id: 'inksa_urgente', name: 'Pedidos', description: 'Avisos do seu pedido em andamento.', importance: 5 },
-      { id: 'inksa_ofertas', name: 'Ofertas', description: 'Promoções e ofertas relâmpago.', importance: 4 },
+      { id: 'inksa_ofertas_som', name: 'Ofertas', description: 'Promoções e ofertas relâmpago.',
+        importance: 4, sound: 'oferta_relampago', visibility: 1 },
     ];
     for (const c of canais) {
       try { await PushNotifications.createChannel(c); } catch { /* iOS, ou já existe */ }
