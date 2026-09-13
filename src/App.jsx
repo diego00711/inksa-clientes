@@ -75,7 +75,32 @@ function AuthUnauthorizedHandler() {
  */
 function PushAcoesHandler() {
   const navigate = useNavigate();
+  const { addToast } = useToast();
   useEffect(() => { configurarAcoesDePush(navigate); }, [navigate]);
+
+  // PUSH QUE CHEGA COM O APP ABERTO.
+  //
+  // Nem o Android nem o navegador desenham a notificação nesse caso — ela é
+  // entregue ao app e cabe a ele fazer algo. Sem isto a mensagem some: o
+  // servidor registra "enviado", o token está bom, e a pessoa jura que não
+  // recebeu nada. Foi o que aconteceu no teste da oferta relâmpago em 13/09.
+  //
+  // Um aviso na tela é melhor que uma notificação do sistema aqui: quem já
+  // está no app não precisa ser chamado pra fora dele.
+  useEffect(() => {
+    const aoReceber = (e) => {
+      const { titulo, corpo, dados } = e.detail || {};
+      addToast('info', [titulo, corpo].filter(Boolean).join(' — '));
+      if (dados?.url && dados.url !== '/') {
+        // Oferta relâmpago manda o destino; leva junto pra pessoa não ter que
+        // procurar o que o aviso prometeu.
+        setTimeout(() => navigate(dados.url), 1200);
+      }
+    };
+    window.addEventListener('inksa:push-em-primeiro-plano', aoReceber);
+    return () => window.removeEventListener('inksa:push-em-primeiro-plano', aoReceber);
+  }, [addToast, navigate]);
+
   return null;
 }
 

@@ -144,6 +144,40 @@ export async function configurarAcoesDePush(navegarPara) {
       const destino = d.url || (d.order_id ? `/pedido/${d.order_id}/acompanhar` : '/');
       try { navegarPara(destino); } catch { window.location.href = destino; }
     });
+
+    // PUSH COM O APP ABERTO, NO APK.
+    //
+    // O Android NÃO desenha a notificação quando o app está em primeiro plano:
+    // ele entrega no `pushNotificationReceived` e espera que o app faça algo.
+    // Sem isto, a mensagem chega e some — o servidor registra "enviado", o
+    // token está bom, e a pessoa jura que não recebeu nada.
+    //
+    // Foi o que aconteceu com o Diego em 13/09/2026 no teste da oferta
+    // relâmpago: o modo teste manda de propósito mesmo com o app aberto, que é
+    // exatamente o caso em que o Android não mostra nada.
+    //
+    // ⚠️ Isto é o par NATIVO do `onMessage` do caminho web. Os dois precisam
+    // existir: no APK o caminho web nem roda (o WebView não tem a Notification
+    // API), e no navegador o plugin não existe. Consertar um só deixa metade
+    // dos clientes sem ver.
+    await PushNotifications.addListener('pushNotificationReceived', (n) => {
+      try {
+        const d = n?.data || {};
+        const titulo = n?.title || d.title || 'Inksa Delivery';
+        const corpo = n?.body || d.body || '';
+        // Usa o canal local do próprio plugin: aparece igual a uma notificação
+        // normal, sem inventar uma interface diferente pra quem está no app.
+        PushNotifications.createChannel?.({
+          id: 'inksa_ofertas', name: 'Ofertas e avisos', importance: 4,
+        }).catch(() => {});
+        window.dispatchEvent(new CustomEvent('inksa:push-em-primeiro-plano', {
+          detail: { titulo, corpo, dados: d },
+        }));
+      } catch (e) {
+        console.warn('push em primeiro plano (nativo) não pôde ser tratado:', e);
+      }
+    });
+
     listenersDeAcaoProntos = true;
   } catch (e) {
     console.warn('Push: não consegui registrar o listener de toque:', e);
@@ -241,7 +275,10 @@ export async function obterTokenFCM() {
 
   try {
     const { initializeApp, getApps } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js');
-    const { getMessaging, getToken, isSupported } =
+    // `onMessage` sai DESTE mesmo import, e não de um 'firebase/messaging':
+    // este projeto carrega o Firebase pela CDN, e o pacote npm não existe
+    // aqui. Pedir por nome quebra o build com "could not resolve".
+    const { getMessaging, getToken, isSupported, onMessage } =
       await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-messaging.js');
 
     // O próprio Firebase sabe dizer se o ambiente serve. No iOS fora da Tela
@@ -282,6 +319,23 @@ export async function obterTokenFCM() {
     });
 
     if (!token) return { token: null, erro: 'O Firebase respondeu sem token.' };
+
+    // PUSH COM O APP ABERTO.
+    //
+    // Quem mostra a notificação é o Service Worker — e ele SÓ age quando a
+    // página está em segundo plano. Com o app aberto, a mensagem chega no SDK
+    // e, sem este tratamento, SOME EM SILÊNCIO.
+    //
+    // Descoberto em 13/09/2026: o Diego disparou o teste da oferta relâmpago,
+    // o envio funcionou, o token estava bom, e nada apareceu na tela dele —
+    // porque ele estava com o app aberto, que é exatamente o que o modo teste
+    // permite de propósito.
+    //
+    // Não é só teste: quem está navegando no app quando entra uma oferta
+    // também não via nada. A notificação mais valiosa é a que chega em quem já
+    // está lá dentro.
+    escutarComAppAberto(messaging, onMessage);
+
     return { token, erro: null };
   } catch (e) {
     // `code` do Firebase (ex.: messaging/token-subscribe-failed) é o que
@@ -291,6 +345,61 @@ export async function obterTokenFCM() {
     return { token: null, erro: detalhe };
   }
 }
+
+/** Já ligou o ouvinte? Registrar duas vezes mostraria a mesma coisa em dobro. */
+let jaEscutando = false;
+
+/**
+ * Mostra a notificação que chega com o app ABERTO.
+ *
+ * O Service Worker só cuida do caso "app em segundo plano". Com a página em
+ * primeiro plano o Firebase entrega a mensagem aqui, e cabe a nós fazer algo
+ * com ela — sem isto, a notificação simplesmente não existe pra quem está
+ * usando o app.
+ *
+ * Usa `new Notification` e não um toast nosso de propósito: é a mesma coisa
+ * que a pessoa veria com o app fechado, então a experiência não muda conforme
+ * onde ela estava. E se o navegador recusar (permissão revogada, iOS antigo),
+ * o catch segura — push é bônus, nunca pode quebrar a tela.
+ */
+function escutarComAppAberto(messaging, onMessage) {
+  if (jaEscutando) return;
+  jaEscutando = true;
+  try {
+    onMessage(messaging, (payload) => {
+      try {
+        const n = payload?.notification || {};
+        const d = payload?.data || {};
+        const titulo = n.title || d.title || 'Inksa Delivery';
+        const corpo = n.body || d.body || '';
+        if (typeof Notification === 'undefined' || Notification.permission !== 'granted') return;
+
+        const aviso = new Notification(titulo, {
+          body: corpo,
+          icon: '/icons/icon-192.png',
+          // Mesma tag = a nova substitui a anterior em vez de empilhar. Numa
+          // campanha com duas rodadas (aviso + última chamada), empilhar faria
+          // parecer spam.
+          tag: d.banner_id ? `relampago-${d.banner_id}` : undefined,
+          data: d,
+        });
+        aviso.onclick = () => {
+          window.focus();
+          // A oferta relâmpago manda o destino no payload; sem ele, a home.
+          const destino = d.url || '/';
+          if (window.location.pathname !== destino) window.location.href = destino;
+          aviso.close();
+        };
+      } catch (e) {
+        console.warn('push em primeiro plano não pôde ser exibido:', e);
+      }
+    });
+  } catch (e) {
+    // firebase/messaging sem onMessage (versão antiga) ou import falhou.
+    console.warn('não deu pra escutar push com o app aberto:', e);
+  }
+}
+
 
 /** Compatibilidade: os chamadores antigos esperam o token ou null. */
 export async function requestNotificationPermission() {
