@@ -18,12 +18,14 @@
 //   2. O banco recusa apelido reservado (carrinho, perfil, login, admin…) no
 //      trigger de slug, então nenhuma loja consegue tomar o nome de uma tela.
 import { useEffect, useState } from 'react';
-import { useParams, Navigate, Link } from 'react-router-dom';
+import { useParams, Navigate, Link, useLocation } from 'react-router-dom';
 import { Loader2 } from 'lucide-react';
 import { CLIENT_API_URL as API } from '../services/api';
 
 export default function LojaPorApelidoPage() {
   const { apelido } = useParams();
+  // A query string que veio no link curto. Segue junto no redirecionamento.
+  const { search: busca } = useLocation();
   const [estado, setEstado] = useState('procurando'); // procurando | achou | nao-existe
   const [id, setId] = useState(null);
 
@@ -44,7 +46,15 @@ export default function LojaPorApelidoPage() {
   // replace: o redirecionamento não entra no histórico. Sem isso, o "voltar"
   // do navegador devolveria a pessoa para esta tela, que redirecionaria de
   // novo — e ela ficaria presa sem conseguir sair.
-  if (estado === 'achou') return <Navigate to={`/restaurantes/${id}`} replace />;
+  //
+  // ⚠️ `busca` VAI JUNTO. Este redirecionamento trocava o endereço e descartava
+  // a query string, e com ela o `?item=<id>` da oferta relâmpago: o cliente
+  // tocava no banner do X-Bacon, chegava na loja e tinha que procurar o item na
+  // mão. O banner prometia um lanche e entregava um cardápio.
+  //
+  // Vale pra qualquer parâmetro futuro (utm de campanha, origem do link da
+  // bio): quem entra por /gelae?algo=1 tem que chegar com o `algo` na mão.
+  if (estado === 'achou') return <Navigate to={`/restaurantes/${id}${busca}`} replace />;
 
   if (estado === 'nao-existe') {
     return (
