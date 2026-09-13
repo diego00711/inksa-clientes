@@ -43,6 +43,7 @@ function getAudioCtx() {
 // A saída é um compressor no caminho: ele segura os picos quando as notas se
 // somam, e aí o ganho de mestre pode subir de verdade sem sujar o som.
 let masterGain = null;
+let voiceGain = null;   // saída própria do clipe gravado, sem o compressor
 function getSaida(ctx) {
   if (masterGain) return masterGain;
   try {
@@ -125,7 +126,21 @@ function playVoiceBuffer(motivo = 'new_order') {
     if (_voicePlaying) return true; // já falando -> não sobrepõe
     const src = ctx.createBufferSource();
     src.buffer = _voiceBuffer;
-    src.connect(getSaida(ctx));
+    // ⚠️ O CLIPE NÃO PASSA PELO COMPRESSOR do jingle.
+    //
+    // Aquele compressor (razão 12:1, limiar -18 dB) existe por um motivo
+    // específico: as quatro notas do arpejo SE SOBREPÕEM e somam até 4.0, o que
+    // estouraria. O MP3 não tem esse problema — ele já sai daqui masterizado e
+    // limitado. Mandá-lo por ali esmagaria justamente o volume que foi
+    // trabalhado no arquivo, e o clipe soaria mais BAIXO que o jingle.
+    //
+    // Vai por um ganho próprio, direto na saída.
+    if (!voiceGain) {
+      voiceGain = ctx.createGain();
+      voiceGain.gain.value = 1.0;
+      voiceGain.connect(ctx.destination);
+    }
+    src.connect(voiceGain);
     src.onended = () => { _voicePlaying = false; };
     _voicePlaying = true;
     src.start();
