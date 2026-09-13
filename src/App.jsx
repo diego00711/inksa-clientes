@@ -8,6 +8,7 @@ import { ProtectedRoute } from "./components/ProtectedRoute";
 import { CartProvider } from "./context/CartContext";
 import { LocationProvider } from "./context/LocationContext";
 import { ToastProvider, useToast } from "./context/ToastContext";
+import { useNotificationSound } from "./hooks/useNotificationSound";
 import OnboardingSlides from "./components/onboarding/OnboardingSlides";
 import GuidedTour from "./components/onboarding/GuidedTour";
 import FirstOrderCelebration from "./components/onboarding/FirstOrderCelebration";
@@ -76,6 +77,7 @@ function AuthUnauthorizedHandler() {
 function PushAcoesHandler() {
   const navigate = useNavigate();
   const { addToast } = useToast();
+  const tocarSom = useNotificationSound();
   useEffect(() => { configurarAcoesDePush(navigate); }, [navigate]);
 
   // PUSH QUE CHEGA COM O APP ABERTO.
@@ -91,6 +93,11 @@ function PushAcoesHandler() {
     const aoReceber = (e) => {
       const { titulo, corpo, dados } = e.detail || {};
       addToast('info', [titulo, corpo].filter(Boolean).join(' — '));
+      // Jingle + voz da marca, igual ao "Novo pedido no Incasa!" do parceiro.
+      //
+      // ⚠️ Só toca com o app ABERTO — é o app produzindo o som, não o sistema.
+      // Com o app fechado quem avisa é o iOS/Android e o som é o deles.
+      try { tocarSom(dados?.type === 'relampago' ? 'relampago' : 'new_order'); } catch { /* áudio bloqueado */ }
       if (dados?.url && dados.url !== '/') {
         // Oferta relâmpago manda o destino; leva junto pra pessoa não ter que
         // procurar o que o aviso prometeu.
@@ -99,7 +106,7 @@ function PushAcoesHandler() {
     };
     window.addEventListener('inksa:push-em-primeiro-plano', aoReceber);
     return () => window.removeEventListener('inksa:push-em-primeiro-plano', aoReceber);
-  }, [addToast, navigate]);
+  }, [addToast, navigate, tocarSom]);
 
   return null;
 }

@@ -1,43 +1,195 @@
-import { useRef, useCallback } from 'react';
+import { useCallback } from 'react';
+
+// Som de notificação "estilo Inksa": jingle (Web Audio) + voz falando a marca
+//
+// ⚠️ ISTO NÃO É SOM DE NOTIFICAÇÃO DO SISTEMA. Toca enquanto o app está
+// ABERTO, produzido pelo próprio app. Com o app fechado quem avisa é o
+// sistema operacional, e aí o som é o dele — no PWA do iPhone não existe
+// som personalizado (nenhum navegador implementa), e no APK exigiria
+// arquivo empacotado + canal novo + release na loja.
+//
+// Copiado do app do Parceiro em 13/09/2026. A versão que existia aqui só
+// tinha apitos, sem voz — e não era usada por ninguém.
+// (speechSynthesis / TTS do navegador em pt-BR). Sem depender de arquivo.
+//
+// AudioContext único no módulo + desbloqueio no primeiro gesto do usuário —
+// sem isto a política de autoplay mantém o áudio "suspended" e o alerta
+// disparado por evento assíncrono (pedido chegando) fica MUDO.
+let audioCtx = null;
+let unlockBound = false;
+
+function getAudioCtx() {
+  if (typeof window === 'undefined') return null;
+  if (!audioCtx) {
+    try {
+      audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    } catch {
+      return null;
+    }
+  }
+  if (audioCtx.state === 'suspended') audioCtx.resume().catch(() => {});
+  return audioCtx;
+}
+
+// ── Saída de áudio: compressor + ganho de mestre ────────────────────────────
+// O volume era 0.25 por nota (25% da amplitude). Comparado ao iFood, que toca
+// no volume de notificação do sistema, isso soava baixo — a Yo!Frango não
+// ouviu o pedido chegar. Foi relatado em 29/08/2026.
+//
+// Não dá pra simplesmente pôr 1.0: as quatro notas do arpejo SE SOBREPÕEM
+// (começam em 0, 0.12, 0.24 e 0.38, e cada uma dura 0.26), então quatro notas
+// a 1.0 somam 4.0 e estouram em distorção — que soa mais alto e pior.
+//
+// A saída é um compressor no caminho: ele segura os picos quando as notas se
+// somam, e aí o ganho de mestre pode subir de verdade sem sujar o som.
+let masterGain = null;
+function getSaida(ctx) {
+  if (masterGain) return masterGain;
+  try {
+    const comp = ctx.createDynamicsCompressor();
+    comp.threshold.value = -18;
+    comp.knee.value = 12;
+    comp.ratio.value = 12;
+    comp.attack.value = 0.003;
+    comp.release.value = 0.15;
+    masterGain = ctx.createGain();
+    masterGain.gain.value = 0.95;
+    masterGain.connect(comp);
+    comp.connect(ctx.destination);
+  } catch {
+    masterGain = ctx.destination; // sem compressor, liga direto
+  }
+  return masterGain;
+}
+
+function bindUnlockOnce() {
+  if (unlockBound || typeof window === 'undefined') return;
+  unlockBound = true;
+  const unlock = () => {
+    const ctx = getAudioCtx();
+    if (ctx && ctx.state === 'suspended') ctx.resume().catch(() => {});
+    // prime o TTS também (também exige gesto em alguns navegadores)
+    try { window.speechSynthesis && window.speechSynthesis.resume(); } catch {}
+  };
+  ['pointerdown', 'keydown', 'touchstart'].forEach((ev) =>
+    window.addEventListener(ev, unlock, { passive: true })
+  );
+}
+
+// Voz da marca por CLIPE GRAVADO (MP3 em /sons/). Toca em QUALQUER celular sem
+// depender do TTS do aparelho (que no WebView costuma ficar mudo). Tocamos pelo
+// MESMO AudioContext do jingle — que já é desbloqueado no 1º gesto — então o
+// autoplay não bloqueia. Se o arquivo não existir, cai no TTS/silêncio.
+const BRAND_VOICE_URL = '/sons/novo-pedido.mp3';
+let _voiceBuffer = null;
+let _voiceTried = false;
+let _voicePlaying = false; // trava anti-sobreposição (não empilha 2 vozes)
+
+function loadVoiceBuffer() {
+  if (_voiceBuffer || _voiceTried) return;
+  _voiceTried = true; // tenta uma vez; se não houver arquivo, não insiste
+  const ctx = getAudioCtx();
+  if (!ctx) { _voiceTried = false; return; }
+  fetch(BRAND_VOICE_URL)
+    .then((r) => (r.ok ? r.arrayBuffer() : Promise.reject(new Error('sem clipe'))))
+    .then((buf) => ctx.decodeAudioData(buf))
+    .then((decoded) => { _voiceBuffer = decoded; })
+    .catch(() => { /* sem MP3 -> segue com TTS/jingle */ });
+}
+
+// Toca o clipe gravado. Retorna true se tocou OU se já está tocando (pra o
+// chamador não cair no TTS); false só se ainda não há buffer.
+function playVoiceBuffer() {
+  try {
+    const ctx = getAudioCtx();
+    if (!ctx || !_voiceBuffer) return false;
+    if (_voicePlaying) return true; // já falando -> não sobrepõe
+    const src = ctx.createBufferSource();
+    src.buffer = _voiceBuffer;
+    src.connect(getSaida(ctx));
+    src.onended = () => { _voicePlaying = false; };
+    _voicePlaying = true;
+    src.start();
+    return true;
+  } catch {
+    _voicePlaying = false;
+    return false;
+  }
+}
+
+// Fala a marca em pt-BR. Degrada sem erro se o aparelho não tiver TTS.
+function speakInksa(text) {
+  try {
+    const synth = typeof window !== 'undefined' && window.speechSynthesis;
+    if (!synth) return;
+    if (synth.speaking || synth.pending) return; // não empilha a cada 5s
+    const u = new SpeechSynthesisUtterance(text);
+    u.lang = 'pt-BR';
+    u.rate = 1.02;
+    u.pitch = 1.05;
+    u.volume = 1;
+    const voices = synth.getVoices ? synth.getVoices() : [];
+    const ptVoice = voices.find((v) => /pt[-_]?br/i.test(v.lang)) || voices.find((v) => /^pt/i.test(v.lang));
+    if (ptVoice) u.voice = ptVoice;
+    synth.speak(u);
+  } catch {
+    // sem TTS: fica só o jingle
+  }
+}
 
 export function useNotificationSound() {
-  const ctxRef = useRef(null);
-
-  const getCtx = useCallback(() => {
-    if (!ctxRef.current) {
-      try {
-        ctxRef.current = new (window.AudioContext || window.webkitAudioContext)();
-      } catch {
-        return null;
-      }
-    }
-    if (ctxRef.current.state === 'suspended') ctxRef.current.resume();
-    return ctxRef.current;
-  }, []);
+  // liga o desbloqueio na 1ª vez que algum componente usa o hook
+  bindUnlockOnce();
+  loadVoiceBuffer(); // pré-carrega o clipe de voz (se existir em /sons/)
 
   const beep = useCallback((notes, duration = 0.18, waveType = 'sine') => {
-    const ctx = getCtx();
+    const ctx = getAudioCtx();
     if (!ctx) return;
     const now = ctx.currentTime;
     notes.forEach(({ f, t = 0 }) => {
       const osc = ctx.createOscillator();
       const gain = ctx.createGain();
       osc.connect(gain);
-      gain.connect(ctx.destination);
+      gain.connect(getSaida(ctx));
       osc.type = waveType;
       osc.frequency.value = f;
-      gain.gain.setValueAtTime(0.25, now + t);
+      gain.gain.setValueAtTime(0.7, now + t);
       gain.gain.exponentialRampToValueAtTime(0.001, now + t + duration);
       osc.start(now + t);
       osc.stop(now + t + duration + 0.02);
     });
-  }, [getCtx]);
+  }, []);
 
   const play = useCallback((event = 'new_order') => {
     try {
       switch (event) {
         case 'new_order':
-          beep([{ f: 523, t: 0 }, { f: 659, t: 0.2 }, { f: 784, t: 0.4 }], 0.22);
+          // Jingle "Inksa": arpejo ascendente quentinho + oitava de acento…
+          beep([
+            { f: 523, t: 0 },     // C5
+            { f: 659, t: 0.12 },  // E5
+            { f: 784, t: 0.24 },  // G5
+            { f: 1047, t: 0.38 }, // C6
+          ], 0.26, 'triangle');
+          // …e a voz da marca logo após o jingle. Grafia FONÉTICA de propósito
+          // ("Incasa" em vez de "Inksa"): o TTS pt-BR lê "Inksa" com o K
+          // travado; "Incasa" sai com a dicção certa da marca. Não trocar.
+          setTimeout(() => { if (!playVoiceBuffer()) speakInksa('Novo pedido no Incasa!'); }, 680);
+          break;
+        case 'relampago':
+          // OFERTA RELÂMPAGO chegando com o app aberto.
+          //
+          // Mesmo jingle do parceiro, frase própria. Só toca com o app ABERTO:
+          // com ele fechado quem avisa é o sistema operacional, e o som de lá
+          // não é escolha nossa — no PWA do iPhone, em especial, não existe som
+          // personalizado. Ver o comentário no topo.
+          beep([
+            { f: 659, t: 0 },      // E5
+            { f: 880, t: 0.10 },   // A5
+            { f: 1047, t: 0.20 },  // C6
+            { f: 1319, t: 0.32 },  // E6  — sobe, de propósito: é boa notícia
+          ], 0.24, 'triangle');
+          setTimeout(() => { if (!playVoiceBuffer()) speakInksa('Oferta relâmpago no Incasa!'); }, 620);
           break;
         case 'accepted':
           beep([{ f: 440, t: 0 }, { f: 554, t: 0.12 }, { f: 659, t: 0.24 }], 0.28);
