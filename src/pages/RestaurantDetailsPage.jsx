@@ -1,7 +1,7 @@
 // Local: src/pages/RestaurantDetailsPage.jsx
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useSearchParams } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight, Star, Loader2, MapPin, Clock, Phone, AlertCircle, Plus, Minus, Flame } from "lucide-react";
 import { useCart, montarItemComOpcoes } from '../context/CartContext';
@@ -11,6 +11,9 @@ import EscolherOpcoes from '../components/EscolherOpcoes';
 import { DescricaoExpandivel } from '../components/DescricaoExpandivel';
 import BarraLocalizacao from '../components/BarraLocalizacao';
 import FotoAmpliada from '../components/FotoAmpliada';
+// ⚠️ Import na MESMA edição do uso — este projeto já teve duas telas
+// brancas por símbolo usado sem importar.
+import ContagemRelampago from '../components/ContagemRelampago';
 import { brl } from '../utils/dinheiro';
 import { mensagemDeErro } from '../utils/mensagemDeErro.js';
 
@@ -25,6 +28,9 @@ export function RestaurantDetailsPage() {
   const [quantities, setQuantities] = useState({});
   const [fotoAberta, setFotoAberta] = useState(null); // {url, nome}
   const [ordem, setOrdem] = useState('padrao');
+  // Item que o banner de oferta relâmpago mandou abrir (?item=<id>).
+  const [searchParams] = useSearchParams();
+  const itemDestacado = searchParams.get('item');
   const [ranking, setRanking] = useState({ itens_com_venda: 0, janela_dias: 0 });
   // Disponíveis x esgotados — ver o comentário no contador do cardápio.
   const disponiveis = menuItems.filter((m) => m.available !== false).length;
@@ -79,6 +85,21 @@ export function RestaurantDetailsPage() {
       })
       .map((x) => x.m);
   }, [menuItems, ordem]);
+
+  // Rola até o item da oferta, depois que o cardápio existe na tela.
+  //
+  // Depende de `menuItems` de propósito: rolar antes de os cards existirem não
+  // acha nada, e o cliente ficaria no topo da loja sem entender por que o
+  // banner prometeu um lanche específico.
+  useEffect(() => {
+    if (!itemDestacado || !menuItems.length) return undefined;
+    // Um quadro depois: dá tempo do React pintar os cards.
+    const t = setTimeout(() => {
+      const el = document.getElementById(`item-${itemDestacado}`);
+      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }, 120);
+    return () => clearTimeout(t);
+  }, [itemDestacado, menuItems.length]);
 
   useEffect(() => {
     const fetchDetails = async () => {
@@ -238,6 +259,9 @@ export function RestaurantDetailsPage() {
             deliveryType={restaurant.delivery_type ?? 'platform'}
           />
         )}
+        {/* Grudada no topo: o cliente rola o cardápio inteiro procurando o
+            item, e um relógio que sai de vista deixa de ser relógio. */}
+        <ContagemRelampago className="sticky top-0 z-30 -mx-4 mt-2" />
       </div>
 
       <div className="max-w-4xl mx-auto px-4 py-6 space-y-6">
@@ -377,13 +401,21 @@ export function RestaurantDetailsPage() {
                 return (
                   <div
                     key={item.id}
+                    // Âncora da oferta relâmpago: o banner manda pra cá com
+                    // ?item=<id> e a página rola até este card.
+                    id={`item-${item.id}`}
                     aria-disabled={esgotado || undefined}
                     className={`relative border rounded-xl p-3 sm:p-4 transition-shadow ${
                       esgotado
                         ? 'border-gray-150 bg-gray-50/60'
                         : 'border-gray-200 hover:shadow-sm'
-                    }`}
+                    } ${itemDestacado === item.id ? 'ring-2 ring-orange-500 ring-offset-2' : ''}`}
                   >
+                    {itemDestacado === item.id && (
+                      <span className="absolute -top-2 left-3 rounded-full bg-orange-500 px-2 py-0.5 text-[10px] font-extrabold uppercase text-white shadow">
+                        ⚡ sua oferta
+                      </span>
+                    )}
                     <div className={`flex gap-3 ${esgotado ? 'opacity-55' : ''}`}>
                       {item.image_url ? (
                         /* A miniatura abre a foto grande. É botão e não uma

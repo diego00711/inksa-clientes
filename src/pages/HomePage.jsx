@@ -101,7 +101,11 @@ function BannerCarousel({ banners }) {
     try {
       const r = await reservarOferta(b.id);
       if (r.ok) {
-        navigate(r.slug ? `/${r.slug}` : "/");
+        // Com item, leva DIRETO ao produto (?item=<id>): a oferta é daquele
+        // lanche, e largar o cliente na loja pra ele procurar é perder metade
+        // da urgência que o relógio acabou de criar.
+        const destino = r.slug ? `/${r.slug}` : "/";
+        navigate(r.itemId ? `${destino}?item=${r.itemId}` : destino);
         return;
       }
       if (r.erro === "sem_login") {

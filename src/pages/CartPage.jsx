@@ -20,6 +20,7 @@ import { CLIENT_API_URL, createAuthHeaders } from '../services/api';
 import { PENDING_COUPON_KEY } from '../components/StoreCoupons';
 import { brl } from '../utils/dinheiro';
 import { mensagemDeErro } from '../utils/mensagemDeErro.js';
+import ContagemRelampago from '../components/ContagemRelampago';
 
 const MP_PUBLIC_KEY = import.meta.env.VITE_MERCADOPAGO_PUBLIC_KEY;
 
@@ -430,6 +431,14 @@ export function CartPage() {
           order_total: subTotal,
           delivery_fee: safeFee,
           restaurant_id: cartItems[0]?.restaurant_id || null,
+          // Oferta relâmpago presa a um item precisa saber O QUE está no
+          // carrinho. Só os ids: o PREÇO o servidor busca no banco, porque
+          // cupom que confia no preço mandado pelo app é cupom em que o
+          // cliente escolhe o próprio desconto.
+          //
+          // Sem isto aqui, o carrinho diria "cupom inválido" e o fechamento
+          // aceitaria — o cliente desistiria antes de descobrir que valia.
+          itens: cartItems.map((i) => ({ menu_item_id: i.id ?? i.menu_item_id })),
         }),
       });
       const data = await res.json();
@@ -658,6 +667,11 @@ export function CartPage() {
         </Button>
         <h1 className="text-xl sm:text-3xl font-bold ml-4">Meu Carrinho</h1>
       </div>
+
+      {/* O relógio da oferta acompanha até o fim. É aqui que ele mais importa:
+          o cliente está preenchendo endereço e escolhendo pagamento, e é o
+          trecho onde o tempo escorre sem ele perceber. */}
+      <ContagemRelampago className="-mx-4 mb-4 rounded-none sm:mx-0 sm:rounded-lg" />
 
       {cartItems.length === 0 ? (
         <div className="text-center py-20">
