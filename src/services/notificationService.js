@@ -139,6 +139,32 @@ export async function configurarAcoesDePush(navegarPara) {
   if (!ehAppNativo() || listenersDeAcaoProntos) return;
   try {
     const { PushNotifications } = await import('@capacitor/push-notifications');
+
+    // ─── CANAIS, ANTES DE QUALQUER PUSH ──────────────────────────────────
+    //
+    // No Android 8+ toda notificação pertence a um CANAL, e notificação
+    // enviada pra um canal que o app NÃO CRIOU é descartada em silêncio: o FCM
+    // aceita, o servidor registra "enviado", e nada aparece.
+    //
+    // O backend manda `channel_id='inksa_urgente'` em todo push urgente
+    // (pedido aceito, entregador a caminho) — e este canal nunca era criado
+    // por ninguém. Descoberto em 13/09/2026 investigando por que a oferta
+    // relâmpago não chegava com o app fechado.
+    //
+    // ⚠️ AQUI, e não quando o push chega: o canal precisa existir ANTES. Criar
+    // no recebimento é tarde — a primeira notificação, que é justamente a que
+    // importa, já foi descartada.
+    //
+    // ⚠️ Canal é IMUTÁVEL depois de criado: mudar importância ou som aqui não
+    // tem efeito em quem já tem o app. Pra mudar de verdade, ID novo.
+    const canais = [
+      { id: 'inksa_urgente', name: 'Pedidos', description: 'Avisos do seu pedido em andamento.', importance: 5 },
+      { id: 'inksa_ofertas', name: 'Ofertas', description: 'Promoções e ofertas relâmpago.', importance: 4 },
+    ];
+    for (const c of canais) {
+      try { await PushNotifications.createChannel(c); } catch { /* iOS, ou já existe */ }
+    }
+
     await PushNotifications.addListener('pushNotificationActionPerformed', (acao) => {
       const d = acao?.notification?.data || {};
       const destino = d.url || (d.order_id ? `/pedido/${d.order_id}/acompanhar` : '/');
@@ -165,11 +191,6 @@ export async function configurarAcoesDePush(navegarPara) {
         const d = n?.data || {};
         const titulo = n?.title || d.title || 'Inksa Delivery';
         const corpo = n?.body || d.body || '';
-        // Usa o canal local do próprio plugin: aparece igual a uma notificação
-        // normal, sem inventar uma interface diferente pra quem está no app.
-        PushNotifications.createChannel?.({
-          id: 'inksa_ofertas', name: 'Ofertas e avisos', importance: 4,
-        }).catch(() => {});
         window.dispatchEvent(new CustomEvent('inksa:push-em-primeiro-plano', {
           detail: { titulo, corpo, dados: d },
         }));
