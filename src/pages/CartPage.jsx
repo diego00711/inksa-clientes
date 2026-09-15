@@ -919,9 +919,12 @@ export function CartPage() {
                   <span className={`block text-sm font-bold ${entregaIndisponivel ? 'text-gray-500' : 'text-gray-800'}`}>
                     🛵 Entrega
                   </span>
+                  {/* "Sem entregador agora" lia como "esta loja não entrega".
+                      Dizer ONLINE deixa claro que a loja está de pé e o que
+                      falta é gente na rua — que muda sozinho em minutos. */}
                   {entregaIndisponivel ? (
                     <span className="block text-xs text-red-600 font-semibold mt-0.5">
-                      Sem entregador agora
+                      Nenhum entregador online
                     </span>
                   ) : (
                     <span className="block text-xs text-gray-500 mt-0.5">Levamos até você</span>
@@ -937,6 +940,19 @@ export function CartPage() {
                   <span className="block text-xs text-green-700 font-semibold mt-0.5">Sem taxa de entrega</span>
                 </button>
               </div>
+
+              {/* A explicação vive AQUI e não dentro do botão: ali só cabe um
+                  rótulo, e duas linhas num card e uma no outro deixariam a
+                  dupla torta. Aqui tem largura pra dizer que é temporário E
+                  apontar a saída — que é o ponto: sem entregador o pedido não
+                  se perde, só muda de caminho. */}
+              {entregaIndisponivel && (
+                <p className="mt-2 text-xs text-gray-600 leading-relaxed">
+                  Nenhum entregador está online agora. Isso costuma mudar em
+                  poucos minutos — ou você retira no local e ainda economiza a
+                  taxa de entrega.
+                </p>
+              )}
               {retirada && (
                 <div className="mt-3 rounded-xl bg-amber-50 border border-amber-200 p-3">
                   <p className="text-xs font-bold text-amber-900 mb-1">Você retira em:</p>
@@ -958,6 +974,31 @@ export function CartPage() {
                   </p>
                 </div>
               )}
+            </div>
+          )}
+
+          {/* LOJA QUE NÃO ACEITA RETIRADA, E SEM ENTREGADOR ONLINE.
+              Este caso não tinha aviso nenhum: o bloco "Como você quer receber?"
+              acima só existe quando a loja aceita retirada, então quem cai aqui
+              preenchia endereço, escolhia pagamento, clicava em pagar — e só
+              então o servidor recusava com "Sem entregadores ativos na sua
+              região" (payment.py, _MSG_SEM_ENTREGADOR).
+              É exatamente o que o comentário do bloco acima diz que se quis
+              evitar; a proteção só tinha sido escrita dentro do ramo da
+              retirada. O botão de finalizar também passou a travar. */}
+          {entregaIndisponivel && !restaurantInfo?.accepts_pickup && (
+            <div className="border-t pt-5 mt-5">
+              <div className="rounded-xl border border-red-200 bg-red-50 p-3">
+                <p className="text-sm font-bold text-red-800">
+                  Nenhum entregador online agora
+                </p>
+                <p className="text-xs text-red-700 mt-1 leading-relaxed">
+                  Esta loja está aberta, mas não há entregador em serviço para
+                  levar seu pedido — e ela não faz retirada no local. Costuma
+                  liberar em poucos minutos: deixe o carrinho montado e tente
+                  de novo em instantes.
+                </p>
+              </div>
             </div>
           )}
 
@@ -1148,6 +1189,13 @@ export function CartPage() {
                 // retirada não há endereço nenhum, e exigir complemento deixaria
                 // o botão morto sem explicação.
                 || (!retirada && faltaComplemento)
+                // Sem entregador online, ENTREGA não fecha — o servidor recusa
+                // (_MSG_SEM_ENTREGADOR). Travar aqui é o mesmo princípio do
+                // botão "Entrega" desabilitado: não deixar a pessoa percorrer
+                // um caminho que já sabemos que termina em recusa.
+                // `!retirada` é essencial: quem escolheu retirar não depende
+                // de entregador nenhum e não pode ser travado por isso.
+                || (!retirada && entregaIndisponivel)
                 || (temItemRestrito && !maioridadeOk))}
             >
               {!isAuthenticated ? (
@@ -1156,6 +1204,11 @@ export function CartPage() {
                 <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Processando...</>
               ) : restauranteFechado ? (
                 'Loja fechada'
+              ) : (!retirada && entregaIndisponivel) ? (
+                // Botão travado precisa DIZER por quê. Travar sem explicar é
+                // pior que deixar clicável: a pessoa fica olhando um botão
+                // morto e conclui que o app quebrou.
+                'Sem entregador online'
               ) : paymentMethod === 'cash' ? (
                 '💵 Confirmar Pedido'
               ) : (
