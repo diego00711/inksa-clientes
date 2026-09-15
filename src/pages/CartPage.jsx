@@ -946,8 +946,14 @@ export function CartPage() {
                   <p className="text-xs text-amber-800 mt-0.5">
                     {restaurantInfo?.full_address || restaurantInfo?.address || 'Endereço na tela da loja'}
                   </p>
+                  {/* SEM dizer quantos dígitos, de propósito. Aqui dizia "código
+                      de 6 números" e em 13/09/2026 o código virou 4 — esta tela
+                      ficou de fora da troca e passou a mentir pro cliente.
+                      Pior: pedido que já estava na rua na hora da troca continua
+                      com 6, então nem "4 números" seria verdade pra todo mundo.
+                      Número que muda não deve morar no texto. */}
                   <p className="text-xs text-amber-800 mt-2">
-                    Ao chegar, mostre o <strong>código de 6 números</strong> que aparece no
+                    Ao chegar, mostre o <strong>código</strong> que aparece no
                     acompanhamento do pedido.
                   </p>
                 </div>

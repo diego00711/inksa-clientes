@@ -433,7 +433,9 @@ const MyOrdersPage = () => {
             </p>
           </div>
 
-          <PickupCodeDisplay orderId={order.id} orderStatus={order.status} />
+          {/* `isPickup` decide o rótulo E o texto: na retirada quem digita o
+              código é o balcão, não um entregador que nunca vai aparecer. */}
+          <PickupCodeDisplay orderId={order.id} orderStatus={order.status} isPickup={!!order.is_pickup} />
 
           {canTrack && (
             <Link

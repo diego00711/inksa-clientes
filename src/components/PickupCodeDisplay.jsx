@@ -1,31 +1,40 @@
 import React, { useState, useEffect } from 'react';
-import { Shield, Package, Truck, CheckCircle, Clock, Loader2 } from 'lucide-react'; // FIX: import Loader2 for spinner
+import { Shield, Truck, CheckCircle, Loader2 } from 'lucide-react';
 import AuthService from '../services/authService';
 import { CLIENT_API_URL } from '../services/api';
 import { mensagemDeErro } from '../utils/mensagemDeErro.js';
 
 const API_URL = `${CLIENT_API_URL}/api`;
 
-export const PickupCodeDisplay = ({ orderId, orderStatus }) => {
+// Status em que o pedido ainda está vivo E o cliente precisa do código à mão.
+//
+// ⚠️ `ready` ESTÁ AQUI POR CAUSA DA RETIRADA NO LOCAL, e a falta dele era um
+// buraco real: num pedido de retirada não existe entregador, então o pedido vai
+// `preparing` → `ready` → (loja confirma) → `delivered`. Ele NUNCA passa por
+// `accepted_by_delivery` nem `delivering`. Como a lista antiga só tinha esses
+// dois, o cliente chegava no balcão, a loja pedia o código, e esta tela não
+// mostrava nada — justamente no único momento em que ele precisava.
+//
+// Quem fecha a retirada é o balcão, digitando o código que o CLIENTE mostra
+// (ver o comentário do `OrderCard` do app do parceiro, caso 'Pronto').
+const STATUS_COM_CODIGO = ['ready', 'accepted_by_delivery', 'delivering'];
+
+export const PickupCodeDisplay = ({ orderId, orderStatus, isPickup = false }) => {
   const [codes, setCodes] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  useEffect(() => {
-    const fetchCodes = async () => {
-      const statusesWithCodes = ['accepted_by_delivery', 'delivering', 'delivered'];
-      if (!statusesWithCodes.includes(orderStatus)) {
-        return;
-      }
+  const relevante = STATUS_COM_CODIGO.includes(orderStatus);
 
+  useEffect(() => {
+    if (!relevante) return;
+
+    const fetchCodes = async () => {
       setLoading(true);
       setError(null);
-
       try {
         const authToken = AuthService.getToken();
-        if (!authToken) {
-          throw new Error('Token não encontrado');
-        }
+        if (!authToken) throw new Error('Token não encontrado');
 
         const response = await fetch(`${API_URL}/orders/${orderId}/codes`, {
           headers: {
@@ -34,37 +43,29 @@ export const PickupCodeDisplay = ({ orderId, orderStatus }) => {
           },
           credentials: 'include'
         });
+        if (!response.ok) throw new Error('Não foi possível buscar os códigos');
 
-        if (!response.ok) {
-          throw new Error('Não foi possível buscar os códigos');
-        }
-
-        const data = await response.json();
-        setCodes(data);
+        setCodes(await response.json());
       } catch (err) {
         console.error('Erro ao buscar códigos:', err);
         setError(mensagemDeErro(err, 'Não consegui buscar o código agora.',
-        'Sem conexão. O código aparece assim que o sinal voltar.'));
+          'Sem conexão. O código aparece assim que o sinal voltar.'));
       } finally {
         setLoading(false);
       }
     };
 
     fetchCodes();
-  }, [orderId, orderStatus]);
+  }, [orderId, orderStatus, relevante]);
 
-  const statusesWithCodes = ['accepted_by_delivery', 'delivering', 'delivered'];
-  if (!statusesWithCodes.includes(orderStatus)) {
-    return null;
-  }
+  if (!relevante) return null;
 
   if (loading) {
-    // FIX: use Loader2 (circular spinner) instead of Clock for loading state
     return (
       <div className="mt-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
         <div className="flex items-center gap-2 text-blue-700">
           <Loader2 className="animate-spin" size={20} />
-          <span className="text-sm font-medium">Carregando códigos...</span>
+          <span className="text-sm font-medium">Carregando código...</span>
         </div>
       </div>
     );
@@ -78,77 +79,55 @@ export const PickupCodeDisplay = ({ orderId, orderStatus }) => {
     );
   }
 
-  if (!codes) {
-    return null;
-  }
-
-  // So renderiza a caixa se o codigo VEIO na resposta. O /codes do backend,
-  // de proposito, nunca manda o pickup_code pro CLIENTE (ele e o segredo do
-  // entregador com o restaurante) — sem esta guarda, o cliente via uma caixa
-  // "Codigo de Retirada" eternamente vazia e achava que era erro.
-  const showPickupCode = !!codes.pickup_code
-    && ['accepted_by_delivery', 'delivering', 'delivered'].includes(orderStatus);
-  const showDeliveryCode = !!codes.delivery_code
-    && ['delivering', 'delivered'].includes(orderStatus);
+  // Aqui existia também um bloco "Código de Retirada" lendo `codes.pickup_code`.
+  // Ele NUNCA podia aparecer: a rota /codes, para user_type 'client', devolve
+  // só `delivery_code` — o pickup_code é o segredo do entregador com a loja.
+  // Era código que parecia vivo e não era; foi removido em 14/09/2026.
+  if (!codes?.delivery_code) return null;
 
   return (
     <div className="mt-4 border-t border-gray-100 pt-4">
       <div className="flex items-center gap-2 mb-3">
         <Shield className="text-blue-600" size={20} />
-        <h3 className="text-lg font-bold text-gray-800">Códigos de Verificação</h3>
+        <h3 className="text-lg font-bold text-gray-800">
+          {isPickup ? 'Código de Retirada' : 'Código de Entrega'}
+        </h3>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        {showPickupCode && (
-          <div className="bg-gradient-to-br from-blue-50 to-blue-100 p-4 rounded-lg border-2 border-blue-300 shadow-md">
-            <div className="flex items-center gap-2 mb-2">
-              <Package className="text-blue-700" size={18} />
-              <span className="text-sm font-semibold text-blue-800">Código de Retirada</span>
-            </div>
-            <div className="bg-white p-3 rounded-md border-2 border-dashed border-blue-400">
-              <p className="text-3xl font-bold text-center text-blue-900 tracking-widest font-mono">
-                {codes.pickup_code}
-              </p>
-            </div>
-            <p className="text-xs text-blue-700 mt-2 text-center">
-              {orderStatus === 'accepted_by_delivery' && '🚴 Entregador está a caminho da loja'}
-              {orderStatus === 'delivering' && '✅ Pedido retirado pelo entregador'}
-              {orderStatus === 'delivered' && '✅ Pedido foi retirado'}
-            </p>
-          </div>
-        )}
-
-        {showDeliveryCode && (
-          <div className="bg-gradient-to-br from-green-50 to-green-100 p-4 rounded-lg border-2 border-green-300 shadow-md">
-            <div className="flex items-center gap-2 mb-2">
-              <Truck className="text-green-700" size={18} />
-              <span className="text-sm font-semibold text-green-800">Código de Entrega</span>
-            </div>
-            <div className="bg-white p-3 rounded-md border-2 border-dashed border-green-400">
-              <p className="text-3xl font-bold text-center text-green-900 tracking-widest font-mono">
-                {codes.delivery_code}
-              </p>
-            </div>
-            <p className="text-xs text-green-700 mt-2 text-center">
-              {orderStatus === 'delivering' && '🚚 Mostre este código ao entregador'}
-              {orderStatus === 'delivered' && '✅ Pedido foi entregue'}
-            </p>
-          </div>
-        )}
+      <div className="bg-gradient-to-br from-green-50 to-green-100 p-4 rounded-lg border-2 border-green-300 shadow-md">
+        <div className="flex items-center gap-2 mb-2">
+          <Truck className="text-green-700" size={18} />
+          <span className="text-sm font-semibold text-green-800">
+            {isPickup ? 'Mostre no balcão' : 'Mostre a quem entregar'}
+          </span>
+        </div>
+        <div className="bg-white p-3 rounded-md border-2 border-dashed border-green-400">
+          {/* SEM dizer quantos dígitos: o código nasce com 4 desde 13/09/2026,
+              mas pedido que já estava na rua na troca segue com 6. */}
+          <p className="text-3xl font-bold text-center text-green-900 tracking-widest font-mono">
+            {String(codes.delivery_code).toUpperCase()}
+          </p>
+        </div>
       </div>
 
       <div className="mt-4 p-3 bg-amber-50 rounded-lg border border-amber-200">
         <div className="flex items-start gap-2">
           <CheckCircle className="text-amber-600 flex-shrink-0 mt-0.5" size={16} />
           <div className="text-xs text-amber-800">
-            {orderStatus === 'accepted_by_delivery' && (
+            {isPickup && orderStatus === 'ready' && (
+              <p><strong>Pronto!</strong> Seu pedido está no balcão. Mostre este código ao retirar.</p>
+            )}
+            {isPickup && orderStatus !== 'ready' && (
+              <p><strong>Status:</strong> A loja está preparando seu pedido.</p>
+            )}
+            {!isPickup && orderStatus === 'ready' && (
+              <p><strong>Status:</strong> Pedido pronto, aguardando o entregador.</p>
+            )}
+            {!isPickup && orderStatus === 'accepted_by_delivery' && (
               <p><strong>Status:</strong> O entregador está a caminho da loja para retirar seu pedido.</p>
             )}
-            {orderStatus === 'delivering' && (
-              <p><strong>Status:</strong> Seu pedido está a caminho! Mostre o código de entrega quando o entregador chegar.</p>
-            )}
-            {orderStatus === 'delivered' && (
-              <p><strong>Concluído!</strong> Seu pedido foi entregue com sucesso. Bom apetite! 🍽️</p>
+            {!isPickup && orderStatus === 'delivering' && (
+              <p><strong>Status:</strong> Seu pedido está a caminho! Mostre o código quando o entregador chegar.</p>
             )}
           </div>
         </div>
