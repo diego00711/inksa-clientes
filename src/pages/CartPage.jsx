@@ -166,8 +166,47 @@ export function CartPage() {
   // Usando a localização atual, o complemento é OBRIGATÓRIO e entra no
   // endereço que o entregador recebe. Endereço salvo já tem número próprio.
   const faltaComplemento = !!currentLoc && complementoGps.trim().length < 2;
+
+  // ⚠️ O GPS NÃO DEVOLVE NÚMERO DE CASA — e sem número o Waze do entregador cai
+  // na coordenada de nível de RUA.
+  //
+  // Achado no teste de 16/09/2026: o pedido foi gravado como
+  //   "Rua Maria Floriani Flores - Ponte Grande - Lages — Casa"
+  // enquanto o endereço CADASTRADO da mesma pessoa, na mesma rua, dizia 307.
+  // O número existia no banco e se perdia aqui.
+  //
+  // Se o reverso do GPS caiu na MESMA RUA de um endereço salvo, o número
+  // daquele cadastro é quase certamente o certo — a pessoa está em casa. Só
+  // empresta quando a rua bate; em rua diferente ela está noutro lugar, e
+  // carimbar o número de casa seria mandar o entregador pro endereço errado.
+  const numeroDoCadastro = (() => {
+    if (!currentLoc?.address) return '';
+    const soLetras = (t) => String(t || '')
+      .normalize('NFD').replace(/[̀-ͯ]/g, '')
+      .toLowerCase().replace(/[^a-z0-9]+/g, '');
+    const doGps = soLetras(currentLoc.address);
+    if (!doGps) return '';
+    const casa = addresses.find((a) => {
+      const rua = soLetras(a.street);
+      return rua.length > 6 && a.number && doGps.includes(rua);
+    });
+    return casa ? String(casa.number).trim() : '';
+  })();
+
+  // O número entra logo DEPOIS DA RUA, não no fim da string. Grudado no fim
+  // sairia "... - Lages, 307", que lê torto e dá ao geocodificador do Waze um
+  // número colado na cidade. O reverso vem como "Rua X - Bairro - Cidade",
+  // então basta costurar no primeiro pedaço: "Rua X, 307 - Bairro - Cidade".
+  const enderecoGpsComNumero = (() => {
+    const base = currentLoc?.address || '';
+    if (!numeroDoCadastro || !base) return base;
+    const pedacos = base.split(' - ');
+    pedacos[0] = `${pedacos[0]}, ${numeroDoCadastro}`;
+    return pedacos.join(' - ');
+  })();
+
   const deliveryAddressStr = currentLoc
-    ? [currentLoc.address, complementoGps.trim()].filter(Boolean).join(' — ')
+    ? [enderecoGpsComNumero, complementoGps.trim()].filter(Boolean).join(' — ')
     : (selectedAddress
       ? formatAddress(selectedAddress)
       : (clientProfile?.address || clientProfile?.full_address || ''));
