@@ -169,7 +169,6 @@ export function CartPage() {
     || Number(deliveryLat) === 0 || Number(deliveryLng) === 0;
   // Usando a localização atual, o complemento é OBRIGATÓRIO e entra no
   // endereço que o entregador recebe. Endereço salvo já tem número próprio.
-  const faltaComplemento = !!currentLoc && complementoGps.trim().length < 2;
 
   // ⚠️ O GPS NÃO DEVOLVE NÚMERO DE CASA — e sem número o Waze do entregador cai
   // na coordenada de nível de RUA.
@@ -222,6 +221,19 @@ export function CartPage() {
   // sairia "... - Lages, 307", que lê torto e dá ao geocodificador do Waze um
   // número colado na cidade. O reverso vem como "Rua X - Bairro - Cidade",
   // então basta costurar no primeiro pedaço: "Rua X, 307 - Bairro - Cidade".
+  // ⚠️ SÓ É OBRIGATÓRIO QUANDO NÃO TEMOS NÚMERO.
+  //
+  // Era sempre, e a razão era boa: o reverso do GPS dá a rua, não a porta.
+  // Mas desde 16/09/2026 o número vem emprestado do endereço salvo quando o
+  // GPS cai na mesma rua, e o app do entregador navega pela coordenada do
+  // aparelho, que é precisa. Exigir mesmo assim só produz "Casa" digitado por
+  // obrigação — foi exatamente o que apareceu no primeiro pedido de teste.
+  //
+  // Quem NÃO tem endereço salvo naquela rua continua sem número nenhum. Aí a
+  // exigência vale: é a única coisa que diz em qual porta tocar.
+  const faltaComplemento = !!currentLoc && !numeroDoCadastro
+    && complementoGps.trim().length < 2;
+
   const enderecoGpsComNumero = (() => {
     const base = currentLoc?.address || '';
     if (!numeroDoCadastro || !base) return base;
@@ -1221,12 +1233,22 @@ export function CartPage() {
                 </button>
               </div>
             )}
-            {/* O GPS acerta a rua, não a porta. Este campo é o que evita o
-                entregador rodando no quarteirão com a comida esfriando. */}
+            {/* ⚠️ O TEXTO AQUI MUDA CONFORME O QUE A GENTE JÁ SABE.
+                Até 16/09/2026 dizia sempre "o GPS mostra a rua certa, mas não
+                diz qual é a sua porta" — e o Diego apontou que isso virou
+                mentira: com o número emprestado do cadastro e a navegação pela
+                coordenada do aparelho, o Waze leva certo. Aviso que assusta sem
+                motivo gasta a confiança que o aviso de verdade vai precisar.
+                Tendo número, o campo é AJUDA (referência, prédio, apartamento).
+                Sem número, ele continua sendo a única pista da porta. */}
             {currentLoc && (
               <div className="mt-2">
                 <label htmlFor="complementoGps" className="block text-xs font-semibold text-gray-700">
-                  Número e complemento <span className="text-red-500">*</span>
+                  {numeroDoCadastro ? (
+                    <>Complemento <span className="font-normal text-gray-400">(opcional)</span></>
+                  ) : (
+                    <>Número e complemento <span className="text-red-500">*</span></>
+                  )}
                 </label>
                 <input
                   id="complementoGps"
@@ -1234,11 +1256,15 @@ export function CartPage() {
                   value={complementoGps}
                   onChange={(e) => setComplementoGps(e.target.value)}
                   maxLength={120}
-                  placeholder="Ex: 307, casa dos fundos, portão azul"
+                  placeholder={numeroDoCadastro
+                    ? 'Ex: edifício rosa, ap 402, portão azul'
+                    : 'Ex: 307, casa dos fundos, portão azul'}
                   className="mt-1 w-full rounded-xl border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400"
                 />
                 <p className="mt-1 text-xs text-gray-500">
-                  O GPS mostra a rua certa, mas não diz qual é a sua porta.
+                  {numeroDoCadastro
+                    ? 'Ajude o entregador a chegar mais rápido: prédio, apartamento, cor do portão.'
+                    : 'O GPS mostra a rua certa, mas não diz qual é a sua porta.'}
                 </p>
                 {faltaComplemento && (
                   <p className="mt-1 text-xs font-medium text-red-600">
