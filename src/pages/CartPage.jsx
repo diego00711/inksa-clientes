@@ -580,6 +580,18 @@ export function CartPage() {
         delivery_address: retirada ? '' : deliveryAddressStr,
         client_latitude: deliveryLat,
         client_longitude: deliveryLng,
+        // DE ONDE veio essa coordenada. Só o carrinho sabe, e sem mandar junto
+        // o app do entregador tem que adivinhar — foi o que estava acontecendo.
+        //
+        // `currentLoc` é o GPS do aparelho: precisão de metros. O endereço
+        // salvo é geocodificado: precisão de RUA (a mesma rua devolve a mesma
+        // coordenada para o nº 284 e para o nº 307 — medido).
+        //
+        // ⚠️ A ordem importa e é a mesma de `deliveryLat`: currentLoc tem
+        // precedência lá, então tem que ter aqui. Divergir faria o pedido
+        // dizer "gps" carregando coordenada de endereço, ou o contrário —
+        // e aí o entregador navegaria pelo pior dos dois achando que é o melhor.
+        client_coord_origem: currentLoc ? 'gps' : (selectedAddress ? 'endereco' : null),
         delivery_distance_km: deliveryDistance || 0,
         notes: notes.trim(),
         cliente_email: user.email,
