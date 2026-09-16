@@ -112,6 +112,10 @@ export function CartPage() {
   // (modal de detalhes + comanda impressa). O backend já grava em orders.notes.
   const [notes, setNotes] = useState('');
 
+  // Cupom e observações nascem FECHADOS. Ver o comentário no JSX.
+  const [mostrarCupom, setMostrarCupom] = useState(false);
+  const [mostrarObs, setMostrarObs] = useState(false);
+
   // CPF pro pagamento online (exigência do PIX). Só entra em cena se o perfil
   // ainda não tem — o backend salva no primeiro uso e nunca mais pergunta.
   const [pedindoCpf, setPedindoCpf] = useState(false);
@@ -427,6 +431,14 @@ export function CartPage() {
   const couponDiscount = (couponData?.valid && Number(couponData?.discount_amount) > 0)
     ? Number(couponData.discount_amount)
     : 0;
+
+  // ⚠️ ABERTO = o toque OU já ter conteúdo. Derivar em vez de só usar o
+  // estado evita o caso que estraga tudo: cupom aplicado (ou observação
+  // digitada) sumindo atrás de um bloco fechado — a pessoa não vê, acha que
+  // perdeu, e digita de novo.
+  const cupomAberto = mostrarCupom || !!couponData?.valid || !!couponCode.trim();
+  const obsAberto = mostrarObs || !!notes.trim();
+
   const finalTotal = Math.max(0, subTotal + safeFee - couponDiscount);
   const acceptsCash = restaurantInfo?.accepts_cash ?? true;
   // Só bloqueia quando o backend confirma que está fechado (is_open === false).
@@ -870,91 +882,10 @@ export function CartPage() {
             </div>
           )}
 
-      {/* Cupom de desconto */}
-            <div className="border-t pt-3 mt-3">
-              <p className="text-sm font-medium text-gray-700 mb-2">Cupom de desconto</p>
-
-              {/* A ESCOLHA APARECE em vez de ficar escondida. Só um cupom entra
-                  por pedido — mostrar os dois lado a lado com quanto cada um
-                  economiza transforma um conflito silencioso numa decisão. */}
-              {cuponsDisponiveis.length > 0 && (
-                <div className="mb-3 space-y-1.5">
-                  {cuponsDisponiveis.map((c, i) => {
-                    const escolhido = couponData?.valid && couponCode.trim().toUpperCase() === c.codigo;
-                    return (
-                      <button
-                        key={c.codigo}
-                        onClick={() => applyCoupon(c.codigo)}
-                        className={`flex w-full items-center justify-between gap-3 rounded-xl border px-3 py-2.5 text-left transition ${
-                          escolhido ? 'border-orange-500 bg-orange-50' : 'border-gray-200 hover:border-orange-300'}`}
-                      >
-                        <span className="min-w-0">
-                          <span className="block text-sm font-bold text-gray-800">
-                            {c.codigo}
-                            {c.meu && <span className="ml-2 rounded bg-orange-100 px-1.5 py-0.5 text-[10px] font-semibold text-orange-700">SEU</span>}
-                            {/* Só marca o melhor quando há mais de um: com um
-                                cupom só, "melhor" não informa nada. */}
-                            {i === 0 && cuponsDisponiveis.length > 1 && (
-                              <span className="ml-2 rounded bg-green-100 px-1.5 py-0.5 text-[10px] font-semibold text-green-700">MELHOR</span>
-                            )}
-                          </span>
-                          <span className="block truncate text-xs text-gray-500">
-                            {c.tipo === 'free_delivery' ? 'Frete grátis' : c.descricao || 'Desconto'}
-                          </span>
-                        </span>
-                        <span className="shrink-0 text-sm font-bold text-green-700">
-                          − {brl(Number(c.desconto))}
-                        </span>
-                      </button>
-                    );
-                  })}
-                  {cuponsDisponiveis.length > 1 && (
-                    <p className="pt-0.5 text-xs text-gray-500">
-                      Vale <strong>um cupom por pedido</strong>. Os outros continuam
-                      valendo até vencer — use no próximo.
-                    </p>
-                  )}
-                </div>
-              )}
-
-              <div className="flex gap-2">
-                <input
-                  value={couponCode}
-                  onChange={e => setCouponCode(e.target.value.toUpperCase())}
-                  placeholder="Digite o código"
-                  className="flex-1 border rounded-lg px-3 py-2 text-base text-sm uppercase"
-                />
-                <button
-                  onClick={() => applyCoupon()}
-                  disabled={couponLoading}
-                  className="bg-orange-500 text-white px-4 rounded-lg min-h-[44px] text-sm font-medium disabled:opacity-50"
-                >
-                  {couponLoading ? '...' : 'Aplicar'}
-                </button>
-              </div>
-              {couponData && (
-                <p className={`text-sm mt-1 ${couponData.valid ? 'text-green-600' : 'text-red-500'}`}>
-                  {couponData.valid
-                    ? `✓ Desconto de ${brl(Number(couponData.discount_amount))} aplicado!`
-                    : couponData.message}
-                </p>
-              )}
-            </div>
-
-            {/* Observações do pedido — vão pro restaurante (modal + comanda) */}
-            <div className="border-t pt-3 mt-3">
-              <p className="text-sm font-medium text-gray-700 mb-2">Observações do pedido</p>
-              <textarea
-                value={notes}
-                onChange={e => setNotes(e.target.value)}
-                maxLength={300}
-                rows={2}
-                placeholder="Ex: sem cebola, ponto da carne, tocar a campainha…"
-                className="w-full border rounded-lg px-3 py-2 text-sm resize-none"
-              />
-              <p className="text-xs text-gray-400 mt-0.5 text-right">{notes.length}/300</p>
-            </div>
-
+            {/* ── O TOTAL VEM LOGO DEPOIS DAS PARCELAS QUE O FORMAM ────────
+                Antes a ordem era subtotal → frete → distância → CUPOM →
+                OBSERVAÇÕES → total: duas caixas de digitação no meio da conta.
+                Quem confere preço tinha que pular por cima delas. */}
             {couponDiscount > 0 && (
               <div className="flex justify-between items-center text-green-600 text-sm">
                 <span>Desconto do cupom</span>
@@ -965,6 +896,127 @@ export function CartPage() {
             <div className="flex justify-between items-center text-lg font-bold mt-2">
               <span>Total</span>
               <span>{brl(finalTotal)}</span>
+            </div>
+
+            {/* ── Cupom e observações: FECHADOS por padrão ─────────────────
+                Os dois viviam abertos, com rótulo e campo, comendo quase um
+                terço da primeira tela — para coisas que a maioria dos pedidos
+                não usa. Abrem no toque.
+                ⚠️ Abrem SOZINHOS quando já têm conteúdo: cupom aplicado ou
+                observação digitada não pode sumir atrás de um toque, senão a
+                pessoa acha que perdeu. */}
+            <div className="border-t pt-3 mt-3 space-y-1">
+              <button
+                type="button"
+                onClick={() => setMostrarCupom((v) => !v)}
+                className="w-full flex items-center justify-between py-2 text-left"
+              >
+                <span className="text-sm font-medium text-gray-700">
+                  Cupom de desconto
+                  {couponData?.valid && (
+                    <span className="ml-2 text-xs font-bold text-green-700">aplicado</span>
+                  )}
+                </span>
+                <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform ${cupomAberto ? "rotate-180" : ""}`} />
+              </button>
+              {cupomAberto && (
+                /* O título saiu daqui: quem nomeia agora é o botão que abre. */
+                <div className="pb-3">
+
+                {/* A ESCOLHA APARECE em vez de ficar escondida. Só um cupom entra
+                    por pedido — mostrar os dois lado a lado com quanto cada um
+                    economiza transforma um conflito silencioso numa decisão. */}
+                {cuponsDisponiveis.length > 0 && (
+                  <div className="mb-3 space-y-1.5">
+                    {cuponsDisponiveis.map((c, i) => {
+                      const escolhido = couponData?.valid && couponCode.trim().toUpperCase() === c.codigo;
+                      return (
+                        <button
+                          key={c.codigo}
+                          onClick={() => applyCoupon(c.codigo)}
+                          className={`flex w-full items-center justify-between gap-3 rounded-xl border px-3 py-2.5 text-left transition ${
+                            escolhido ? 'border-orange-500 bg-orange-50' : 'border-gray-200 hover:border-orange-300'}`}
+                        >
+                          <span className="min-w-0">
+                            <span className="block text-sm font-bold text-gray-800">
+                              {c.codigo}
+                              {c.meu && <span className="ml-2 rounded bg-orange-100 px-1.5 py-0.5 text-[10px] font-semibold text-orange-700">SEU</span>}
+                              {/* Só marca o melhor quando há mais de um: com um
+                                  cupom só, "melhor" não informa nada. */}
+                              {i === 0 && cuponsDisponiveis.length > 1 && (
+                                <span className="ml-2 rounded bg-green-100 px-1.5 py-0.5 text-[10px] font-semibold text-green-700">MELHOR</span>
+                              )}
+                            </span>
+                            <span className="block truncate text-xs text-gray-500">
+                              {c.tipo === 'free_delivery' ? 'Frete grátis' : c.descricao || 'Desconto'}
+                            </span>
+                          </span>
+                          <span className="shrink-0 text-sm font-bold text-green-700">
+                            − {brl(Number(c.desconto))}
+                          </span>
+                        </button>
+                      );
+                    })}
+                    {cuponsDisponiveis.length > 1 && (
+                      <p className="pt-0.5 text-xs text-gray-500">
+                        Vale <strong>um cupom por pedido</strong>. Os outros continuam
+                        valendo até vencer — use no próximo.
+                      </p>
+                    )}
+                  </div>
+                )}
+
+                <div className="flex gap-2">
+                  <input
+                    value={couponCode}
+                    onChange={e => setCouponCode(e.target.value.toUpperCase())}
+                    placeholder="Digite o código"
+                    className="flex-1 border rounded-lg px-3 py-2 text-base text-sm uppercase"
+                  />
+                  <button
+                    onClick={() => applyCoupon()}
+                    disabled={couponLoading}
+                    className="bg-orange-500 text-white px-4 rounded-lg min-h-[44px] text-sm font-medium disabled:opacity-50"
+                  >
+                    {couponLoading ? '...' : 'Aplicar'}
+                  </button>
+                </div>
+                {couponData && (
+                  <p className={`text-sm mt-1 ${couponData.valid ? 'text-green-600' : 'text-red-500'}`}>
+                    {couponData.valid
+                      ? `✓ Desconto de ${brl(Number(couponData.discount_amount))} aplicado!`
+                      : couponData.message}
+                  </p>
+                )}
+              </div>
+              )}
+              <button
+                type="button"
+                onClick={() => setMostrarObs((v) => !v)}
+                className="w-full flex items-center justify-between py-2 text-left border-t"
+              >
+                <span className="text-sm font-medium text-gray-700">
+                  Observações do pedido
+                  {notes.trim() && (
+                    <span className="ml-2 text-xs font-bold text-orange-700">1</span>
+                  )}
+                </span>
+                <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform ${obsAberto ? "rotate-180" : ""}`} />
+              </button>
+              {obsAberto && (
+                /* Vão pro restaurante (modal + comanda). O título está no botão. */
+                <div className="pb-3">
+                <textarea
+                  value={notes}
+                  onChange={e => setNotes(e.target.value)}
+                  maxLength={300}
+                  rows={2}
+                  placeholder="Ex: sem cebola, ponto da carne, tocar a campainha…"
+                  className="w-full border rounded-lg px-3 py-2 text-sm resize-none"
+                />
+                <p className="text-xs text-gray-400 mt-0.5 text-right">{notes.length}/300</p>
+              </div>
+              )}
             </div>
           </div>
 
@@ -1082,57 +1134,76 @@ export function CartPage() {
             <p className="text-sm font-semibold text-gray-700 mb-2 flex items-center gap-1.5">
               <MapPin className="w-4 h-4 text-orange-500" /> Endereço de entrega
             </p>
-            {addresses.length === 0 ? (
-              <button
-                onClick={() => navigate('/perfil')}
-                className="w-full text-left border border-dashed border-orange-300 rounded-xl p-3 text-sm text-orange-600 hover:bg-orange-50"
-              >
-                + Cadastrar endereço de entrega
-              </button>
-            ) : (
-              <div className="border rounded-xl">
+            {/* ⚠️ UM ENDEREÇO DE CADA VEZ NA TELA.
+            
+                Até 16/09/2026 o cartão do endereço SALVO continuava aparecendo com
+                o GPS ligado. No print do Diego os dois mostravam quase o mesmo
+                texto ("Rua Maria Floriani Flores - Ponte Grande - Lages"), um em
+                cima do outro, e não havia como saber qual valia.
+            
+                Num checkout, dúvida sobre PARA ONDE VAI é o pior lugar possível pra
+                pessoa estar. Quem manda de verdade é o `currentLoc` (ele tem
+                precedência em deliveryLat/Lng e em deliveryAddressStr), então a tela
+                passa a dizer a mesma coisa que o código faz.
+            
+                Volta pro endereço salvo pelo X da caixa verde — por isso o botão de
+                GPS pode sair junto: manter os dois seria oferecer de novo o que já
+                está ligado. */}
+            {!currentLoc && (
+              <>
+              {addresses.length === 0 ? (
                 <button
-                  onClick={() => setShowAddressList((v) => !v)}
-                  className="w-full flex items-center justify-between p-3 text-left"
+                  onClick={() => navigate('/perfil')}
+                  className="w-full text-left border border-dashed border-orange-300 rounded-xl p-3 text-sm text-orange-600 hover:bg-orange-50"
                 >
-                  <span className="min-w-0">
-                    <span className="font-semibold text-sm text-gray-800">{selectedAddress?.label || 'Selecione'}</span>
-                    <span className="block text-xs text-gray-500 truncate">{deliveryAddressStr || 'Toque para escolher'}</span>
-                  </span>
-                  <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform ${showAddressList ? 'rotate-180' : ''}`} />
+                  + Cadastrar endereço de entrega
                 </button>
-                {showAddressList && (
-                  <div className="border-t divide-y">
-                    {addresses.map((a) => (
-                      <button
-                        key={a.id}
-                        onClick={() => { setSelectedAddressId(a.id); setShowAddressList(false); }}
-                        className={`w-full text-left p-3 text-sm hover:bg-gray-50 ${a.id === selectedAddressId ? 'bg-orange-50' : ''}`}
-                      >
-                        <span className="font-semibold text-gray-800">{a.label}</span>
-                        {a.is_default && <span className="ml-2 text-[10px] font-bold text-green-700">PADRÃO</span>}
-                        <span className="block text-xs text-gray-500 truncate">{formatAddress(a)}</span>
+              ) : (
+                <div className="border rounded-xl">
+                  <button
+                    onClick={() => setShowAddressList((v) => !v)}
+                    className="w-full flex items-center justify-between p-3 text-left"
+                  >
+                    <span className="min-w-0">
+                      <span className="font-semibold text-sm text-gray-800">{selectedAddress?.label || 'Selecione'}</span>
+                      <span className="block text-xs text-gray-500 truncate">{deliveryAddressStr || 'Toque para escolher'}</span>
+                    </span>
+                    <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform ${showAddressList ? 'rotate-180' : ''}`} />
+                  </button>
+                  {showAddressList && (
+                    <div className="border-t divide-y">
+                      {addresses.map((a) => (
+                        <button
+                          key={a.id}
+                          onClick={() => { setSelectedAddressId(a.id); setShowAddressList(false); }}
+                          className={`w-full text-left p-3 text-sm hover:bg-gray-50 ${a.id === selectedAddressId ? 'bg-orange-50' : ''}`}
+                        >
+                          <span className="font-semibold text-gray-800">{a.label}</span>
+                          {a.is_default && <span className="ml-2 text-[10px] font-bold text-green-700">PADRÃO</span>}
+                          <span className="block text-xs text-gray-500 truncate">{formatAddress(a)}</span>
+                        </button>
+                      ))}
+                      <button onClick={() => navigate('/perfil')} className="w-full text-left p-3 text-sm text-orange-600 hover:bg-orange-50">
+                        + Gerenciar endereços
                       </button>
-                    ))}
-                    <button onClick={() => navigate('/perfil')} className="w-full text-left p-3 text-sm text-orange-600 hover:bg-orange-50">
-                      + Gerenciar endereços
-                    </button>
-                  </div>
-                )}
-              </div>
-            )}
+                    </div>
+                  )}
+                </div>
+              )}
 
-            {/* Usar localização atual (GPS) — pra pedir de onde está, mesmo sem
-                endereço salvo aqui (ex.: está em outra cidade). */}
-            <button
-              type="button"
-              onClick={useCurrentLocation}
-              disabled={locatingNow}
-              className="mt-2 w-full flex items-center justify-center gap-2 rounded-xl border border-orange-300 bg-orange-50 text-orange-700 text-sm font-semibold py-2.5 hover:bg-orange-100 disabled:opacity-60"
-            >
-              {locatingNow ? <Loader2 className="w-4 h-4 animate-spin" /> : <LocateFixed className="w-4 h-4" />}
-              {locatingNow ? 'Buscando GPS...' : 'Usar minha localização atual'}
-            </button>
+              {/* Usar localização atual (GPS) — pra pedir de onde está, mesmo sem
+                  endereço salvo aqui (ex.: está em outra cidade). */}
+              <button
+                type="button"
+                onClick={useCurrentLocation}
+                disabled={locatingNow}
+                className="mt-2 w-full flex items-center justify-center gap-2 rounded-xl border border-orange-300 bg-orange-50 text-orange-700 text-sm font-semibold py-2.5 hover:bg-orange-100 disabled:opacity-60"
+              >
+                {locatingNow ? <Loader2 className="w-4 h-4 animate-spin" /> : <LocateFixed className="w-4 h-4" />}
+                {locatingNow ? 'Buscando GPS...' : 'Usar minha localização atual'}
+              </button>
+              </>
+            )}
             {currentLoc && (
               <div className="mt-2 flex items-start gap-2 rounded-xl bg-green-50 border border-green-200 p-3">
                 <MapPin className="w-4 h-4 text-green-600 mt-0.5 shrink-0" />
@@ -1240,15 +1311,17 @@ export function CartPage() {
             />
           )}
 
-          {/* Actions */}
-          <div className="flex justify-between mt-8 gap-4 flex-col sm:flex-row">
-            <Button variant="outline" onClick={clearCart}
-              className="flex-1 text-red-500 border-red-500 hover:bg-red-500/10"
-              disabled={isProcessingOrder}>
-              Limpar Carrinho
-            </Button>
+          {/* ⚠️ O "LIMPAR CARRINHO" PERDEU PESO, DE PROPÓSITO.
+              Era um botão de largura cheia, borda vermelha, encostado no
+              "Finalizar Pedido e Pagar" — ação destrutiva com o mesmo peso
+              visual da ação principal, e do lado dela. Duas coisas erradas ao
+              mesmo tempo: disputa atenção com o que a pessoa veio fazer, e
+              convida ao toque errado no dedão.
+              Virou texto discreto ABAIXO do botão principal. Continua a um
+              toque de quem procura; deixou de competir com quem vai pagar. */}
+          <div className="mt-8">
             <Button
-              className="flex-1 bg-primary text-primary-foreground hover:bg-primary/90"
+              className="w-full bg-primary text-primary-foreground hover:bg-primary/90"
               onClick={handleFinalizarPedido}
               // Sem conta o frete NUNCA é calculado (não há endereço), e as
               // travas abaixo dependem dele — o botão ficaria morto pra sempre
@@ -1287,6 +1360,15 @@ export function CartPage() {
                 'Finalizar Pedido e Pagar'
               )}
             </Button>
+
+            <button
+              type="button"
+              onClick={clearCart}
+              disabled={isProcessingOrder}
+              className="mt-3 w-full text-center text-xs text-gray-400 hover:text-red-500 disabled:opacity-50"
+            >
+              Limpar carrinho
+            </button>
           </div>
         </div>
       )}
