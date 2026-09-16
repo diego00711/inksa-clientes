@@ -179,6 +179,24 @@ export function CartPage() {
   // daquele cadastro é quase certamente o certo — a pessoa está em casa. Só
   // empresta quando a rua bate; em rua diferente ela está noutro lugar, e
   // carimbar o número de casa seria mandar o entregador pro endereço errado.
+  // ⚠️ SE A PESSOA JÁ DIGITOU O NÚMERO, NÃO EMPRESTA OUTRO.
+  //
+  // O campo ao lado se chama "Número e complemento" e o exemplo dele é
+  // literalmente "Ex: 307, casa dos fundos" — ou seja, o número digitado é o
+  // caminho esperado. Sem esta trava o endereço saía com ele DUAS vezes:
+  //   "Rua Maria Floriani Flores, 307 - Ponte Grande - Lages — 307, casa dos fundos"
+  // E o que a pessoa digita vale mais que o cadastro: ela pode estar na casa
+  // do vizinho, no fundo do lote, num número que o cadastro não tem.
+  // ⚠️ E a checagem é pelo MESMO número, não por "tem algum número".
+  //
+  // "apto 42" tem número e NÃO é número de casa — com a regra grosseira, esse
+  // pedido perdia o 307 e o entregador ficava sem a porta de novo. Comparar o
+  // valor exato pega a duplicata real e deixa apartamento, lote e quadra em paz.
+  const complementoJaTemNumero = (numero) => {
+    if (!numero) return false;
+    return new RegExp(`(?:^|[^0-9])${numero}(?:[^0-9]|$)`).test(complementoGps);
+  };
+
   const numeroDoCadastro = (() => {
     if (!currentLoc?.address) return '';
     const soLetras = (t) => String(t || '')
@@ -190,7 +208,10 @@ export function CartPage() {
       const rua = soLetras(a.street);
       return rua.length > 6 && a.number && doGps.includes(rua);
     });
-    return casa ? String(casa.number).trim() : '';
+    if (!casa) return '';
+    const numero = String(casa.number).trim();
+    // Já digitado no complemento? Então é dele que a pessoa quer — não repete.
+    return complementoJaTemNumero(numero) ? '' : numero;
   })();
 
   // O número entra logo DEPOIS DA RUA, não no fim da string. Grudado no fim
