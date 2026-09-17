@@ -1,7 +1,7 @@
 // RotatingBanner.jsx - VERSÃO COM OVERLAY CONDICIONAL
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { CLIENT_API_URL as API_BASE_URL } from '../services/api';
+import { CLIENT_API_URL as API_BASE_URL, createAuthHeaders } from '../services/api';
 import { useLocation } from '../context/LocationContext';
 
 const RotatingBanner = () => {
@@ -48,8 +48,27 @@ const RotatingBanner = () => {
           url.searchParams.set('lat', location.latitude);
           url.searchParams.set('lng', location.longitude);
         }
-        const response = await fetch(url);
-        
+        /* ── E POR QUE O TOKEN VAI JUNTO ───────────────────────────────────
+           Esta é a única chamada do app que já traz a coordenada do cliente,
+           então é aqui que o backend a GUARDA em client_profiles
+           (_guardar_onde_o_cliente_esta, em routes/banners.py) — é dela que
+           sai o público "no raio" das campanhas de oferta relâmpago.
+
+           Só que o carimbo começa com `if not auth: return`, e esta chamada
+           saía com `fetch(url)` pelado. Resultado: ele voltava calado em 100%
+           das vezes, inclusive com o cliente logado. Em 17/09/2026 o banco
+           tinha 0 de 36 clientes com coordenada, e não era falta de movimento
+           — era estrutural. As duas metades estavam certas sozinhas e nunca se
+           encontravam.
+
+           ⚠️ O sintoma disso é o pior tipo: disparar uma campanha "no raio"
+           não dava erro nenhum. Ia pra ninguém e o log registrava sucesso.
+
+           `createAuthHeaders()` devolve {} quando não há token, então a rota
+           segue pública — a vitrine continua funcionando deslogado, que é o
+           motivo de ela ser pública. */
+        const response = await fetch(url, { headers: createAuthHeaders() });
+
         if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
         
         const data = await response.json();
