@@ -6,6 +6,7 @@ import { Smartphone, Gift, ArrowRight } from "lucide-react";
 import { LoginForm } from "../components/LoginForm";
 import { ehAppNativo } from "../services/notificationService";
 import { pendente as indicacaoPendente } from "../utils/indicacao";
+import Versiculo from '../components/Versiculo';
 
 const PLAY_STORE = "https://play.google.com/store/apps/details?id=com.inksa.cliente";
 
@@ -159,6 +160,8 @@ export function LoginPage() {
               </a>
             )
         )}
+
+        <Versiculo />
       </div>
     </div>
   );
