@@ -428,11 +428,29 @@ export function HomePage() {
   // Fetch banners — refaz quando a localização do cliente muda, porque o
   // backend filtra banner por alcance geográfico (banner de Lages não aparece
   // pra quem está em São Paulo).
+  //
+  // ⚠️ `latitude`/`longitude`, NÃO `lat`/`lng`. O LocationContext entrega
+  // `{ latitude, longitude }` (é o que restaurantService.js já lia certo), e
+  // aqui estava `location?.lat` — `undefined` sempre. Dois estragos de uma vez,
+  // os dois silenciosos:
+  //
+  //   1. a chamada saía SEM coordenada, então banner com alcance geográfico
+  //      nunca apareceu pra ninguém, nem pra quem está na porta da loja;
+  //   2. o backend só carimba a posição do cliente (client_profiles.latitude)
+  //      quando ESTA chamada traz lat/lng — e é dessa coluna que sai o público
+  //      "no raio" das campanhas de oferta relâmpago. Medido em 17/09/2026:
+  //      0 de 36 clientes com coordenada.
+  //
+  // E a lista de dependências tinha o mesmo erro, então nem quando o GPS
+  // resolvia o efeito rodava de novo: `[undefined, undefined]` nunca muda.
+  //
+  // Nada disso dava erro. Disparar campanha "no raio" ia pra ninguém e o log
+  // registrava sucesso.
   useEffect(() => {
-    BannerService.getBanners({ lat: location?.lat, lng: location?.lng })
+    BannerService.getBanners({ lat: location?.latitude, lng: location?.longitude })
       .then((data) => setBanners(Array.isArray(data) ? data : []))
       .catch(() => setBanners([]));
-  }, [location?.lat, location?.lng]);
+  }, [location?.latitude, location?.longitude]);
 
   const toggleQuickFilter = useCallback((key) => {
     setQuickFilters(prev =>
