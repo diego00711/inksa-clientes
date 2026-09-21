@@ -22,6 +22,13 @@ import {
   pendente as indicacaoPendente,
   limpar as limparIndicacao,
 } from "./utils/indicacao";
+// Import na MESMA edição em que o uso entra — a regra que este repositório
+// aprendeu com o ícone Lightbulb, e que vale igual pra componente de JSX.
+import {
+  capturarDaUrl as capturarCampanhaDaUrl,
+  pendente as campanhaPendente,
+  limpar as limparCampanha,
+} from "./utils/campanha";
 
 // --- Lazy-loaded pages ---
 const HomePage = lazy(() => import("./pages/HomePage").then(m => ({ default: m.HomePage })));
@@ -214,6 +221,53 @@ function IndicacaoHandler() {
   return null;
 }
 
+/** DE ONDE VEIO ESTA PESSOA (?de=guga). Irmão do handler acima, e separado
+ *  dele de propósito: indicação PAGA R$5 e por isso fala com o usuário
+ *  (toast, cupom); campanha é medição e é MUDA — quem chegou pela publi não
+ *  tem nada a ver com a nossa contabilidade.
+ *
+ *  ⚠️ Não juntar os dois num handler só. A indicação tem regra de negócio e
+ *  volta com mensagem; a campanha não pode nem atrasar a tela. Um `await`
+ *  compartilhado faria a campanha herdar a lentidão da indicação.
+ */
+function CampanhaHandler() {
+  const { isAuthenticated } = useAuth();
+  const tentado = useRef(false);
+
+  useEffect(() => { capturarCampanhaDaUrl(CLIENT_API_URL); }, []);
+
+  useEffect(() => {
+    if (!isAuthenticated || tentado.current) return;
+    const codigo = campanhaPendente();
+    if (!codigo) return;
+    tentado.current = true;
+    (async () => {
+      try {
+        const r = await fetch(`${CLIENT_API_URL}/api/campanha/atribuir`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', ...createAuthHeaders() },
+          body: JSON.stringify({ codigo }),
+        });
+        // Mesma cicatriz do handler de indicação: 404 aqui é NORMAL no
+        // primeiro acesso (a conta entra antes de o perfil existir), e 401 é
+        // o token gravado meio passo depois. Apagar o código nesses estados
+        // perderia a atribuição justamente de quem acabou de chegar pela
+        // campanha — que é a única pessoa que esta função existe pra medir.
+        const RETENTAR = [401, 403, 404, 408, 425, 429];
+        if (!r.ok && (r.status >= 500 || RETENTAR.includes(r.status))) {
+          tentado.current = false;
+          return;
+        }
+        limparCampanha();
+      } catch {
+        tentado.current = false;   // sem rede: tenta na próxima abertura
+      }
+    })();
+  }, [isAuthenticated]);
+
+  return null;
+}
+
 function OnboardingManager() {
   const { isAuthenticated } = useAuth();
 
@@ -274,6 +328,7 @@ function AppContent() {
           <OnlineStatusHandler />
           <PaymentReturnHandler />
           <IndicacaoHandler />
+          <CampanhaHandler />
           <GlobalError />
           <OnboardingManager />
           <SupportButton />
