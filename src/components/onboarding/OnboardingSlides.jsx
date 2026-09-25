@@ -36,10 +36,25 @@ export default function OnboardingSlides({ onComplete }) {
   };
 
   const goNext = () => {
+    // ⚠️ DOIS TOQUES SEGUIDOS DERRUBAVAM O APP INTEIRO.
+    //
+    // A trava lia `current` do render atual, mas o incremento só acontecia
+    // 200 ms depois, dentro do setTimeout. Dois toques dentro dessa janela
+    // liam o MESMO `current`, passavam os dois pela trava e somavam dois:
+    // do slide 2 o índice ia pra 3, SLIDES[3] é undefined e `slide.emoji`
+    // estourava direto no ErrorBoundary ("Algo deu errado nesta tela").
+    //
+    // E o botão pede esse segundo toque: ele espera a transição de 200 ms
+    // antes de mudar qualquer coisa na tela, então quem toca e não vê nada
+    // acontecer toca de novo. Some com o primeiro app que a pessoa abre —
+    // e sem chamar finish(), então recarregar devolve o onboarding.
+    if (exiting) return;
     if (current < SLIDES.length - 1) {
       setExiting(true);
       setTimeout(() => {
-        setCurrent((c) => c + 1);
+        // O teto aqui é a segunda trava: mesmo que algo volte a entrar duas
+        // vezes, o índice não passa do último slide.
+        setCurrent((c) => Math.min(c + 1, SLIDES.length - 1));
         setExiting(false);
       }, 200);
     } else {

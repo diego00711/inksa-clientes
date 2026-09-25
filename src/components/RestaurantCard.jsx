@@ -4,7 +4,7 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
-import { Star, MapPin, Clock, Heart, Info, Ticket } from "lucide-react";
+import { Star, MapPin, Clock, Heart, Info, Ticket, Store } from "lucide-react";
 import { useToast } from "../context/ToastContext";
 import { segmentLabel } from "../utils/segments";
 import { brl } from '../utils/dinheiro';
@@ -33,22 +33,48 @@ export function RestaurantCard({ restaurant }) {
   const category = primeiroTipo || segmentLabel(restaurant.segment);
   const isOpen = restaurant.is_open;
   const deliveryType = restaurant.delivery_type;
+  // Quem leva o pedido: a própria loja ou um entregador da Inksa. O padrão é
+  // 'platform' quando o campo vem vazio — errar para o lado da plataforma é o
+  // lado seguro, porque anunciar "entrega da loja" onde não é seria mandar o
+  // cliente esperar alguém que não vem.
+  const entregaDaLoja = (deliveryType ?? 'platform') !== 'platform';
   const aceitaRetirada = !!restaurant.accepts_pickup;
   const distance = restaurant.distance_km;
   const totalReviews = restaurant.total_reviews ?? 0;
 
   // --- COMPONENTE INTERNO PARA O TEXTO DA ENTREGA ---
   const DeliveryInfo = () => {
-    // O frete real é calculado por distância no checkout. O delivery_fee estático
-    // do restaurante (0/nulo) NÃO significa grátis — só mostra valor se houver um
-    // fixo real (>0); caso contrário, "Entrega a calcular" (honesto).
-    if (deliveryFee > 0 && deliveryType !== 'platform') {
+    // ENTREGA PRÓPRIA. O cliente via só "R$ 9,00" e não tinha como saber que
+    // quem bate na porta é a loja, não um entregador da Inksa. Isso muda o que
+    // ele espera: não vai existir rastreio do entregador no mapa e ninguém vai
+    // pedir o código de 4 dígitos — é a loja que fecha o pedido.
+    //
+    // Aqui o valor mostrado é a taxa FIXA da loja e é o que ele vai pagar de
+    // verdade: no ramo 'own', delivery_calculator.py só lê delivery_fee e não
+    // recalcula por distância. Diferente da loja de plataforma, onde o frete
+    // sai de distância + peso e só existe depois do endereço.
+    //
+    // Fica DENTRO do chip do frete em vez de virar um selo novo porque esta
+    // linha já carrega frete + "Retira aqui" + distância; um quarto chip
+    // quebraria em duas linhas no celular.
+    if (entregaDaLoja) {
       return (
-        <span className="flex items-center gap-1 font-medium text-gray-600 bg-gray-50 px-2 py-1 rounded-full text-xs">
-          {brl(parseFloat(deliveryFee))}
+        <span className="flex items-center gap-1 font-medium text-gray-700 bg-gray-50 px-2 py-1 rounded-full text-xs whitespace-nowrap">
+          <Store className="w-3 h-3 text-gray-500" />
+          {deliveryFee > 0 ? (
+            <>
+              {brl(parseFloat(deliveryFee))}
+              <span className="font-normal text-gray-500">· entrega da loja</span>
+            </>
+          ) : (
+            <span className="font-normal text-gray-600">Entrega da loja</span>
+          )}
         </span>
       );
     }
+    // Loja da plataforma: o frete é calculado por distância no checkout. O
+    // delivery_fee estático (0/nulo) NÃO significa grátis, então nunca é
+    // mostrado aqui — "a calcular" é o honesto.
     return (
       <span className="flex items-center gap-1 font-medium text-blue-600 bg-blue-50 px-2 py-1 rounded-full text-xs">
         <Info className="w-3 h-3" />

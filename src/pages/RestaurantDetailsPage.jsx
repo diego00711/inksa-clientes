@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, Link, useSearchParams } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
-import { ChevronLeft, ChevronRight, Star, Loader2, MapPin, Clock, Phone, AlertCircle, Plus, Minus, Flame } from "lucide-react";
+import { ChevronLeft, ChevronRight, Star, Loader2, MapPin, Clock, Phone, AlertCircle, Plus, Minus, Flame, Store } from "lucide-react";
 import { useCart, montarItemComOpcoes } from '../context/CartContext';
 import RestaurantService from '../services/restaurantService';
 import StoreCoupons from '../components/StoreCoupons';
@@ -206,8 +206,8 @@ export function RestaurantDetailsPage() {
   // frete por distância e peso, que só existe depois do endereço. Mostrar o
   // delivery_fee estático nesse caso era anunciar R$ 1,00 e cobrar R$ 30 no
   // carrinho — o card da lista já tratava isso, esta tela não.
-  const temTaxaPropria = (restaurant.delivery_type ?? 'platform') !== 'platform'
-    && Number(deliveryFee) > 0;
+  const entregaDaLoja = (restaurant.delivery_type ?? 'platform') !== 'platform';
+  const temTaxaPropria = entregaDaLoja && Number(deliveryFee) > 0;
   const deliveryTime = restaurant.delivery_time;
 
   return (
@@ -321,12 +321,23 @@ export function RestaurantDetailsPage() {
                 </div>
               )}
               
+              {/* Mesma informação do card da vitrine, no lugar onde o cliente
+                  decide: além de QUANTO custa a entrega, QUEM vai fazê-la.
+                  Numa loja de entrega própria não há entregador da Inksa no
+                  caminho — logo não há rastreio no mapa nem código de retirada,
+                  e é a loja que fecha o pedido. */}
               <div className="flex items-center gap-2 text-gray-600">
+                {entregaDaLoja && <Store className="w-5 h-5 text-orange-500" />}
                 <span className="text-sm font-medium">
                   {temTaxaPropria ? (
                     `Entrega: ${brl(parseFloat(deliveryFee))}`
+                  ) : entregaDaLoja ? (
+                    'Entrega'
                   ) : (
                     <span className="text-blue-600 font-medium">Frete calculado no seu endereço</span>
+                  )}
+                  {entregaDaLoja && (
+                    <span className="font-normal text-gray-500"> · feita pela loja</span>
                   )}
                 </span>
               </div>
