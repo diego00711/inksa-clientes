@@ -452,7 +452,12 @@ export function CartPage() {
   const obsAberto = mostrarObs || !!notes.trim();
 
   const finalTotal = Math.max(0, subTotal + safeFee - couponDiscount);
-  const acceptsCash = restaurantInfo?.accepts_cash ?? true;
+  // ⚠️ `?? false`, não `?? true`. Se a informação não chegar, o checkout
+  // NÃO oferece dinheiro. Errar pro lado de oferecer criaria um pedido em
+  // dinheiro numa loja que não aceita — e aí alguém sai com a comida sem
+  // ter como receber. Errar pro lado de esconder só tira uma opção de
+  // pagamento que o cliente pode escolher de novo recarregando.
+  const acceptsCash = restaurantInfo?.accepts_cash ?? false;
   // Só bloqueia quando o backend confirma que está fechado (is_open === false).
   // Se o campo vier ausente, trata como aberto pra não travar o checkout à toa —
   // o servidor tem a trava autoritativa de qualquer forma.
