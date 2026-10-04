@@ -46,6 +46,7 @@ const MyOrdersPage = lazy(() => import("./pages/MyOrdersPage"));
 const ClientEvaluationsCenter = lazy(() => import("./pages/ClientEvaluationsCenter"));
 const GamificationPage = lazy(() => import("./pages/GamificationPage"));
 const IndiqueGanhePage = lazy(() => import("./pages/IndiqueGanhePage"));
+const RifaPage = lazy(() => import("./pages/RifaPage"));
 const OrderTrackingPage = lazy(() => import("./pages/OrderTrackingPage").then(m => ({ default: m.OrderTrackingPage })));
 const PaymentSuccessPage = lazy(() => import("./pages/PaymentSuccessPage"));
 const PaymentFailurePage = lazy(() => import("./pages/PaymentFailurePage"));
@@ -385,6 +386,7 @@ function AppContent() {
                   <Route path="clube" element={<GamificationPage />} />
                   {/* O push do prêmio manda pra cá (data.url = /indique). */}
                   <Route path="indique" element={<IndiqueGanhePage />} />
+                  <Route path="numeros" element={<RifaPage />} />
                   <Route path="gamificacao" element={<Navigate to="/clube" replace />} />
                   <Route path="suporte" element={<SuportePage />} />
                   <Route path="pedido/:orderId/acompanhar" element={<OrderTrackingPage />} />

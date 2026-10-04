@@ -1,6 +1,9 @@
 import { useState, useEffect, useRef } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
-import { ShoppingCart, LogOut, Receipt, Star, Medal, Menu, X, LifeBuoy, Gift, MessageCircle , Lightbulb } from "lucide-react";
+// ⚠️ `Ticket` entrou JUNTO com o link "Meus números" abaixo. Ícone usado sem
+// constar NESTE import passa no build e apaga a tela de todo mundo logado.
+import { ShoppingCart, LogOut, Receipt, Star, Medal, Menu, X, LifeBuoy, Gift, MessageCircle , Lightbulb, Ticket } from "lucide-react";
+import { useRifa } from "../hooks/useRifa";
 import { Button } from "./ui/button";
 import { useAuth } from "../context/AuthContext";
 import { useCart } from "../context/CartContext";
@@ -10,6 +13,9 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 export function Header() {
   const { isAuthenticated, logout, user } = useAuth();
   const { totalItemsInCart } = useCart();
+  // Campanha de números: o item do menu só existe quando há campanha valendo.
+  // Visitante toma 401 nessa busca e o hook devolve "desligada" em silêncio.
+  const { ligada: rifaLigada } = useRifa();
   const navigate = useNavigate();
   const location = useLocation();
   const [menuOpen, setMenuOpen] = useState(false);
@@ -69,6 +75,15 @@ export function Header() {
                   <Gift className="h-5 w-5 text-orange-500" />
                   <span>Indique e ganhe</span>
                 </Link>
+                {/* Só aparece quando há campanha valendo — quem decide é o
+                    servidor. Item de menu para promoção encerrada é pior que
+                    não ter item nenhum. */}
+                {rifaLigada && (
+                  <Link to="/numeros" className="flex items-center gap-3 px-4 py-3 text-sm text-gray-700 hover:bg-orange-50 hover:text-orange-700">
+                    <Ticket className="h-5 w-5 text-orange-500" />
+                    <span>Meus números</span>
+                  </Link>
+                )}
                 {/* Dois destinos diferentes, então dois nomes que dizem o
                     destino. "Falar no WhatsApp" é literal: abre o WhatsApp.
                     "Suporte" continua sendo a central de chamados, com o nome
