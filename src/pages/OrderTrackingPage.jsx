@@ -59,7 +59,7 @@ const STATUS_TO_STAGE = {
  * quando dá errado: a loja recusa, e quem cancelou o pedido, aos olhos do
  * cliente, foi a Inksa.
  */
-function estagiosPara(status, retirada = false) {
+function estagiosPara(status, retirada = false, entregaPropria = false) {
   const aindaEsperando = String(status || '').toLowerCase() === 'pending';
   const primeiro = aindaEsperando
     ? STAGES[0]
@@ -77,6 +77,23 @@ function estagiosPara(status, retirada = false) {
       { ...STAGES[2], label: "Pronto para retirada",
         msg: "Pode vir buscar! Mostre o código no balcão." },
       { ...STAGES[4], label: "Retirado!", msg: "Obrigado pela preferência! 😊" },
+    ];
+  }
+
+  // ENTREGA PRÓPRIA: a loja leva com a equipe dela, não há entregador Inksa.
+  // "Aguardando um entregador retirar" é literalmente o oposto do que
+  // acontece — o cliente fica olhando o mapa esperando uma moto que nunca vai
+  // ser despachada, enquanto o pedido já saiu pela porta da loja.
+  //
+  // Mesmos cinco passos, só a fala muda: aqui existe sim um "saiu para
+  // entrega", diferente da retirada no local.
+  if (entregaPropria) {
+    return [
+      primeiro,
+      STAGES[1],
+      { ...STAGES[2], msg: "Pronto! A loja já vai sair para entregar." },
+      { ...STAGES[3], msg: "A loja saiu para entregar o seu pedido!" },
+      STAGES[4],
     ];
   }
 
@@ -192,8 +209,8 @@ function CountdownTimer({
 }
 
 // ─── Timeline ────────────────────────────────────────────────────────────────
-function Timeline({ currentStage, status, retirada = false }) {
-  const STAGES = estagiosPara(status, retirada);
+function Timeline({ currentStage, status, retirada = false, entregaPropria = false }) {
+  const STAGES = estagiosPara(status, retirada, entregaPropria);
   return (
     <div>
       {STAGES.map((stage, idx) => {
@@ -914,7 +931,8 @@ export function OrderTrackingPage() {
         <div className="bg-white rounded-2xl shadow-md p-5 mb-5 border border-gray-100">
           <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-5">Histórico do pedido</p>
           <Timeline currentStage={currentStage} status={order.status}
-                    retirada={!!order.is_pickup} />
+                    retirada={!!order.is_pickup}
+                    entregaPropria={order.delivery_type === 'own'} />
         </div>
 
         {/* Order summary — separa os produtos da taxa de entrega (padrão iFood):
