@@ -15,6 +15,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { usePullToRefresh } from "../hooks/usePullToRefresh";
 import { RestaurantSkeleton as RestaurantSkeletonGrid } from "../components/skeletons/RestaurantSkeleton";
 import SocialDayBanner from "../components/SocialDayBanner";
+import RifaBanner from "../components/RifaBanner";
 import { SEGMENTS } from "../utils/segments";
 import SugerirRestaurante from '../components/SugerirRestaurante';
 // ⚠️ Import na MESMA edição em que o uso entrou — este projeto já teve DUAS
@@ -800,6 +801,11 @@ export function HomePage() {
       </div>
 
       <div className="max-w-7xl mx-auto px-4">
+        {/* Campanha de números. Fica ANTES do Dia I e dos banners porque é a
+            única coisa na tela que fala com quem ainda não tem conta — e
+            quem não tem conta é, hoje, praticamente todo mundo que chega. */}
+        <RifaBanner />
+
         {/* Dia I — Inksa Social (só aparece quando habilitado no admin) */}
         <SocialDayBanner />
 

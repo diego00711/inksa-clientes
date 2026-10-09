@@ -6,6 +6,11 @@ import clientService from '../services/clientService';
 import { requestNotificationPermission, obterTokenFCM, saveFcmToken } from '../services/notificationService';
 import { CLIENT_API_URL, createAuthHeaders } from '../services/api';
 import { isTokenExpired, refreshSession, REFRESH_NETWORK_ERROR } from '../services/apiClient';
+// A resposta da rifa é cacheada em memória do módulo e MUDA conforme quem
+// está logado: visitante recebe a chamada pra se cadastrar, logado recebe os
+// próprios números. Sem limpar o cache na troca de usuário, quem acabou de
+// se cadastrar continuaria vendo "crie sua conta".
+import { limparCacheDaRifa } from '../hooks/useRifa';
 
 export const AuthContext = createContext(null);
 
@@ -14,6 +19,11 @@ export const AuthProvider = ({ children }) => {
   const [isLoading, setIsLoading] = useState(true);
 
   const fetchAndSetUser = useCallback(async () => {
+    // Aqui e não nos logins: são QUATRO caminhos que trocam de usuário
+    // (login, entrarComSessao, loginWithGoogle, logout) e todos os três
+    // primeiros passam por esta função. Um lugar só em vez de quatro pra
+    // esquecer — que é o risco que o próprio entrarComSessao já documenta.
+    limparCacheDaRifa();
     let token = authService.getToken();
     // TOKEN VENCIDO NÃO É SESSÃO PERDIDA — é sessão que precisa renovar.
     // Antes isto deslogava direto, ignorando que existe um refresh_token
@@ -211,6 +221,7 @@ export const AuthProvider = ({ children }) => {
 
   const logout = () => {
     authService.logout();
+    limparCacheDaRifa();   // o logout não passa por fetchAndSetUser
     setUser(null);
   };
 

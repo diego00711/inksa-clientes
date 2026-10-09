@@ -5,7 +5,7 @@
 // mesmo dia. Quem carregou o app naquela janela ficou com um cache chamado
 // v15; se subissemos v15 de novo, o activate veria o mesmo nome e NAO apagaria
 // nada — justamente em quem passou pela janela do problema.
-const CACHE_NAME = 'inksa-cliente-v19';
+const CACHE_NAME = 'inksa-cliente-v20';
 
 // O host devolve o index.html — HTTP 200, content-type text/html — para
 // QUALQUER caminho que nao existe, inclusive /assets/*. Como `res.ok` e true
