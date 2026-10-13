@@ -22,6 +22,7 @@ import {
   pendente as indicacaoPendente,
   limpar as limparIndicacao,
 } from "./utils/indicacao";
+import { useIndicacaoLigada } from "./hooks/useIndicacao";
 // Import na MESMA edição em que o uso entra — a regra que este repositório
 // aprendeu com o ícone Lightbulb, e que vale igual pra componente de JSX.
 import {
@@ -174,11 +175,16 @@ function IndicacaoHandler() {
   const { isAuthenticated } = useAuth();
   const { addToast } = useToast();
   const tentado = useRef(false);
+  // Com o programa desligado NEM TENTA. Tentar devolveria "o programa de
+  // indicação está pausado" — um aviso sobre uma promessa que esta pessoa
+  // nunca viu, já que a faixa e o campo também somem. E o código fica
+  // guardado: se a campanha voltar, o convite ainda vale.
+  const indicacaoLigada = useIndicacaoLigada();
 
   useEffect(() => { capturarIndicacaoDaUrl(); }, []);
 
   useEffect(() => {
-    if (!isAuthenticated || tentado.current) return;
+    if (!isAuthenticated || tentado.current || !indicacaoLigada) return;
     const codigo = indicacaoPendente();
     if (!codigo) return;
     tentado.current = true;
@@ -217,7 +223,7 @@ function IndicacaoHandler() {
         tentado.current = false;   // sem rede: deixa guardado e tenta depois
       }
     })();
-  }, [isAuthenticated, addToast]);
+  }, [isAuthenticated, addToast, indicacaoLigada]);
 
   return null;
 }

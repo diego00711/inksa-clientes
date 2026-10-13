@@ -6,6 +6,7 @@ import { Smartphone, Gift, ArrowRight } from "lucide-react";
 import { LoginForm } from "../components/LoginForm";
 import { ehAppNativo } from "../services/notificationService";
 import { pendente as indicacaoPendente } from "../utils/indicacao";
+import { useIndicacaoLigada } from "../hooks/useIndicacao";
 import Versiculo from '../components/Versiculo';
 
 const PLAY_STORE = "https://play.google.com/store/apps/details?id=com.inksa.cliente";
@@ -99,7 +100,10 @@ export function LoginPage() {
   // O mesmo site roda nos dois lugares (o Capacitor carrega a versão publicada),
   // então a tela precisa saber onde está.
   const noNavegador = !ehAppNativo();
-  const convidado = indicacaoPendente();
+  // Com o programa desligado o backend recusa o código. Prometer aqui faria a
+  // pessoa criar conta atrás de um frete grátis que não existe mais.
+  const indicacaoLigada = useIndicacaoLigada();
+  const convidado = indicacaoLigada ? indicacaoPendente() : null;
 
   return (
     <div className="flex min-h-screen items-center justify-center px-4 py-8">

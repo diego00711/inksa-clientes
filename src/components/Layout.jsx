@@ -9,6 +9,7 @@ import { apiFetch } from "../services/apiClient.js";
 import { NotificationPrompt } from "./NotificationPrompt";
 import { CompleteCadastro } from "./CompleteCadastro";
 import { pendente as indicacaoPendente } from "../utils/indicacao";
+import { useIndicacaoLigada } from "../hooks/useIndicacao";
 
 function BottomNav() {
   const { totalItemsInCart } = useCart();
@@ -103,13 +104,16 @@ function usePresencaCliente() {
 function FaixaDeConvite() {
   const { isAuthenticated } = useAuth();
   const local = useLocation();
+  // Quem manda é o servidor: com o programa desligado, `aplicar_codigo` recusa
+  // o código, e esta faixa estaria prometendo frete grátis que não vem.
+  const indicacaoLigada = useIndicacaoLigada();
   // Relê a cada navegação. Ler localStorage direto no render não avisa o React
   // quando o valor muda por fora — e quem apaga o convite é o IndicacaoHandler,
   // de fora daqui, ao aplicar o código. Sem isto a faixa continuaria prometendo
   // frete grátis depois de o convite já ter sido usado.
   const codigo = useMemo(
     () => indicacaoPendente(), [local.pathname, isAuthenticated]);
-  if (isAuthenticated || !codigo) return null;
+  if (isAuthenticated || !codigo || !indicacaoLigada) return null;
   return (
     <Link
       to="/register"

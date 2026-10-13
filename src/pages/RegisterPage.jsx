@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Eye, EyeOff, Gift } from 'lucide-react';
 import AuthService from '../services/authService';
 import { pendente as indicacaoPendente, guardar as guardarIndicacao } from '../utils/indicacao';
+import { useIndicacaoLigada } from '../hooks/useIndicacao';
 
 export default function RegisterPage() {
   // O código NÃO vai no cadastro: este registro não loga, ele manda pro login,
@@ -10,6 +11,8 @@ export default function RegisterPage() {
   // e o IndicacaoHandler aplica no primeiro acesso autenticado. Se chegou por
   // link (?ref=), o campo já vem preenchido e a pessoa não digita nada.
   const [codigoIndicacao, setCodigoIndicacao] = useState(() => indicacaoPendente() || '');
+  // Quem decide se o campo aparece é o servidor, não o localStorage.
+  const indicacaoLigada = useIndicacaoLigada();
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
@@ -98,8 +101,13 @@ export default function RegisterPage() {
 
           {/* Opcional e por último: campo obrigatório-parecendo no cadastro
               espanta quem não tem código. Quem chegou pelo link nem vê — já
-              vem preenchido. */}
-          <div>
+              vem preenchido.
+
+              O campo INTEIRO some com o programa desligado, não só a frase do
+              frete grátis: um campo de código que o backend vai recusar é pior
+              que campo nenhum — a pessoa digita, cria a conta e leva "programa
+              de indicação pausado" como boas-vindas. */}
+          {indicacaoLigada && <div>
             <label htmlFor="codigoIndicacao" className="flex items-center gap-1.5 text-sm font-medium text-gray-700">
               <Gift className="h-4 w-4 text-orange-500" />
               Código de indicação <span className="font-normal text-gray-400">(opcional)</span>
@@ -116,7 +124,7 @@ export default function RegisterPage() {
             <p className="mt-1 text-xs text-orange-600">
               Tem o código de um amigo? Seu primeiro pedido sai sem frete.
             </p>
-          </div>
+          </div>}
 
           {/* FIX: show success or error feedback inline */}
           {successMessage && <p className="text-sm text-center text-green-600 font-medium">{successMessage}</p>}
