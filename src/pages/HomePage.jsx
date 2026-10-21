@@ -875,30 +875,32 @@ export function HomePage() {
             }
           />
 
-          {isLoading || locationLoading ? (
-            <RestaurantSkeletonGrid count={6} />
-          ) : precisaCidade ? (
-            /* A plataforma atende mais de uma cidade e não sabemos onde esta
-               pessoa está. Mostrar tudo faria ela escolher uma loja que não
-               atende o endereço dela e descobrir só no fim do carrinho.
-               Perguntar é mais honesto que adivinhar. */
-            <div className="text-center py-16 bg-white rounded-2xl border border-gray-100 shadow-sm">
-              <div className="text-5xl mb-4">📍</div>
-              <p className="text-gray-800 font-bold text-lg">De qual cidade você é?</p>
-              <p className="text-gray-500 text-sm mt-2 max-w-sm mx-auto">
-                O Inksa já atende mais de uma cidade. Escolha a sua para ver
-                só as lojas que entregam até você.
+          {/* 🔴 ESTA FAIXA ERA UM PORTÃO — corrigido em 21/10/2026.
+              Antes ela substituía a LISTA INTEIRA quando a cidade era
+              desconhecida: o visitante novo chegava do Instagram e não via uma
+              única loja, com cinco abertas atrás da tela. Agora é aviso, e a
+              lista aparece embaixo. Ver o comentário em public_restaurants.py.
+
+              Só aparece quando HÁ loja pra mostrar — sem loja, quem fala é o
+              estado vazio logo abaixo, que já explica melhor. */}
+          {precisaCidade && !isLoading && !locationLoading && filteredRestaurants.length > 0 && (
+            <div className="mb-5 flex flex-wrap items-center gap-3 rounded-2xl border border-orange-200 bg-orange-50 px-4 py-3">
+              <span className="text-xl leading-none">📍</span>
+              <p className="flex-1 min-w-[12rem] text-sm text-orange-900">
+                Estas são as lojas de <strong>todas as cidades</strong> que o
+                Inksa atende. Diga a sua para ver só quem entrega até você.
               </p>
               <button
                 onClick={() => setShowCityMenu(true)}
-                className="mt-5 px-6 py-3 min-h-[44px] bg-orange-500 text-white text-sm font-bold rounded-full hover:bg-orange-600 transition-colors"
+                className="px-4 py-2 min-h-[44px] bg-orange-500 text-white text-sm font-bold rounded-full hover:bg-orange-600 transition-colors"
               >
-                Escolher minha cidade
+                Escolher cidade
               </button>
-              <p className="text-gray-400 text-xs mt-4">
-                Ou permita a localização para a gente descobrir sozinho.
-              </p>
             </div>
+          )}
+
+          {isLoading || locationLoading ? (
+            <RestaurantSkeletonGrid count={6} />
           ) : filteredRestaurants.length === 0 ? (
             <div className="text-center py-16 bg-white rounded-2xl border border-gray-100 shadow-sm">
               <div className="text-5xl mb-4">🍽️</div>
