@@ -40,6 +40,10 @@ export function RestaurantCard({ restaurant }) {
   const entregaDaLoja = (deliveryType ?? 'platform') !== 'platform';
   const aceitaRetirada = !!restaurant.accepts_pickup;
   const distance = restaurant.distance_km;
+  // A cidade vem de `address_city` e a API já a envia (ver public_restaurants.py).
+  // Serve de aviso no cartão quando não há distância calculada — ver o
+  // comentário longo no bloco que a renderiza.
+  const cidadeLoja = (restaurant.address_city || '').trim();
   const totalReviews = restaurant.total_reviews ?? 0;
 
   // --- COMPONENTE INTERNO PARA O TEXTO DA ENTREGA ---
@@ -224,7 +228,28 @@ export function RestaurantCard({ restaurant }) {
               </div>
 
               {/* Distância ou informação sobre localização */}
-              <div className="flex gap-2">
+              <div className="flex gap-2 flex-wrap">
+                {/* 🔴 A CIDADE DA LOJA, QUANDO NÃO SE SABE A DISTÂNCIA.
+                    Até 21/10/2026 este cartão não dizia de onde a loja é. Com
+                    a plataforma em UMA cidade isso era inofensivo; no dia em
+                    que a Oishii entrou, em Fraiburgo, um cliente de Lages
+                    passou a ver "Oishii Sushi · R$ 10,00 · entrega da loja" e
+                    só descobriria os ~130 km no fim do carrinho, quando o
+                    `verificar_area` recusasse o pedido (raio da plataforma:
+                    15 km).
+
+                    Foi a pergunta certa do Diego quando tiramos o portão de
+                    cidade da vitrine. A resposta não é trazer o portão de
+                    volta — é pôr a informação no cartão, antes do clique.
+
+                    Só aparece sem distância: com o km na tela, a distância já
+                    responde melhor que o nome da cidade. */}
+                {cidadeLoja && !(distance > 0) && (
+                  <span className="flex items-center gap-1 text-xs font-medium text-gray-700 bg-gray-100 px-2 py-1 rounded-full whitespace-nowrap">
+                    <MapPin className="w-3 h-3 text-gray-500" />
+                    {cidadeLoja}
+                  </span>
+                )}
                 {distance !== undefined && distance !== null && distance !== "" && distance > 0 ? (
                   <span className="flex items-center gap-1 text-sm font-medium text-blue-600 bg-blue-50 px-2 py-1 rounded-full">
                     <MapPin className="w-3 h-3" />
