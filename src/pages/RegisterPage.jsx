@@ -1,11 +1,13 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Eye, EyeOff, Gift } from 'lucide-react';
+import { Eye, EyeOff, Gift, Ticket } from 'lucide-react';
 import { Capacitor } from '@capacitor/core';
 import AuthService from '../services/authService';
 import { useAuth } from '../context/AuthContext';
 import { GoogleSignInButton } from '../components/GoogleSignInButton';
 import { mensagemDeErro } from '../utils/mensagemDeErro.js';
+import { useRifa } from '../hooks/useRifa';
+import { brl } from '../utils/dinheiro';
 import { pendente as indicacaoPendente, guardar as guardarIndicacao } from '../utils/indicacao';
 import { useIndicacaoLigada } from '../hooks/useIndicacao';
 
@@ -33,6 +35,18 @@ export default function RegisterPage() {
   const navigate = useNavigate();
 
   const { loginWithGoogle } = useAuth();
+
+  // A faixa do prêmio em cima do formulário. Existe porque o anúncio pago
+  // passou a apontar direto pra cá: sem ela, quem clica num anúncio de
+  // scooter cai num formulário seco que não menciona scooter nenhuma — o
+  // mesmo descasamento que em 03/11 fez 39 cliques virarem zero cadastro.
+  //
+  // ⚠️ O texto vem do SERVIDOR (useRifa), não está escrito aqui. Quando a
+  // campanha for desligada no admin, a faixa some sozinha em vez de ficar
+  // prometendo um prêmio que acabou.
+  const { ligada: rifaLigada, premio, nome: nomeRifa,
+          reais_por_numero, numero_no_cadastro } = useRifa();
+  const premioTexto = premio || nomeRifa || 'um prêmio';
 
   // Fica escondido até `VITE_GOOGLE_CLIENT_ID` existir, e dentro do APK
   // sempre — o plugin nativo do Google não está instalado, então o botão
@@ -105,6 +119,23 @@ export default function RegisterPage() {
             Crie a sua Conta
           </h2>
         </div>
+
+        {rifaLigada && (
+          <div className="flex items-center gap-3 rounded-xl bg-gradient-to-r from-orange-600 via-orange-500 to-amber-400 p-3 text-white shadow">
+            <Ticket className="h-8 w-8 shrink-0" />
+            <div className="min-w-0">
+              <p className="font-extrabold leading-tight">Concorra a {premioTexto}</p>
+              <p className="text-xs leading-snug text-white/90">
+                {numero_no_cadastro
+                  ? 'Ao criar sua conta você já ganha o primeiro número.'
+                  : 'Crie sua conta para participar.'}
+                {reais_por_numero
+                  ? ` Depois, a cada ${brl(reais_por_numero)} em pedidos, mais um.`
+                  : ''}
+              </p>
+            </div>
+          </div>
+        )}
         <form className="space-y-4" onSubmit={handleSubmit}>
           <div>
             <label htmlFor="firstName" className="block text-sm font-medium text-gray-700">Nome</label>
