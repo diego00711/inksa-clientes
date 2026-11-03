@@ -1,7 +1,11 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Eye, EyeOff, Gift } from 'lucide-react';
+import { Capacitor } from '@capacitor/core';
 import AuthService from '../services/authService';
+import { useAuth } from '../context/AuthContext';
+import { GoogleSignInButton } from '../components/GoogleSignInButton';
+import { mensagemDeErro } from '../utils/mensagemDeErro.js';
 import { pendente as indicacaoPendente, guardar as guardarIndicacao } from '../utils/indicacao';
 import { useIndicacaoLigada } from '../hooks/useIndicacao';
 
@@ -13,9 +17,12 @@ export default function RegisterPage() {
   const [codigoIndicacao, setCodigoIndicacao] = useState(() => indicacaoPendente() || '');
   // Quem decide se o campo aparece é o servidor, não o localStorage.
   const indicacaoLigada = useIndicacaoLigada();
+  // ⚠️ SEM "Apelido". Era obrigatório e não servia pra nada: o sobrenome não
+  // aparece em pedido, em entrega nem na comanda. Num cadastro que em 03/11
+  // converteu ZERO de 39 visitas vindas do anúncio, cada campo obrigatório a
+  // menos conta — e este era o único que não tinha uso nenhum depois.
   const [formData, setFormData] = useState({
     firstName: '',
-    lastName: '',
     email: '',
     password: '',
   });
@@ -25,8 +32,34 @@ export default function RegisterPage() {
   const [showPassword, setShowPassword] = useState(false);
   const navigate = useNavigate();
 
+  const { loginWithGoogle } = useAuth();
+
+  // Fica escondido até `VITE_GOOGLE_CLIENT_ID` existir, e dentro do APK
+  // sempre — o plugin nativo do Google não está instalado, então o botão
+  // apareceria e não funcionaria. Mesmo gate do LoginForm, de propósito: se
+  // um dia a chave entrar, os dois acendem juntos.
+  const googleEnabled = !!import.meta.env.VITE_GOOGLE_CLIENT_ID && !Capacitor.isNativePlatform();
+
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
+
+  // ⚠️ Pelo Google a pessoa já entra LOGADA — diferente do cadastro por
+  // formulário, que manda pro /login. Por isso a indicação é guardada aqui
+  // também: o IndicacaoHandler aplica no primeiro acesso autenticado, e sem
+  // esta linha quem entrasse pelo Google perderia o código que digitou.
+  const handleGoogleCredential = async (credential) => {
+    setError('');
+    setIsLoading(true);
+    try {
+      guardarIndicacao(codigoIndicacao);
+      await loginWithGoogle(credential);
+      navigate('/');
+    } catch (err) {
+      setError(mensagemDeErro(err, 'Não foi possível entrar com o Google.'));
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -39,7 +72,7 @@ export default function RegisterPage() {
       const dataToSend = {
         email: formData.email,
         password: formData.password,
-        name: `${formData.firstName} ${formData.lastName}`, // Combina nome e apelido
+        name: formData.firstName.trim(),
         userType: 'client', // Adiciona o tipo de usuário fixo
       };
 
@@ -73,15 +106,9 @@ export default function RegisterPage() {
           </h2>
         </div>
         <form className="space-y-4" onSubmit={handleSubmit}>
-          <div className="flex flex-col sm:flex-row gap-4">
-            <div className="flex-1">
-              <label htmlFor="firstName" className="block text-sm font-medium text-gray-700">Nome</label>
-              <input id="firstName" name="firstName" type="text" required value={formData.firstName} onChange={handleChange} className="mt-1 w-full px-3 py-2 text-base border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
-            </div>
-            <div className="flex-1">
-              <label htmlFor="lastName" className="block text-sm font-medium text-gray-700">Apelido</label>
-              <input id="lastName" name="lastName" type="text" required value={formData.lastName} onChange={handleChange} className="mt-1 w-full px-3 py-2 text-base border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
-            </div>
+          <div>
+            <label htmlFor="firstName" className="block text-sm font-medium text-gray-700">Nome</label>
+            <input id="firstName" name="firstName" type="text" autoComplete="given-name" required value={formData.firstName} onChange={handleChange} className="mt-1 w-full px-3 py-2 text-base border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
           </div>
           <div>
             <label htmlFor="email" className="block text-sm font-medium text-gray-700">E-mail</label>
@@ -147,6 +174,25 @@ export default function RegisterPage() {
             </button>
           </div>
         </form>
+
+        {googleEnabled && (
+          <>
+            <div className="relative my-4">
+              <div className="absolute inset-0 flex items-center">
+                <span className="w-full border-t border-gray-200" />
+              </div>
+              <div className="relative flex justify-center text-xs uppercase">
+                <span className="bg-white px-2 text-gray-400">ou</span>
+              </div>
+            </div>
+            <GoogleSignInButton
+              onCredential={handleGoogleCredential}
+              onError={(e) => setError(mensagemDeErro(e, 'Falha ao carregar o Google.'))}
+              text="signup_with"
+            />
+          </>
+        )}
+
         <div className="text-sm text-center text-gray-500 pt-4 border-t">
           <Link to="/login" className="font-medium text-indigo-600 hover:text-indigo-500">
             Já tem uma conta? Faça Login
