@@ -278,9 +278,40 @@ function CampanhaHandler() {
 function OnboardingManager() {
   const { isAuthenticated } = useAuth();
 
-  const [showOnboarding, setShowOnboarding] = useState(
-    localStorage.getItem('inksa_onboarding_done') !== 'true'
-  );
+  // ⚠️ QUEM CHEGA POR LINK DE CAMPANHA (?de=) NÃO VÊ AS TELAS DE BOAS-VINDAS.
+  //
+  // Medido em 03/11/2026, nas primeiras horas do anúncio da scooter: 743
+  // pessoas alcançadas, 39 cliques registrados em `campanha_cliques`, e
+  // ZERO cadastros. O que essas 39 encontraram ao chegar não foi a scooter —
+  // foi "Peça de tudo, aqui da sua cidade", três telas apresentando o app.
+  // O anúncio prometia um prêmio e a chegada entregava um carrossel sobre
+  // pet shop e padaria.
+  //
+  // O RifaBanner existe e está no TOPO da home (HomePage.jsx), exatamente
+  // para falar com quem ainda não tem conta. Só que este overlay fica na
+  // frente dele, então ninguém que veio pelo anúncio chegou a vê-lo.
+  //
+  // É a mesma forma do bug de 09/10 (ver inksa-rifa-scooter): a promoção
+  // feita pra TRAZER cadastro só aparecia depois do cadastro. Errar para o
+  // lado de esconder é o padrão certo numa promoção encerrada e o errado
+  // num funil de aquisição.
+  //
+  // Quem vem de campanha veio por um motivo específico. A apresentação do
+  // app pode esperar — ela volta na próxima visita, porque a flag
+  // `inksa_onboarding_done` continua sem ser marcada.
+  const [showOnboarding, setShowOnboarding] = useState(() => {
+    if (localStorage.getItem('inksa_onboarding_done') === 'true') return false;
+    // Olha a URL E o que já foi guardado: capturarDaUrl() limpa a barra de
+    // endereço, e dependendo da ordem de montagem o `?de=` já pode ter sumido
+    // daqui. Checar os dois torna isso independente da ordem.
+    try {
+      if (new URLSearchParams(window.location.search).get('de')) return false;
+      if (campanhaPendente()) return false;
+    } catch {
+      /* URL ou storage indisponível: cai no comportamento antigo, que é mostrar */
+    }
+    return true;
+  });
   const [showTour, setShowTour] = useState(false);
   const [showCelebration, setShowCelebration] = useState(false);
 
