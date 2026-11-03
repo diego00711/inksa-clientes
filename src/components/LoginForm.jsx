@@ -11,6 +11,7 @@ import { Label } from "@/components/ui/label";
 import { Capacitor } from "@capacitor/core";
 import { GoogleSignInButton } from "./GoogleSignInButton";
 import { mensagemDeErro } from '../utils/mensagemDeErro.js';
+import { marcarCadastro } from '../utils/pixel';
 
 export function LoginForm() {
   const [email, setEmail] = useState("");
@@ -59,7 +60,11 @@ export function LoginForm() {
     setError(null);
     setIsLoading(true);
     try {
-      await loginWithGoogle(credential);
+      const dados = await loginWithGoogle(credential);
+      // A tela de LOGIN também cria conta: quem nunca entrou e toca no botão
+      // do Google nasce aqui. Sem esta linha o cadastro vindo do anúncio
+      // sumiria da medição toda vez que a pessoa caísse no /login.
+      if (dados?.is_new_user) marcarCadastro('google');
       navigate(voltarPara);
     } catch (err) {
       console.error("Falha no login com Google:", err);

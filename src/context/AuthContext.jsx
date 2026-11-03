@@ -198,9 +198,12 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  // ⚠️ DEVOLVE o resultado. O backend responde `is_new_user`, e é só com ele
+  // que dá pra separar "criou conta agora" de "entrou de novo" — a diferença
+  // que o Pixel precisa pra não contar login repetido como cadastro novo.
   const loginWithGoogle = async (idToken) => {
     try {
-      await authService.loginWithGoogle(idToken);
+      const dados = await authService.loginWithGoogle(idToken);
       console.log('✅ [AuthContext] Login com Google bem-sucedido');
 
       // Atualiza o contexto após login
@@ -213,6 +216,8 @@ export const AuthProvider = ({ children }) => {
       } catch (fcmErr) {
         console.warn('FCM pós-login Google error (ignorado):', fcmErr);
       }
+
+      return dados;
     } catch (error) {
       console.error("❌ [AuthContext] Erro no login com Google:", error);
       throw error;

@@ -6,6 +6,11 @@ import { BrowserRouter } from 'react-router-dom'
 import { ConfirmProvider } from './components/ConfirmProvider.jsx'
 import ErrorBoundary from './components/ErrorBoundary.jsx'
 import { iniciarAutoAtualizacao } from './utils/autoAtualiza'
+import { iniciarPixel } from './utils/pixel'
+
+// Medição do anúncio pago. Aqui e não no index.html porque o index.html vai
+// junto no APK — o porquê inteiro está em utils/pixel.js.
+iniciarPixel();
 
 // 🚀 REGISTRO DO SERVICE WORKER - PWA (só no build de produção: em dev o SW
 // intercepta os fetches do Vite/mocks e causa "Failed to fetch" fantasma —

@@ -17,6 +17,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Loader2 } from 'lucide-react';
 import { CLIENT_API_URL as API } from '../services/api';
+import { marcarCadastro } from '../utils/pixel';
 
 export default function CheckoutRapido({ onPronto, addToast }) {
   const navigate = useNavigate();
@@ -55,6 +56,9 @@ export default function CheckoutRapido({ onPronto, addToast }) {
         addToast?.('error', d.error === 'conta_existente' ? d.message : (d.error || 'Não foi possível continuar.'));
         return;
       }
+      // Chegar aqui com 200 é SEMPRE conta nova: e-mail ou telefone repetido
+      // sai no 409 logo acima. Por isso não precisa de flag do servidor.
+      marcarCadastro('checkout');
       await onPronto(d.data);
     } catch {
       addToast?.('error', 'Sem conexão. Tente de novo.');

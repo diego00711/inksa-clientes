@@ -6,6 +6,7 @@ import AuthService from '../services/authService';
 import { useAuth } from '../context/AuthContext';
 import { GoogleSignInButton } from '../components/GoogleSignInButton';
 import { mensagemDeErro } from '../utils/mensagemDeErro.js';
+import { marcarCadastro } from '../utils/pixel';
 import { useRifa } from '../hooks/useRifa';
 import { brl } from '../utils/dinheiro';
 import { pendente as indicacaoPendente, guardar as guardarIndicacao } from '../utils/indicacao';
@@ -67,7 +68,11 @@ export default function RegisterPage() {
     setIsLoading(true);
     try {
       guardarIndicacao(codigoIndicacao);
-      await loginWithGoogle(credential);
+      const dados = await loginWithGoogle(credential);
+      // Só no PRIMEIRO acesso. Pelo Google não existe "tela de cadastro": o
+      // mesmo botão serve pra criar conta e pra voltar, e contar os dois como
+      // cadastro ensinaria o Meta a buscar quem já é cliente.
+      if (dados?.is_new_user) marcarCadastro('google');
       navigate('/');
     } catch (err) {
       setError(mensagemDeErro(err, 'Não foi possível entrar com o Google.'));
@@ -92,6 +97,7 @@ export default function RegisterPage() {
 
       // Envia os dados corretos para o serviço de autenticação
       await AuthService.register(dataToSend);
+      marcarCadastro('formulario');
 
       // Guarda ANTES de sair da tela. O vínculo em si é feito depois do login,
       // pelo IndicacaoHandler — aqui só não se perde o que a pessoa digitou.
