@@ -31,6 +31,28 @@ const escapar = (s) =>
     .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
 
 function pagina({ titulo, descricao, imagem, url }) {
+  // ── A SACOLA LARANJA SÓ APARECE COM AS MEDIDAS DECLARADAS ────────────────
+  //
+  // Sem og:image:width/height o WhatsApp precisa baixar e medir a imagem antes
+  // de decidir se monta o card grande — e ele desiste antes disso. Resultado:
+  // prévia só de texto, sem capa.
+  //
+  // Foi exatamente o que aconteceu em 05/11/2026 com o link de indicação
+  // apontando pra /register. `/register` tem uma barra só, igual ao link curto
+  // de parceiro (`/gelae`), então o rewrite do vercel.json manda o robô pra cá;
+  // não existe loja com esse apelido, cai na capa genérica — e a capa genérica
+  // não declarava medida nenhuma. O index.html declara, por isso o link antigo
+  // pra raiz mostrava a sacola e este não.
+  //
+  // ⚠️ Só para a CAPA PADRÃO, que é 1200x630. O logo do parceiro tem medida
+  // desconhecida e variável: cravar 1200x630 nele faria o card sair esticado,
+  // que é pior do que não ter medida.
+  const medidas = imagem === CAPA_PADRAO
+    ? '\n<meta property="og:image:width" content="1200">'
+      + '\n<meta property="og:image:height" content="630">'
+      + '\n<meta property="og:image:alt" content="Inksa Delivery">'
+    : '';
+
   return `<!doctype html>
 <html lang="pt-BR"><head>
 <meta charset="utf-8">
@@ -41,7 +63,7 @@ function pagina({ titulo, descricao, imagem, url }) {
 <meta property="og:site_name" content="Inksa Delivery">
 <meta property="og:title" content="${escapar(titulo)}">
 <meta property="og:description" content="${escapar(descricao)}">
-<meta property="og:image" content="${escapar(imagem)}">
+<meta property="og:image" content="${escapar(imagem)}">${medidas}
 <meta property="og:url" content="${escapar(url)}">
 <meta property="og:locale" content="pt_BR">
 <meta name="twitter:card" content="summary_large_image">

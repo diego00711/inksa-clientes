@@ -41,14 +41,38 @@ export default function IndiqueGanhePage() {
   // nem lembrar de nada: o app captura sozinho e aplica quando ele logar. O
   // código continua escrito na mensagem só pra quem preferir digitar na mão —
   // e pra pessoa entender o que está mandando.
-  const link = dados ? `https://clientes.inksadelivery.com.br/?ref=${dados.codigo}` : '';
+  // O LINK VAI PRA /register, NÃO PRA VITRINE.
+  //
+  // A mensagem pede pra pessoa criar conta, e o `/` entrega o carrossel de
+  // banners — inclusive o de captação de PARCEIRO, que não tem nada a ver com
+  // quem foi convidado pra pedir. Conferido em 05/11/2026 num navegador sem
+  // nada guardado: `/register?ref=CODIGO` cai direto no cadastro com o campo
+  // "Código de indicação" JÁ PREENCHIDO, e o botão do Google do lado.
+  const link = dados
+    ? `https://clientes.inksadelivery.com.br/register?ref=${dados.codigo}`
+    : '';
   const mensagem = dados
-    // "pra pedir" e não "pra pedir COMIDA": o app já tem bebidas e o cadastro
-    // tem segmento pra pet/mercado. Quem recebe o convite e abre numa loja de
-    // bebida não pode estranhar o que foi prometido na mensagem.
-    ? `Tô usando o Inksa pra pedir aqui na cidade e tá muito bom. `
-      + `Entra por esse link que seu primeiro pedido sai SEM FRETE: ${link} `
-      + `(ou usa o código ${dados.codigo} no cadastro)`
+    // DUAS COISAS QUE O TEXTO NÃO PODE FAZER:
+    //
+    // 1. Dizer "comida". O app já tem bebidas e o cadastro tem segmento pra
+    //    pet e mercado — quem recebe o convite e abre numa loja de bebida não
+    //    pode estranhar o que foi prometido.
+    // 2. Cravar a cidade. A versão anterior dizia "aqui na cidade", e as que
+    //    eu rascunhei diziam "aqui de Lages" — o Diego corrigiu em 05/11:
+    //    Fraiburgo já tem loja e amanhã tem outra. "Daqui" é verdade em
+    //    qualquer uma delas e não envelhece, porque a indicação é pessoa pra
+    //    pessoa e quem recebe mora onde quem manda mora.
+    //
+    // Asterisco é negrito: o compartilhar vai por wa.me, WhatsApp puro.
+    //
+    // "já vem com o cupom" fala do LINK, que carrega o código — não promete
+    // que o checkout aplica sozinho. Enquanto o aviso do `aplicar()` aqui
+    // embaixo mandar "use o código no checkout", prometer aplicação
+    // automática seria prometer o que a própria tela desmente.
+    ? `*Frete grátis no seu primeiro pedido* no Inksa, o app de delivery daqui. `
+      + `Sem valor mínimo.\n\n`
+      + `É só entrar por este link, que já vem com o cupom:\n${link}\n\n`
+      + `Se pedir o código, é ${dados.codigo}`
     : '';
 
   // Copia o LINK, não só o código: colado em qualquer lugar ele já funciona
