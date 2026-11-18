@@ -65,10 +65,12 @@ export default function IndiqueGanhePage() {
     //
     // Asterisco é negrito: o compartilhar vai por wa.me, WhatsApp puro.
     //
-    // "já vem com o cupom" fala do LINK, que carrega o código — não promete
-    // que o checkout aplica sozinho. Enquanto o aviso do `aplicar()` aqui
-    // embaixo mandar "use o código no checkout", prometer aplicação
-    // automática seria prometer o que a própria tela desmente.
+    // "já vem com o cupom" agora é verdade dos dois lados: o LINK carrega o
+    // código E o carrinho aplica sozinho quando é o único cupom da pessoa
+    // (CartPage.jsx, conserto de 18/11/2026). Até ali, o convidado chegava no
+    // carrinho com o frete grátis dele escondido atrás de um bloco fechado
+    // chamado "Cupom de desconto" — a promessa do WhatsApp morria na única
+    // tela em que precisava valer.
     ? `*Frete grátis no seu primeiro pedido* no Inksa, o app de delivery daqui. `
       + `Sem valor mínimo.\n\n`
       + `É só entrar por este link, que já vem com o cupom:\n${link}\n\n`
@@ -105,7 +107,11 @@ export default function IndiqueGanhePage() {
       });
       const j = await r.json();
       if (j?.ok) {
-        setAviso({ tipo: 'ok', texto: `${j.mensagem} Use o código ${j.cupom} no checkout.` });
+        // ⚠️ ISTO DIZIA "Use o código X no checkout", e era o que impedia a
+        // mensagem lá em cima de prometer aplicação automática. Desde o
+        // conserto no CartPage (18/11/2026) o cupom único entra sozinho no
+        // carrinho — então o aviso passa a dizer o que o app faz.
+        setAviso({ tipo: 'ok', texto: `${j.mensagem} O cupom ${j.cupom} entra sozinho no seu carrinho.` });
         setCodigoAmigo('');
       } else {
         setAviso({ tipo: 'erro', texto: j?.erro || j?.error || 'Não consegui aplicar.' });

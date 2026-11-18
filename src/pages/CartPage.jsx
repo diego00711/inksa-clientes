@@ -448,6 +448,11 @@ export function CartPage() {
   // estado evita o caso que estraga tudo: cupom aplicado (ou observação
   // digitada) sumindo atrás de um bloco fechado — a pessoa não vê, acha que
   // perdeu, e digita de novo.
+  //
+  // Ter cupom na mão também abre — mas via `mostrarCupom` (ver o efeito
+  // abaixo), não aqui. Se entrasse nesta linha o bloco ficaria IMPOSSÍVEL de
+  // fechar enquanto houvesse cupom, e o botão de abrir/fechar viraria um
+  // botão que não responde.
   const cupomAberto = mostrarCupom || !!couponData?.valid || !!couponCode.trim();
   const obsAberto = mostrarObs || !!notes.trim();
 
@@ -553,6 +558,38 @@ export function CartPage() {
       setCouponLoading(false);
     }
   };
+
+  // ⚠️ O FURO MAIS CARO DA INDICAÇÃO MORAVA AQUI.
+  //
+  // O convidado recebe no WhatsApp "é só entrar por este link, que já vem com
+  // o cupom", chega no carrinho com o frete grátis dele esperando — e o bloco
+  // do cupom estava FECHADO, com o nome genérico "Cupom de desconto". Promessa
+  // feita lá fora e desmentida na única tela onde ela precisava valer.
+  //
+  // Agora, quando há cupom disponível:
+  //
+  //   • UM cupom e nada aplicado → entra SOZINHO. Não há escolha a fazer, e
+  //     deixar o único cupom esperando um toque é cobrar pedágio pra entregar
+  //     o que já foi prometido.
+  //   • DOIS OU MAIS → o bloco ABRE, mas nenhum é aplicado. A escolha é da
+  //     pessoa (é pra isso que a lista mostra quanto cada um economiza);
+  //     escolher por ela gastaria o cupom melhor no pedido errado.
+  //
+  // ⚠️ SÓ UMA VEZ, pela trava do ref. Sem ela, quem aplicasse e depois
+  // apagasse o campo veria o cupom voltar sozinho, e quem fechasse o bloco o
+  // veria reabrir — o app decidindo contra a pessoa nos dois casos.
+  const jaOfereceuCupom = useRef(false);
+  useEffect(() => {
+    if (jaOfereceuCupom.current) return;
+    if (cuponsDisponiveis.length === 0) return;
+    if (couponData?.valid || couponCode.trim()) return;
+    jaOfereceuCupom.current = true;
+    setMostrarCupom(true);
+    if (cuponsDisponiveis.length === 1) applyCoupon(cuponsDisponiveis[0].codigo);
+    // `applyCoupon` é recriada a cada render e fica fora das dependências de
+    // propósito: com ela aqui o efeito rodaria a cada tecla digitada.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cuponsDisponiveis, couponData, couponCode]);
 
   const handleFinalizarPedido = async () => {
     if (!isAuthenticated) {
@@ -930,8 +967,19 @@ export function CartPage() {
               >
                 <span className="text-sm font-medium text-gray-700">
                   Cupom de desconto
-                  {couponData?.valid && (
+                  {couponData?.valid ? (
                     <span className="ml-2 text-xs font-bold text-green-700">aplicado</span>
+                  ) : cuponsDisponiveis.length > 0 && (
+                    /* Quem fechar o bloco continua vendo que tem algo ali. Um
+                       rótulo genérico sobre um cupom que a pessoa JÁ TEM é o
+                       mesmo que não ter cupom. */
+                    <span className="ml-2 rounded bg-orange-100 px-1.5 py-0.5 text-[10px] font-bold text-orange-700">
+                      {cuponsDisponiveis.length === 1
+                        ? (cuponsDisponiveis[0].tipo === 'free_delivery'
+                            ? 'FRETE GRÁTIS SEU'
+                            : 'VOCÊ TEM 1')
+                        : `VOCÊ TEM ${cuponsDisponiveis.length}`}
+                    </span>
                   )}
                 </span>
                 <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform ${cupomAberto ? "rotate-180" : ""}`} />
